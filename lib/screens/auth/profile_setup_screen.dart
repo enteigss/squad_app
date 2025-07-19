@@ -1,0 +1,335 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../widgets/custom_button.dart';
+import '../../utils/colors.dart';
+
+class ProfileSetupScreen extends StatefulWidget {
+  const ProfileSetupScreen({super.key});
+
+  @override
+  State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
+}
+
+class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _aboutController = TextEditingController();
+  final _interestController = TextEditingController();
+
+  bool _isLoading = false;
+  List<String> _interests = [];
+
+  final List<String> _popularInterests = [
+    'Sports',
+    'Music',
+    'Movies',
+    'Reading',
+    'Gaming',
+    'Travel',
+    'Cooking',
+    'Photography',
+    'Art',
+    'Dancing',
+    'Fitness',
+    'Technology',
+    'Fashion',
+    'Nature',
+    'Animals',
+    'Food',
+    'Science',
+    'History',
+    'Writing',
+    'Yoga',
+  ];
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _ageController.dispose();
+    _locationController.dispose();
+    _aboutController.dispose();
+    _interestController.dispose();
+    super.dispose();
+  }
+
+  void _addInterest(String interest) {
+    if (interest.isNotEmpty && !_interests.contains(interest)) {
+      setState(() {
+        _interests.add(interest);
+        _interestController.clear();
+      });
+    }
+  }
+
+  void _removeInterest(String interest) {
+    setState(() {
+      _interests.remove(interest);
+    });
+  }
+
+  Future<void> _completeProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_interests.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add at least one interest'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      await authProvider.updateProfile(
+        displayName: _fullNameController.text.trim(),
+        photoUrl: null,
+        bio: _aboutController.text.trim().isNotEmpty ? _aboutController.text.trim() : null,
+        age: int.tryParse(_ageController.text),
+        location: _locationController.text.trim(),
+        interests: _interests,
+      );
+
+      if (mounted) {
+        // Navigate to main app
+        // TODO: Implement navigation to main app screen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile setup complete!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update profile: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Complete Your Profile'),
+        backgroundColor: AppColors.background,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Full Name Field
+                CustomTextField(
+                  label: 'Full Name',
+                  hint: 'Enter your full name',
+                  controller: _fullNameController,
+                  keyboardType: TextInputType.name,
+                  textInputAction: TextInputAction.next,
+                  prefixIcon: const Icon(Icons.person_outlined),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your full name';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Age Field
+                CustomTextField(
+                  label: 'Age',
+                  hint: 'Enter your age',
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  prefixIcon: const Icon(Icons.cake_outlined),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your age';
+                    }
+                    final age = int.tryParse(value);
+                    if (age == null || age < 13 || age > 120) {
+                      return 'Please enter a valid age (13-120)';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Location Field
+                CustomTextField(
+                  label: 'Location',
+                  hint: 'Enter your city, country',
+                  controller: _locationController,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your location';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // About Section
+                CustomTextField(
+                  label: 'About Me',
+                  hint: 'Tell us about yourself (optional)',
+                  controller: _aboutController,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  maxLines: 3,
+                  prefixIcon: const Icon(Icons.info_outlined),
+                  validator: null, // Optional field
+                ),
+
+                const SizedBox(height: 24),
+
+                // Interests Section
+                Text(
+                  'Interests',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Add Interest Field
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomTextField(
+                        label: 'Add Interest',
+                        hint: 'Type an interest',
+                        controller: _interestController,
+                        textInputAction: TextInputAction.done,
+                        onChanged: (value) {
+                          if (value.endsWith('\n')) {
+                            _addInterest(value.trim());
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () =>
+                          _addInterest(_interestController.text.trim()),
+                      icon: const Icon(Icons.add),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Popular Interests
+                if (_interests.length < 10) ...[
+                  Text(
+                    'Popular Interests',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _popularInterests
+                        .where((interest) => !_interests.contains(interest))
+                        .map(
+                          (interest) => FilterChip(
+                            label: Text(interest),
+                            onSelected: (selected) {
+                              if (selected) _addInterest(interest);
+                            },
+                            backgroundColor: AppColors.surface,
+                            selectedColor: AppColors.primary.withOpacity(0.2),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Selected Interests
+                if (_interests.isNotEmpty) ...[
+                  Text(
+                    'Your Interests (${_interests.length})',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _interests
+                        .map(
+                          (interest) => Chip(
+                            label: Text(interest),
+                            onDeleted: () => _removeInterest(interest),
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            deleteIconColor: AppColors.primary,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                const SizedBox(height: 32),
+
+                // Complete Profile Button
+                CustomButton(
+                  text: 'Complete Profile',
+                  onPressed: _completeProfile,
+                  isLoading: _isLoading,
+                  width: double.infinity,
+                  height: 52,
+                ),
+
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
