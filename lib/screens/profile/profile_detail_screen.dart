@@ -7,10 +7,7 @@ import '../../utils/colors.dart';
 class ProfileDetailScreen extends StatelessWidget {
   final UserModel? user;
 
-  const ProfileDetailScreen({
-    super.key,
-    this.user,
-  });
+  const ProfileDetailScreen({super.key, this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +22,7 @@ class ProfileDetailScreen extends StatelessWidget {
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           final UserModel? currentUser = user ?? authProvider.currentUser;
-          
+
           if (currentUser == null) {
             return const Center(
               child: Column(
@@ -54,7 +51,7 @@ class ProfileDetailScreen extends StatelessWidget {
               children: [
                 // Profile Header Section
                 _buildProfileHeader(context, currentUser),
-                
+
                 // Profile Info Cards
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -63,20 +60,22 @@ class ProfileDetailScreen extends StatelessWidget {
                     children: [
                       // Basic Info Card
                       _buildBasicInfoCard(context, currentUser),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // About Section Card
-                      if (currentUser.bio != null && currentUser.bio!.isNotEmpty)
+                      if (currentUser.bio != null &&
+                          currentUser.bio!.isNotEmpty)
                         _buildAboutCard(context, currentUser),
-                      
-                      if (currentUser.bio != null && currentUser.bio!.isNotEmpty)
+
+                      if (currentUser.bio != null &&
+                          currentUser.bio!.isNotEmpty)
                         const SizedBox(height: 16),
-                      
+
                       // Interests Card
                       if (currentUser.interests.isNotEmpty)
                         _buildInterestsCard(context, currentUser),
-                      
+
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -122,7 +121,7 @@ class ProfileDetailScreen extends StatelessWidget {
                       )
                     : _buildDefaultAvatar(user),
               ),
-              
+
               // Online Status Indicator
               Positioned(
                 bottom: 4,
@@ -131,20 +130,19 @@ class ProfileDetailScreen extends StatelessWidget {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: user.isOnline ? AppColors.onlineIndicator : AppColors.offlineIndicator,
+                    color: user.isOnline
+                        ? AppColors.onlineIndicator
+                        : AppColors.offlineIndicator,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 3,
-                    ),
+                    border: Border.all(color: Colors.white, width: 3),
                   ),
                 ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Name
           Text(
             user.displayName ?? user.username,
@@ -153,9 +151,9 @@ class ProfileDetailScreen extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          
+
           const SizedBox(height: 4),
-          
+
           // Username
           if (user.displayName != null && user.displayName != user.username)
             Text(
@@ -164,9 +162,9 @@ class ProfileDetailScreen extends StatelessWidget {
                 color: Colors.white.withOpacity(0.8),
               ),
             ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Status
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -188,10 +186,11 @@ class ProfileDetailScreen extends StatelessWidget {
   }
 
   Widget _buildDefaultAvatar(UserModel user) {
-    final String initials = user.displayName != null && user.displayName!.isNotEmpty
+    final String initials =
+        user.displayName != null && user.displayName!.isNotEmpty
         ? user.displayName!.split(' ').map((n) => n[0]).join().toUpperCase()
         : user.username[0].toUpperCase();
-    
+
     return Container(
       width: 100,
       height: 100,
@@ -232,11 +231,7 @@ class ProfileDetailScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              Icon(Icons.info_outline, color: AppColors.primary, size: 24),
               const SizedBox(width: 12),
               Text(
                 'Basic Information',
@@ -247,9 +242,9 @@ class ProfileDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Email
           _buildInfoRow(
             context,
@@ -257,9 +252,9 @@ class ProfileDetailScreen extends StatelessWidget {
             label: 'Email',
             value: user.email,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Age
           if (user.age != null)
             _buildInfoRow(
@@ -268,10 +263,9 @@ class ProfileDetailScreen extends StatelessWidget {
               label: 'Age',
               value: '${user.age} years old',
             ),
-          
-          if (user.age != null)
-            const SizedBox(height: 12),
-          
+
+          if (user.age != null) const SizedBox(height: 12),
+
           // Location
           if (user.location != null && user.location!.isNotEmpty)
             _buildInfoRow(
@@ -280,10 +274,10 @@ class ProfileDetailScreen extends StatelessWidget {
               label: 'Location',
               value: user.location!,
             ),
-          
+
           if (user.location != null && user.location!.isNotEmpty)
             const SizedBox(height: 12),
-          
+
           // Member Since
           _buildInfoRow(
             context,
@@ -291,9 +285,9 @@ class ProfileDetailScreen extends StatelessWidget {
             label: 'Member Since',
             value: _formatDate(user.createdAt),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Last Seen
           if (user.lastSeen != null)
             _buildInfoRow(
@@ -327,11 +321,7 @@ class ProfileDetailScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.person_outline,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              Icon(Icons.person_outline, color: AppColors.primary, size: 24),
               const SizedBox(width: 12),
               Text(
                 'About Me',
@@ -342,9 +332,9 @@ class ProfileDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Text(
             user.bio!,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -377,11 +367,7 @@ class ProfileDetailScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.favorite_outline,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              Icon(Icons.favorite_outline, color: AppColors.primary, size: 24),
               const SizedBox(width: 12),
               Text(
                 'Interests (${user.interests.length})',
@@ -392,9 +378,9 @@ class ProfileDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -427,18 +413,15 @@ class ProfileDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, {
+  Widget _buildInfoRow(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: AppColors.textSecondary,
-        ),
+        Icon(icon, size: 20, color: AppColors.textSecondary),
         const SizedBox(width: 12),
         Text(
           '$label:',
@@ -451,9 +434,9 @@ class ProfileDetailScreen extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textPrimary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
           ),
         ),
       ],
@@ -462,17 +445,27 @@ class ProfileDetailScreen extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    
+
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   String _formatLastSeen(DateTime lastSeen) {
     final now = DateTime.now();
     final difference = now.difference(lastSeen);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {

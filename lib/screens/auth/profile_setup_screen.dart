@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
@@ -22,6 +23,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   bool _isLoading = false;
   List<String> _interests = [];
+  
 
   final List<String> _popularInterests = [
     'Sports',
@@ -45,6 +47,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     'Writing',
     'Yoga',
   ];
+
 
   @override
   void dispose() {
@@ -70,6 +73,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       _interests.remove(interest);
     });
   }
+
 
   Future<void> _completeProfile() async {
     if (!_formKey.currentState!.validate()) return;
@@ -101,14 +105,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
 
       if (mounted) {
-        // Navigate to main app
-        // TODO: Implement navigation to main app screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile setup complete!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        // Navigate to preferences screen using GoRouter
+        context.go('/preferences');
       }
     } catch (e) {
       if (mounted) {
@@ -145,6 +143,39 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Privacy Notice
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.visibility,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'This information will be publicly visible to other users',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
                 // Full Name Field
                 CustomTextField(
                   label: 'Full Name',

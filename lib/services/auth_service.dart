@@ -238,6 +238,7 @@ class AuthService {
         if (location != null) updates['location'] = location;
         if (interests != null) updates['interests'] = interests;
 
+        // Basic profile created, but not preferences yet
         updates['hasCreatedProfile'] = true;
 
         await _firestore
@@ -278,6 +279,55 @@ class AuthService {
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<void> updateUserAvailability({
+    required Map<String, Map<String, bool>> availability,
+  }) async {
+    try {
+      if (currentUser != null) {
+        await _firestore
+            .collection('users')
+            .doc(currentUser!.uid)
+            .update({
+          'availability': availability,
+          'profileCompleted': true,
+        });
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<void> updateUserPreferences({
+    Map<String, int>? importanceRatings,
+    String? personalityType,
+    String? hangoutFrequency,
+    String? conversationStyle,
+    String? socialInteractionPreference,
+    List<String>? genderPreferences,
+  }) async {
+    try {
+      if (currentUser != null) {
+        final Map<String, dynamic> updates = {};
+
+        if (importanceRatings != null) updates['importanceRatings'] = importanceRatings;
+        if (personalityType != null) updates['personalityType'] = personalityType;
+        if (hangoutFrequency != null) updates['hangoutFrequency'] = hangoutFrequency;
+        if (conversationStyle != null) updates['conversationStyle'] = conversationStyle;
+        if (socialInteractionPreference != null) updates['socialInteractionPreference'] = socialInteractionPreference;
+        if (genderPreferences != null) updates['genderPreferences'] = genderPreferences;
+
+        updates['hasCompletedPreferences'] = true;
+
+        await _firestore
+            .collection('users')
+            .doc(currentUser!.uid)
+            .update(updates);
+      }
     } catch (e) {
       throw e;
     }

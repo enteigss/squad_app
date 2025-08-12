@@ -13,6 +13,8 @@ class UserModel {
   final bool isOnline;
   final String? groupId;
   final bool hasCreatedProfile;
+  final bool hasCompletedPreferences;
+  final bool profileCompleted;
 
   UserModel({
     required this.id,
@@ -29,6 +31,8 @@ class UserModel {
     this.isOnline = false,
     this.groupId,
     this.hasCreatedProfile = false,
+    this.hasCompletedPreferences = false,
+    this.profileCompleted = false,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -47,6 +51,8 @@ class UserModel {
       isOnline: map['isOnline'] ?? false,
       groupId: map['groupId'],
       hasCreatedProfile: map['hasCreatedProfile'] ?? false,
+      hasCompletedPreferences: map['hasCompletedPreferences'] ?? false,
+      profileCompleted: map['profileCompleted'] ?? false,
     );
   }
 
@@ -76,6 +82,8 @@ class UserModel {
       'isOnline': isOnline,
       'groupId': groupId,
       'hasCreatedProfile': hasCreatedProfile,
+      'hasCompletedPreferences': hasCompletedPreferences,
+      'profileCompleted': profileCompleted,
     };
   }
 
@@ -94,6 +102,8 @@ class UserModel {
     bool? isOnline,
     String? groupId,
     bool? hasCreatedProfile,
+    bool? hasCompletedPreferences,
+    bool? profileCompleted,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -110,6 +120,8 @@ class UserModel {
       isOnline: isOnline ?? this.isOnline,
       groupId: groupId ?? this.groupId,
       hasCreatedProfile: hasCreatedProfile ?? this.hasCreatedProfile,
+      hasCompletedPreferences: hasCompletedPreferences ?? this.hasCompletedPreferences,
+      profileCompleted: profileCompleted ?? this.profileCompleted,
     );
   }
 }

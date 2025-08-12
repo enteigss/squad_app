@@ -159,6 +159,11 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> updateCurrentUser(UserModel updatedUser) async {
+    _currentUser = updatedUser;
+    notifyListeners();
+  }
+
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       _setLoading(true);
@@ -222,5 +227,63 @@ class AuthProvider with ChangeNotifier {
       }
     }
     return error.toString();
+  }
+
+  Future<void> updateAvailability(Map<String, Map<String, bool>> availability) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      await _authService.updateUserAvailability(availability: availability);
+
+      // Update the current user model to reflect completed profile
+      if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(
+          profileCompleted: true,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> updatePreferences({
+    Map<String, int>? importanceRatings,
+    String? personalityType,
+    String? hangoutFrequency,
+    String? conversationStyle,
+    String? socialInteractionPreference,
+    List<String>? genderPreferences,
+  }) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      await _authService.updateUserPreferences(
+        importanceRatings: importanceRatings,
+        personalityType: personalityType,
+        hangoutFrequency: hangoutFrequency,
+        conversationStyle: conversationStyle,
+        socialInteractionPreference: socialInteractionPreference,
+        genderPreferences: genderPreferences,
+      );
+
+      // Update the current user model to reflect completed preferences
+      if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(
+          hasCompletedPreferences: true,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
   }
 }

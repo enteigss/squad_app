@@ -64,14 +64,28 @@ class FirestoreService {
 
   Future<void> updateUserProfile({
     required String userId,
-    required String displayName,
+    String? displayName,
     String? photoUrl,
+    String? bio,
+    int? age,
+    String? location,
+    List<String>? interests,
   }) async {
-    await _firestore.collection('users').doc(userId).set({
-      'displayName': displayName,
-      'photoUrl': photoUrl,
+    final Map<String, dynamic> updateData = {
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+
+    if (displayName != null) updateData['displayName'] = displayName;
+    if (photoUrl != null) updateData['photoUrl'] = photoUrl;
+    if (bio != null) updateData['bio'] = bio;
+    if (age != null) updateData['age'] = age;
+    if (location != null) updateData['location'] = location;
+    if (interests != null) updateData['interests'] = interests;
+
+    await _firestore.collection('users').doc(userId).set(
+      updateData,
+      SetOptions(merge: true),
+    );
   }
 
   Future<GroupModel> createGroup({
@@ -285,6 +299,22 @@ class FirestoreService {
           .toList();
     } catch (e) {
       throw e;
+    }
+  }
+
+  Future<UserModel?> getUser(String userId) async {
+    try {
+      final DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        return UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get user: $e');
     }
   }
 

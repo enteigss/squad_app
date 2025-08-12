@@ -6,12 +6,20 @@ import 'package:go_router/go_router.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/post_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
+import 'screens/auth/preferences_screen.dart';
+import 'screens/auth/availability_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/group_screen.dart';
 import 'screens/chat/chat_screen.dart';
+import 'screens/feed/feed_screen.dart';
+import 'screens/feed/create_post_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/squads/squads_screen.dart';
+import 'screens/main/main_scaffold.dart';
 import 'utils/colors.dart';
 
 void main() async {
@@ -30,6 +38,7 @@ class SquadApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => PostProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
@@ -57,34 +66,72 @@ class SquadApp extends StatelessWidget {
       redirect: (context, state) {
         final isLoggedIn = authProvider.isAuthenticated;
         final hasProfile = authProvider.currentUser?.hasCreatedProfile ?? false;
+        final hasCompletedPreferences =
+            authProvider.currentUser?.hasCompletedPreferences ?? false;
+        final profileCompleted =
+            authProvider.currentUser?.profileCompleted ?? false;
+
+        final currentPath = state.uri.toString();
+
+        // Debug: Prevent infinite loops by not redirecting if already on target path
+        print(
+          'GoRouter Debug: isLoggedIn=$isLoggedIn, hasProfile=$hasProfile, hasCompletedPreferences=$hasCompletedPreferences, profileCompleted=$profileCompleted, currentPath=$currentPath',
+        );
 
         // If not logged in, redirect to login
-        if (!isLoggedIn &&
-            state.uri.toString() != '/login' &&
-            state.uri.toString() != '/register') {
-          return '/login';
+        if (!isLoggedIn) {
+          if (currentPath != '/login' && currentPath != '/register') {
+            return '/login';
+          }
+          return null;
         }
 
-        // If logged in but no profile, redirect to profile setup
-        if (isLoggedIn &&
-            !hasProfile &&
-            state.uri.toString() != '/profile-setup') {
-          return '/profile-setup';
+        // If logged in and all complete, redirect to main from auth screens
+        if (isLoggedIn && profileCompleted) {
+          if (currentPath == '/login' ||
+              currentPath == '/register' ||
+              currentPath == '/profile-setup' ||
+              currentPath == '/preferences' ||
+              currentPath == '/availability' ||
+              currentPath == '/') {
+            return '/main';
+          }
+          return null;
         }
 
-        // If logged in with profile, redirect to home
-        if (isLoggedIn &&
-            hasProfile &&
-            (state.uri.toString() == '/login' ||
-                state.uri.toString() == '/register' ||
-                state.uri.toString() == '/profile-setup')) {
-          return '/home';
+        // If logged in but incomplete profile, determine next step
+        if (isLoggedIn && !profileCompleted) {
+          // No basic profile yet
+          if (!hasProfile) {
+            if (currentPath != '/profile-setup') {
+              return '/profile-setup';
+            }
+            return null;
+          }
+
+          // Has basic profile but no preferences
+          if (!hasCompletedPreferences) {
+            if (currentPath != '/preferences') {
+              return '/preferences';
+            }
+            return null;
+          }
+
+          // Has preferences but not availability
+          if (currentPath != '/availability') {
+            return '/availability';
+          }
+          return null;
         }
 
         return null;
       },
       routes: [
-        GoRoute(path: '/', redirect: (context, state) => '/login'),
+        GoRoute(
+          path: '/',
+          builder: (context, state) =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+        ),
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
@@ -97,12 +144,43 @@ class SquadApp extends StatelessWidget {
           path: '/profile-setup',
           builder: (context, state) => const ProfileSetupScreen(),
         ),
-        GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+        GoRoute(
+          path: '/preferences',
+          builder: (context, state) => const PreferencesScreen(),
+        ),
+        GoRoute(
+          path: '/availability',
+          builder: (context, state) => const AvailabilityScreen(),
+        ),
+        GoRoute(
+          path: '/main',
+          builder: (context, state) => const MainScaffold(),
+        ),
+        GoRoute(
+          path: '/home',
+          builder: (context, state) => const MainScaffold(initialIndex: 0),
+        ),
+        GoRoute(
+          path: '/feed',
+          builder: (context, state) => const MainScaffold(initialIndex: 1),
+        ),
+        GoRoute(
+          path: '/squads',
+          builder: (context, state) => const MainScaffold(initialIndex: 2),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const MainScaffold(initialIndex: 3),
+        ),
         GoRoute(
           path: '/group',
           builder: (context, state) => const GroupScreen(),
         ),
         GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
+        GoRoute(
+          path: '/create-post',
+          builder: (context, state) => const CreatePostScreen(),
+        ),
       ],
     );
   }
