@@ -176,7 +176,9 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
                 )
               : Icon(
                   icon,
-                  color: isComingSoon ? AppColors.textSecondary : AppColors.primary,
+                  color: isComingSoon
+                      ? AppColors.textSecondary
+                      : AppColors.primary,
                   size: 24,
                 ),
         ),
@@ -230,27 +232,37 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
   }
 
   void _handleSMSInvite(BuildContext context) async {
-    print('DEBUG: InviteOptionsModal._handleSMSInvite() - Starting SMS invite flow');
-    
+    print(
+      'DEBUG: InviteOptionsModal._handleSMSInvite() - Starting SMS invite flow',
+    );
+
     // Set loading state and close modal
     setState(() {
       _isLoadingContacts = true;
     });
-    
+
     // Wait a bit to show loading state, then close modal
     await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) Navigator.of(context).pop();
 
     try {
-      print('DEBUG: InviteOptionsModal._handleSMSInvite() - Calling InviteService.showContactPicker()');
+      print(
+        'DEBUG: InviteOptionsModal._handleSMSInvite() - Calling InviteService.showContactPicker()',
+      );
       final selectedContacts = await InviteService.showContactPicker(context);
-      print('DEBUG: InviteOptionsModal._handleSMSInvite() - showContactPicker() returned: ${selectedContacts?.length ?? 0} contacts');
+      print(
+        'DEBUG: InviteOptionsModal._handleSMSInvite() - showContactPicker() returned: ${selectedContacts?.length ?? 0} contacts',
+      );
 
       if (selectedContacts != null && selectedContacts.isNotEmpty) {
-        print('DEBUG: InviteOptionsModal._handleSMSInvite() - Proceeding to send SMS invites');
+        print(
+          'DEBUG: InviteOptionsModal._handleSMSInvite() - Proceeding to send SMS invites',
+        );
         await _sendSMSInvites(context, selectedContacts);
       } else {
-        print('DEBUG: InviteOptionsModal._handleSMSInvite() - No contacts selected or null result');
+        print(
+          'DEBUG: InviteOptionsModal._handleSMSInvite() - No contacts selected or null result',
+        );
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -261,7 +273,9 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
         }
       }
     } catch (e) {
-      print('DEBUG: InviteOptionsModal._handleSMSInvite() - Exception caught: $e');
+      print(
+        'DEBUG: InviteOptionsModal._handleSMSInvite() - Exception caught: $e',
+      );
       if (context.mounted) {
         print('DEBUG: InviteOptionsModal._handleSMSInvite() - Showing error');
         ScaffoldMessenger.of(context).showSnackBar(

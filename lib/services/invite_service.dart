@@ -120,137 +120,20 @@ class InviteService {
         'DEBUG: InviteService.getContacts() - Starting FlutterContacts.getContacts()',
       );
 
-      // Try minimal contact access first
-      List<Contact> contacts;
-      try {
-        print(
-          'DEBUG: InviteService.getContacts() - Trying minimal contact access (no properties)',
-        );
-        contacts =
-            await FlutterContacts.getContacts(
-              withProperties: false,
-              withPhoto: false,
-            ).timeout(
-              const Duration(seconds: 15),
-              onTimeout: () {
-                print(
-                  'DEBUG: InviteService.getContacts() - Minimal contact loading timed out after 15 seconds',
-                );
-                throw Exception(
-                  'Minimal contact loading timed out after 15 seconds',
-                );
-              },
-            );
-        print(
-          'DEBUG: InviteService.getContacts() - Minimal contacts loaded: ${contacts.length}',
-        );
-
-        // If minimal access works, try to get properties for contacts with phones only
-        print(
-          'DEBUG: InviteService.getContacts() - Attempting to get properties for contacts',
-        );
-        final contactsWithProperties = <Contact>[];
-
-        // Load first 50 contacts immediately for faster UX
-        final priorityContacts = contacts.take(50).toList();
-        print(
-          'DEBUG: InviteService.getContacts() - Loading first ${priorityContacts.length} contacts immediately',
-        );
-
-        final priorityFutures = priorityContacts.map((contact) async {
-          try {
-            final fullContact = await FlutterContacts.getContact(
-              contact.id,
-              withProperties: true,
-            );
-            if (fullContact != null && fullContact.phones.isNotEmpty) {
-              return fullContact;
-            }
-          } catch (e) {
-            print(
-              'DEBUG: InviteService.getContacts() - Failed to get properties for priority contact ${contact.id}: $e',
-            );
-          }
-          return null;
-        });
-
-        final priorityResults = await Future.wait(priorityFutures);
-        for (final contact in priorityResults) {
-          if (contact != null) {
-            contactsWithProperties.add(contact);
-          }
-        }
-
-        print(
-          'DEBUG: InviteService.getContacts() - Loaded ${contactsWithProperties.length} priority contacts',
-        );
-
-        // Load remaining contacts in background if needed
-        if (contacts.length > 50) {
-          print(
-            'DEBUG: InviteService.getContacts() - Loading remaining ${contacts.length - 50} contacts in background',
+      // Simple contact loading - no batching complexity
+      final contacts =
+          await FlutterContacts.getContacts(
+            withProperties: true,
+            withPhoto: false,
+          ).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              print(
+                'DEBUG: InviteService.getContacts() - Contact loading timed out after 30 seconds',
+              );
+              throw Exception('Contact loading timed out after 30 seconds');
+            },
           );
-          final remainingContacts = contacts.skip(50).toList();
-
-          // Process remaining contacts in larger batches for speed
-          const batchSize = 50;
-          for (int i = 0; i < remainingContacts.length; i += batchSize) {
-            final batch = remainingContacts.skip(i).take(batchSize).toList();
-            print(
-              'DEBUG: InviteService.getContacts() - Processing remaining batch ${(i / batchSize).floor() + 1}/${((remainingContacts.length / batchSize).ceil())} (${batch.length} contacts)',
-            );
-
-            final batchFutures = batch.map((contact) async {
-              try {
-                final fullContact = await FlutterContacts.getContact(
-                  contact.id,
-                  withProperties: true,
-                );
-                if (fullContact != null && fullContact.phones.isNotEmpty) {
-                  return fullContact;
-                }
-              } catch (e) {
-                // Silently ignore errors for background loading
-              }
-              return null;
-            });
-
-            final batchResults = await Future.wait(batchFutures);
-            for (final contact in batchResults) {
-              if (contact != null) {
-                contactsWithProperties.add(contact);
-              }
-            }
-          }
-
-          print(
-            'DEBUG: InviteService.getContacts() - Completed background loading: ${contactsWithProperties.length} total contacts',
-          );
-        }
-
-        contacts = contactsWithProperties;
-        print(
-          'DEBUG: InviteService.getContacts() - Contacts with properties and phone numbers: ${contacts.length}',
-        );
-      } catch (e) {
-        print(
-          'DEBUG: InviteService.getContacts() - Minimal access failed: $e, trying full access',
-        );
-        // Fallback to original method
-        contacts =
-            await FlutterContacts.getContacts(
-              withProperties: true,
-              withPhoto: false,
-            ).timeout(
-              const Duration(seconds: 30),
-              onTimeout: () {
-                print(
-                  'DEBUG: InviteService.getContacts() - Full contact loading timed out after 30 seconds',
-                );
-                throw Exception('Contact loading timed out after 30 seconds');
-              },
-            );
-      }
 
       print(
         'DEBUG: InviteService.getContacts() - Raw contacts loaded: ${contacts.length}',
