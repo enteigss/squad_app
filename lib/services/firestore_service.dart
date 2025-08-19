@@ -327,4 +327,15 @@ class FirestoreService {
       throw e;
     }
   }
+
+  // Remove a member from a post
+  Future<void> removeMemberFromPost(String postId, String userId) async {
+    try {
+      await _firestore.collection('posts').doc(postId).update({
+        'participantIds': FieldValue.arrayRemove([userId]),
+      });
+    } catch (e) {
+      throw Exception('Failed to remove member from post: $e');
+    }
+  }
 }

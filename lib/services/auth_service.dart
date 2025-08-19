@@ -71,6 +71,7 @@ class AuthService {
           createdAt: DateTime.now(),
           isOnline: true,
           hasCreatedProfile: false,
+          squadsOptIn: false,
         );
 
         final userData = {
@@ -81,12 +82,16 @@ class AuthService {
           'createdAt': DateTime.now(),
           'isOnline': true,
           'hasCreatedProfile': false,
+          'squadsOptIn': false,
         };
 
         await _firestore
             .collection('users')
             .doc(result.user!.uid)
             .set(userData);
+
+        // Check for pending party pack invitations
+        await _processPendingInvitations(email);
 
         return newUser;
       }
@@ -122,6 +127,15 @@ class AuthService {
           return null; // User cancelled
         }
 
+        // Validate BU email domain before creating Firebase account
+        final email = googleUser.email;
+        if (!_isBUEmail(email)) {
+          await googleSignIn.signOut(); // Sign out from Google
+          throw Exception(
+            'Access restricted to Boston University students only. Please use your @bu.edu email address.',
+          );
+        }
+
         // Get authentication details
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
@@ -137,14 +151,14 @@ class AuthService {
 
         if (result.user != null) {
           print('🔐 Google sign-in successful for user: ${result.user!.uid}');
-          
+
           // Check if user document exists in Firestore
           final existingUser = await getUserData(result.user!.uid);
           print('🔍 Existing user in Firestore: ${existingUser?.toMap()}');
 
           if (existingUser == null) {
             print('➕ Creating new user document in Firestore');
-            
+
             // Create new user document for Google sign-in
             final UserModel newUser = UserModel(
               id: result.user!.uid,
@@ -155,6 +169,7 @@ class AuthService {
               createdAt: DateTime.now(),
               isOnline: true,
               hasCreatedProfile: false,
+              squadsOptIn: false,
             );
 
             final userData = {
@@ -166,12 +181,16 @@ class AuthService {
               'createdAt': DateTime.now(),
               'isOnline': true,
               'hasCreatedProfile': false,
+              'squadsOptIn': false,
             };
 
             await _firestore
                 .collection('users')
                 .doc(result.user!.uid)
                 .set(userData);
+
+            // Check for pending party pack invitations
+            await _processPendingInvitations(result.user!.email ?? '');
 
             print('✅ User document created successfully');
             return newUser;
@@ -289,10 +308,7 @@ class AuthService {
   }) async {
     try {
       if (currentUser != null) {
-        await _firestore
-            .collection('users')
-            .doc(currentUser!.uid)
-            .update({
+        await _firestore.collection('users').doc(currentUser!.uid).update({
           'availability': availability,
           'profileCompleted': true,
         });
@@ -309,17 +325,28 @@ class AuthService {
     String? conversationStyle,
     String? socialInteractionPreference,
     List<String>? genderPreferences,
+    Map<String, Map<String, int>>? activityPreferences,
+    String? userGender,
   }) async {
     try {
       if (currentUser != null) {
         final Map<String, dynamic> updates = {};
 
-        if (importanceRatings != null) updates['importanceRatings'] = importanceRatings;
-        if (personalityType != null) updates['personalityType'] = personalityType;
-        if (hangoutFrequency != null) updates['hangoutFrequency'] = hangoutFrequency;
-        if (conversationStyle != null) updates['conversationStyle'] = conversationStyle;
-        if (socialInteractionPreference != null) updates['socialInteractionPreference'] = socialInteractionPreference;
-        if (genderPreferences != null) updates['genderPreferences'] = genderPreferences;
+        if (importanceRatings != null)
+          updates['importanceRatings'] = importanceRatings;
+        if (personalityType != null)
+          updates['personalityType'] = personalityType;
+        if (hangoutFrequency != null)
+          updates['hangoutFrequency'] = hangoutFrequency;
+        if (conversationStyle != null)
+          updates['conversationStyle'] = conversationStyle;
+        if (socialInteractionPreference != null)
+          updates['socialInteractionPreference'] = socialInteractionPreference;
+        if (genderPreferences != null)
+          updates['genderPreferences'] = genderPreferences;
+        if (activityPreferences != null)
+          updates['activityPreferences'] = activityPreferences;
+        if (userGender != null) updates['gender'] = userGender;
 
         updates['hasCompletedPreferences'] = true;
 
@@ -330,6 +357,88 @@ class AuthService {
       }
     } catch (e) {
       throw e;
+    }
+  }
+
+  bool _isBUEmail(String email) {
+    // Test accounts for development/testing
+    const testAccounts = ['enteigss@gmail.com', 'michael@geml.co'];
+
+    return email.toLowerCase().endsWith('@bu.edu') ||
+        testAccounts.contains(email.toLowerCase());
+  }
+
+  Future<void> updateSquadsOptIn(bool optIn) async {
+    try {
+      if (currentUser != null) {
+        await _firestore.collection('users').doc(currentUser!.uid).update({
+          'squadsOptIn': optIn,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  Future<void> _processPendingInvitations(String userEmail) async {
+    try {
+      // Find all pending invitations for this email
+      final invitationsQuery = await _firestore
+          .collection('party_invitations')
+          .where('inviteeEmail', isEqualTo: userEmail)
+          .where('processed', isEqualTo: false)
+          .get();
+
+      if (invitationsQuery.docs.isEmpty) {
+        print('No pending party pack invitations found for $userEmail');
+        return;
+      }
+
+      print(
+        'Found ${invitationsQuery.docs.length} pending party pack invitations for $userEmail',
+      );
+
+      // Process each invitation
+      for (final invitationDoc in invitationsQuery.docs) {
+        final invitationData = invitationDoc.data();
+        final inviterEmail = invitationData['inviterEmail'] as String;
+
+        print('Processing party pack invitation from $inviterEmail');
+
+        // Add the inviter to this user's incoming party pack requests
+        await _firestore
+            .collection('users')
+            .where('email', isEqualTo: userEmail)
+            .limit(1)
+            .get()
+            .then((userQuery) async {
+              if (userQuery.docs.isNotEmpty) {
+                final userDoc = userQuery.docs.first;
+                await userDoc.reference.update({
+                  'incomingPartyPackRequests': FieldValue.arrayUnion([
+                    inviterEmail,
+                  ]),
+                });
+                print(
+                  'Added $inviterEmail to incoming party pack requests for $userEmail',
+                );
+              }
+            });
+
+        // Mark invitation as processed
+        await invitationDoc.reference.update({
+          'processed': true,
+          'processedAt': FieldValue.serverTimestamp(),
+        });
+
+        print('Marked invitation from $inviterEmail as processed');
+      }
+
+      print('Successfully processed all pending invitations for $userEmail');
+    } catch (e) {
+      print('Error processing pending invitations for $userEmail: $e');
+      // Don't throw error - this shouldn't block user registration
     }
   }
 }

@@ -32,36 +32,49 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
     'studies': 2,
   };
   
-  // Personality and frequency preferences
-  String? _personalityType; // 'extrovert', 'introvert', 'not_sure'
+  // Frequency preferences
   String? _hangoutFrequency; // 'everyday', 'multiple_times_per_week', 'weekly', 'less_than_weekly'
   String? _conversationStyle; // 'yapper', 'moderate', 'listener', 'not_sure'
   String? _socialInteractionPreference; // 'no_constant_conversation', 'presence_enough', 'live_for_conversation', 'not_sure'
   
-  // Gender preferences for group
-  List<String> _genderPreferences = [];
+  // Gender preference for group
+  String? _genderPreference;
+  
+  // Activity preferences - storing as maps with fun level and frequency
+  Map<String, Map<String, int>> _activityPreferences = {
+    'frat_party': {'fun': 2, 'frequency': 2},
+    'eating_out': {'fun': 2, 'frequency': 2},
+    'bar_crawl': {'fun': 2, 'frequency': 2},
+    'movie_theater': {'fun': 2, 'frequency': 2},
+    'fun_games': {'fun': 2, 'frequency': 2},
+    'physical_activity': {'fun': 2, 'frequency': 2},
+    'concerts': {'fun': 2, 'frequency': 2},
+    'dancing_clubbing': {'fun': 2, 'frequency': 2},
+    'outdoor_activities': {'fun': 2, 'frequency': 2},
+    'watch_movie_in': {'fun': 2, 'frequency': 2},
+    'board_games': {'fun': 2, 'frequency': 2},
+    'hangout_vibe': {'fun': 2, 'frequency': 2},
+    'play_games_casual': {'fun': 2, 'frequency': 2},
+    'play_games_competitive': {'fun': 2, 'frequency': 2},
+    'cooking_baking': {'fun': 2, 'frequency': 2},
+  };
 
   final List<String> _importanceOptions = [
-    'Not important at all',
-    'Not very important',
+    'Not at all',
+    'Slightly',
     'Neutral',
     'Important',
-    'Very important',
+    'Very',
   ];
 
   final Map<String, String> _importanceLabels = {
-    'deep_conversation': 'Deep Conversation',
-    'casual_hangouts': 'Casual Hangouts',
-    'activities_with_friends': 'Activities with Friends',
-    'big_events_parties_nightlife': 'Big Events, Parties, and Nightlife',
-    'studies': 'Studies',
+    'deep_conversation': '💭 Deep Conversation',
+    'casual_hangouts': '😊 Casual Hangouts',
+    'activities_with_friends': '🎯 Activities with Friends',
+    'big_events_parties_nightlife': '🎉 Big Events, Parties, and Nightlife',
+    'studies': '📚 Studies',
   };
 
-  final List<Map<String, String>> _personalityOptions = [
-    {'value': 'extrovert', 'label': 'Extrovert'},
-    {'value': 'introvert', 'label': 'Introvert'},
-    {'value': 'not_sure', 'label': 'Not Sure'},
-  ];
 
   final List<Map<String, String>> _hangoutFrequencyOptions = [
     {'value': 'everyday', 'label': 'Everyday'},
@@ -84,10 +97,62 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
   ];
 
   final List<Map<String, String>> _genderOptions = [
-    {'value': 'women', 'label': 'Women'},
-    {'value': 'men', 'label': 'Men'},
-    {'value': 'non_binary', 'label': 'Non-binary'},
+    {'value': 'same_gender', 'label': 'Same gender'},
+    {'value': 'mixed', 'label': 'Mixed'},
+    {'value': 'dont_care', 'label': 'Don\'t care'},
   ];
+
+  final List<String> _funLevels = [
+    'Not fun',
+    'Slightly',
+    'Kind of fun',
+    'Fun',
+    'Very fun',
+  ];
+
+  final List<String> _frequencyLevels = [
+    'Never',
+    'Rarely',
+    'Sometimes',
+    'Often',
+    'Always',
+  ];
+
+  final Map<String, String> _activityLabels = {
+    'frat_party': '🎉 Frat party',
+    'eating_out': '🍽️ Eating out',
+    'bar_crawl': '🍻 Bar crawl',
+    'movie_theater': '🎬 Watching a movie at a theater',
+    'fun_games': '🎯 Fun game/competition (mini-golf, go-karting, paintball etc.)',
+    'physical_activity': '💪 Physical activity',
+    'concerts': '🎵 Concerts/live music',
+    'dancing_clubbing': '💃 Dancing/clubbing',
+    'outdoor_activities': '🌳 Outdoor activities (hiking, beach, park)',
+    'watch_movie_in': '📺 Watch a movie',
+    'board_games': '🎲 Play board games',
+    'hangout_vibe': '😎 Just hangout and vibe',
+    'play_games_casual': '🎮 Play games (casually)',
+    'play_games_competitive': '🏆 Play games (competitively)',
+    'cooking_baking': '👩‍🍳 Cooking and baking together',
+  };
+
+  final Map<String, String> _activityCategories = {
+    'frat_party': 'Going Out',
+    'eating_out': 'Going Out',
+    'bar_crawl': 'Going Out',
+    'movie_theater': 'Going Out',
+    'fun_games': 'Going Out',
+    'physical_activity': 'Going Out',
+    'concerts': 'Going Out',
+    'dancing_clubbing': 'Going Out',
+    'outdoor_activities': 'Going Out',
+    'watch_movie_in': 'Staying In',
+    'board_games': 'Staying In',
+    'hangout_vibe': 'Staying In',
+    'play_games_casual': 'Staying In',
+    'play_games_competitive': 'Staying In',
+    'cooking_baking': 'Staying In',
+  };
 
   @override
   void initState() {
@@ -113,11 +178,21 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
           }
           
           // Load other preferences
-          _personalityType = data['personalityType'];
           _hangoutFrequency = data['hangoutFrequency'];
           _conversationStyle = data['conversationStyle'];
           _socialInteractionPreference = data['socialInteractionPreference'];
-          _genderPreferences = List<String>.from(data['genderPreferences'] ?? []);
+          final genderPrefs = List<String>.from(data['genderPreferences'] ?? []);
+          _genderPreference = genderPrefs.isNotEmpty ? genderPrefs.first : null;
+          
+          // Load activity preferences
+          if (data['activityPreferences'] != null) {
+            final activities = Map<String, dynamic>.from(data['activityPreferences']);
+            for (final key in activities.keys) {
+              if (_activityPreferences.containsKey(key)) {
+                _activityPreferences[key] = Map<String, int>.from(activities[key]);
+              }
+            }
+          }
           
           _isLoadingData = false;
         });
@@ -134,23 +209,14 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
     }
   }
 
-  void _toggleGenderPreference(String gender) {
+  void _setGenderPreference(String gender) {
     setState(() {
-      if (_genderPreferences.contains(gender)) {
-        _genderPreferences.remove(gender);
-      } else {
-        _genderPreferences.add(gender);
-      }
+      _genderPreference = gender;
     });
   }
 
   Future<void> _savePreferences() async {
     // Validation
-    if (_personalityType == null) {
-      _showError('Please select your personality type');
-      return;
-    }
-
     if (_hangoutFrequency == null) {
       _showError('Please select how often you like to hang out');
       return;
@@ -166,8 +232,8 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
       return;
     }
 
-    if (_genderPreferences.isEmpty) {
-      _showError('Please select at least one gender preference for your group');
+    if (_genderPreference == null) {
+      _showError('Please select your group gender preference');
       return;
     }
 
@@ -181,11 +247,12 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
 
       await authProvider.updatePreferences(
         importanceRatings: _importanceRatings,
-        personalityType: _personalityType,
+        personalityType: null,
         hangoutFrequency: _hangoutFrequency,
         conversationStyle: _conversationStyle,
         socialInteractionPreference: _socialInteractionPreference,
-        genderPreferences: _genderPreferences,
+        genderPreferences: _genderPreference != null ? [_genderPreference!] : [],
+        activityPreferences: _activityPreferences,
       );
 
       if (mounted) {
@@ -395,75 +462,6 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
                         ),
                       );
                     }).toList(),
-
-                    const SizedBox(height: 24),
-
-                    // Personality Type Section
-                    Text(
-                      'Personality Type',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'How would you describe yourself?',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    Row(
-                      children: _personalityOptions.map((option) {
-                        final isSelected = _personalityType == option['value'];
-                        return Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _personalityType = option['value'];
-                              });
-                            },
-                            child: Container(
-                              margin: EdgeInsets.only(
-                                right: option != _personalityOptions.last ? 8 : 0,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.surface,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.divider.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  option['label']!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : AppColors.textPrimary,
-                                        fontWeight: isSelected
-                                            ? FontWeight.w500
-                                            : FontWeight.normal,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
 
                     const SizedBox(height: 24),
 
@@ -751,70 +749,88 @@ class _EditMatchingPreferencesScreenState extends State<EditMatchingPreferencesS
 
                     const SizedBox(height: 24),
 
-                    // Gender Preferences Section
+                    // Gender Preference Section
                     Text(
-                      'Group Gender Preferences',
+                      'Group Gender Preference',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Who would you like to have in your group? (Select all that apply)',
+                      'What type of group would you prefer?',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 12),
 
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
+                    Column(
                       children: _genderOptions.map((option) {
-                        final isSelected = _genderPreferences.contains(option['value']);
-                        return GestureDetector(
-                          onTap: () => _toggleGenderPreference(option['value']!),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 20,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.surface,
-                              borderRadius: BorderRadius.circular(25),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.divider.withValues(alpha: 0.3),
+                        final isSelected = _genderPreference == option['value'];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: GestureDetector(
+                            onTap: () => _setGenderPreference(option['value']!),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (isSelected)
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                if (isSelected) const SizedBox(width: 6),
-                                Text(
-                                  option['label']!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : AppColors.textPrimary,
-                                        fontWeight: isSelected
-                                            ? FontWeight.w500
-                                            : FontWeight.normal,
-                                      ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.primary.withValues(alpha: 0.1)
+                                    : AppColors.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.divider.withValues(alpha: 0.3),
                                 ),
-                              ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : Colors.transparent,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? AppColors.primary
+                                            : AppColors.divider,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 14,
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    option['label']!,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.textPrimary,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w500
+                                              : FontWeight.normal,
+                                        ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );

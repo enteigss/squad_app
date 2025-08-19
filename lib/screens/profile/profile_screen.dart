@@ -41,13 +41,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Profile Picture
                 CircleAvatar(
-                  radius: 60,
+                  radius: 40,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   backgroundImage: user.photoUrl != null 
                     ? NetworkImage(user.photoUrl!) 
@@ -55,34 +55,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: user.photoUrl == null
                     ? Icon(
                         Icons.person,
-                        size: 60,
+                        size: 40,
                         color: AppColors.primary,
                       )
                     : null,
                 ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 
                 // User Name
                 Text(
                   user.displayName ?? user.username,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 
                 // Username
                 Text(
                   '@${user.username}',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 
                 // Profile Info Cards
                 _buildInfoCard('Email', user.email),
@@ -90,47 +90,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (user.location != null) _buildInfoCard('Location', user.location!),
                 if (user.age != null) _buildInfoCard('Age', user.age.toString()),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 
                 // Interests
                 if (user.interests.isNotEmpty) _buildInterestsSection(user.interests),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 
                 // Edit Profile Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _editProfile,
-                    icon: const Icon(Icons.edit),
+                    icon: const Icon(Icons.edit, size: 18),
                     label: const Text('Edit Profile'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),
                 ),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 
                 // Edit Matching Preferences Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _editMatchingPreferences,
-                    icon: const Icon(Icons.tune),
+                    icon: const Icon(Icons.tune, size: 18),
                     label: const Text('Edit Matching Preferences'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.surface,
                       foregroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       side: BorderSide(color: AppColors.primary, width: 2),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),
@@ -146,16 +146,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildInfoCard(String label, String value) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -165,16 +165,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               color: AppColors.textPrimary,
             ),
           ),
@@ -186,15 +186,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildInterestsSection(List<String> interests) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -204,20 +204,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             'Interests',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: interests.map((interest) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primary.withValues(alpha: 0.3),
                 ),
@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 interest,
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),

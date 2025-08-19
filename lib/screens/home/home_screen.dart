@@ -43,8 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 32),
 
-              // Squad Status Section
-              _buildSquadStatusSection(),
+              // How It Works Section
+              _buildHowItWorksSection(),
 
               const SizedBox(height: 32),
 
@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -82,12 +82,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    child: Icon(
-                      Icons.person,
-                      size: 30,
-                      color: AppColors.primary,
-                    ),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    backgroundImage: authProvider.currentUser?.photoUrl != null 
+                      ? NetworkImage(authProvider.currentUser!.photoUrl!) 
+                      : null,
+                    child: authProvider.currentUser?.photoUrl == null
+                      ? Icon(
+                          Icons.person,
+                          size: 30,
+                          color: AppColors.primary,
+                        )
+                      : null,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -119,83 +124,129 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSquadStatusSection() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        final user = authProvider.currentUser;
-        final isInSquad = user?.groupId != null && user!.groupId!.isNotEmpty;
-
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+  Widget _buildHowItWorksSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.primary, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                'How Squad Works',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ],
           ),
+
+          const SizedBox(height: 20),
+
+          // Steps
+          _buildStepItem(
+            '1',
+            'Browse Hangouts',
+            'Check out activities others have shared or create your own',
+            Icons.feed,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          _buildStepItem(
+            '2',
+            'Find Your Squad',
+            'Get matched with people who share your interests and vibe',
+            Icons.group_add,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          _buildStepItem(
+            '3',
+            'Party Pack',
+            'Set up a party pack partner for activities and events',
+            Icons.people_alt,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          _buildStepItem(
+            '4',
+            'Have Fun!',
+            'Chat, plan activities, and make lasting friendships',
+            Icons.celebration,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepItem(String number, String title, String description, IconData icon) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.group, color: AppColors.primary, size: 28),
-                  const SizedBox(width: 12),
+                  Icon(icon, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 8),
                   Text(
-                    'Squad Status',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 16),
-
-              // Squad Status Indicator
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isInSquad
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.error.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isInSquad
-                        ? AppColors.success.withOpacity(0.3)
-                        : AppColors.error.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isInSquad ? Icons.check_circle : Icons.cancel,
-                      color: isInSquad ? AppColors.success : AppColors.error,
-                      size: 32,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      isInSquad ? 'In Squad' : 'Not in Squad',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isInSquad ? AppColors.success : AppColors.error,
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 

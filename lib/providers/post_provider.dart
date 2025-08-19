@@ -7,25 +7,31 @@ class PostProvider with ChangeNotifier {
   final PostService _postService = PostService();
   
   List<Post> _posts = [];
+  List<Post> _allPosts = []; // Includes locked posts
   List<Post> _upcomingPosts = [];
   List<Post> _ongoingPosts = [];
   List<Post> _userPosts = [];
   
   bool _isLoading = false;
   String? _error;
+  String? _lastCreatedPostId;
   
   StreamSubscription<List<Post>>? _postsSubscription;
+  StreamSubscription<List<Post>>? _allPostsSubscription;
   StreamSubscription<List<Post>>? _upcomingSubscription;
   StreamSubscription<List<Post>>? _ongoingSubscription;
   StreamSubscription<List<Post>>? _userPostsSubscription;
+  Timer? _refreshTimer;
 
   // Getters
   List<Post> get posts => _posts;
+  List<Post> get allPosts => _allPosts; // Includes locked posts
   List<Post> get upcomingPosts => _upcomingPosts;
   List<Post> get ongoingPosts => _ongoingPosts;
   List<Post> get userPosts => _userPosts;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get lastCreatedPostId => _lastCreatedPostId;
 
   // Initialize and start listening to posts
   Future<void> initialize() async {
@@ -33,7 +39,7 @@ class PostProvider with ChangeNotifier {
     _clearError();
     
     try {
-      // Subscribe to all posts
+      // Subscribe to all posts (excluding locked)
       _postsSubscription = _postService.getPosts().listen(
         (posts) {
           _posts = posts;
@@ -41,6 +47,17 @@ class PostProvider with ChangeNotifier {
         },
         onError: (error) {
           _setError('Failed to load posts: $error');
+        },
+      );
+
+      // Subscribe to all posts including locked ones
+      _allPostsSubscription = _postService.getAllPosts().listen(
+        (posts) {
+          _allPosts = posts;
+          notifyListeners();
+        },
+        onError: (error) {
+          _setError('Failed to load all posts: $error');
         },
       );
 
@@ -59,6 +76,9 @@ class PostProvider with ChangeNotifier {
           notifyListeners();
         },
       );
+
+      // Start periodic refresh timer (every 30 seconds)
+      _startRefreshTimer();
 
     } catch (e) {
       _setError('Failed to initialize posts: $e');
@@ -118,7 +138,7 @@ class PostProvider with ChangeNotifier {
         genderPreferences: genderPreferences,
       );
 
-      await _postService.createPost(post);
+      _lastCreatedPostId = await _postService.createPost(post);
       return true;
     } catch (e) {
       _setError('Failed to create post: $e');
@@ -182,40 +202,73 @@ class PostProvider with ChangeNotifier {
     }
   }
 
-  // Get posts filtered by gender preferences
-  List<Post> getPostsForUser(List<String> userGenders) {
-    return _posts.where((post) {
-      // If post accepts "Anyone", it matches any user
-      if (post.genderPreferences.contains('Anyone')) {
-        return true;
-      }
-      
-      // Check if user's gender matches any of the post's preferences
-      return userGenders.any((userGender) => 
-          post.genderPreferences.contains(userGender));
-    }).toList();
+  // Lock a post (hide from discovery)
+  Future<bool> lockPost(String postId) async {
+    try {
+      await _postService.lockPost(postId);
+      return true;
+    } catch (e) {
+      _setError('Failed to lock post: $e');
+      return false;
+    }
+  }
+
+  // Unlock a post (make visible for discovery)
+  Future<bool> unlockPost(String postId) async {
+    try {
+      await _postService.unlockPost(postId);
+      return true;
+    } catch (e) {
+      _setError('Failed to unlock post: $e');
+      return false;
+    }
+  }
+
+  // Helper method to check if user can see a post based on gender
+  bool _canUserSeePost(Post post, String? userGender) {
+    // If post accepts "Anyone", it matches any user
+    if (post.genderPreferences.contains('Anyone')) {
+      return true;
+    }
+    
+    // If user hasn't specified gender, they can only see "Anyone" posts
+    if (userGender == null || userGender == 'prefer_not_to_say') {
+      return false; // Already checked "Anyone" above
+    }
+    
+    // Map user gender to post preference format
+    String expectedPreference = '';
+    switch (userGender) {
+      case 'woman':
+        expectedPreference = 'Women only';
+        break;
+      case 'man':
+        expectedPreference = 'Men only';
+        break;
+      case 'non_binary':
+        expectedPreference = 'Non-binary only';
+        break;
+      default:
+        return false;
+    }
+    
+    // Check if post's gender preferences include the user's gender
+    return post.genderPreferences.contains(expectedPreference);
+  }
+
+  // Get posts filtered by user's gender preferences
+  List<Post> getPostsForUser(String? userGender) {
+    return _posts.where((post) => _canUserSeePost(post, userGender)).toList();
   }
 
   // Get upcoming posts for user
-  List<Post> getUpcomingPostsForUser(List<String> userGenders) {
-    return _upcomingPosts.where((post) {
-      if (post.genderPreferences.contains('Anyone')) {
-        return true;
-      }
-      return userGenders.any((userGender) => 
-          post.genderPreferences.contains(userGender));
-    }).toList();
+  List<Post> getUpcomingPostsForUser(String? userGender) {
+    return _upcomingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
   }
 
   // Get ongoing posts for user
-  List<Post> getOngoingPostsForUser(List<String> userGenders) {
-    return _ongoingPosts.where((post) {
-      if (post.genderPreferences.contains('Anyone')) {
-        return true;
-      }
-      return userGenders.any((userGender) => 
-          post.genderPreferences.contains(userGender));
-    }).toList();
+  List<Post> getOngoingPostsForUser(String? userGender) {
+    return _ongoingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
   }
 
   // Search posts
@@ -230,6 +283,26 @@ class PostProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Failed to update post statuses: $e');
     }
+  }
+
+  // Start refresh timer to update UI every 30 seconds
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      // Just notify listeners to refresh the UI with dynamic status calculations
+      notifyListeners();
+      
+      // Optionally update database statuses every 5 minutes (10 timer cycles)
+      if (timer.tick % 10 == 0) {
+        updatePostStatuses();
+      }
+    });
+  }
+
+  // Stop refresh timer
+  void _stopRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
   }
 
   // Check if user can join a post
@@ -284,9 +357,11 @@ class PostProvider with ChangeNotifier {
   @override
   void dispose() {
     _postsSubscription?.cancel();
+    _allPostsSubscription?.cancel();
     _upcomingSubscription?.cancel();
     _ongoingSubscription?.cancel();
     _userPostsSubscription?.cancel();
+    _stopRefreshTimer();
     super.dispose();
   }
 }

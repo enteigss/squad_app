@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/invite_options_modal.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -19,15 +20,34 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _descriptionController = TextEditingController();
 
   DateTime? _selectedDateTime;
-  Set<String> _selectedGenders = {'Anyone'};
+  String _selectedGender = 'Anyone';
   bool _showSuggestions = false;
 
-  final List<String> _genderOptions = [
-    'Anyone',
-    'Male',
-    'Female',
-    'Non-binary',
-  ];
+  // Dynamic gender preference options based on user's gender
+  List<String> _getGenderPreferenceOptions(String? userGender) {
+    if (userGender == null || userGender == 'prefer_not_to_say') {
+      return [
+        'Anyone',
+      ]; // Only "Anyone" if user hasn't selected gender or prefers not to say
+    }
+
+    final baseOptions = ['Anyone'];
+
+    // Add gender-specific option based on user's selection
+    switch (userGender) {
+      case 'woman':
+        baseOptions.insert(0, 'Women only');
+        break;
+      case 'man':
+        baseOptions.insert(0, 'Men only');
+        break;
+      case 'non_binary':
+        baseOptions.insert(0, 'Non-binary only');
+        break;
+    }
+
+    return baseOptions;
+  }
 
   final Map<String, List<String>> _activitySuggestions = {
     'Boston Hotspots': [
@@ -37,10 +57,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       'Faneuil Hall',
       'Harvard Square',
     ],
-    'BU Hotspots': [
-      'Dining hall',
-      'BU Beach',
-    ],
+    'BU Hotspots': ['Dining hall', 'BU Beach'],
   };
 
   @override
@@ -55,7 +72,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Create Post'),
+        title: const Text('Create Hangout'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -151,7 +168,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         ),
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
-            return 'Please enter a title for your post';
+            return 'Please enter a title for your hangout';
           }
           return null;
         },
@@ -316,7 +333,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         controller: _descriptionController,
         maxLines: 4,
         decoration: InputDecoration(
-          hintText: 'Share more details about your plans...',
+          hintText:
+              'Share more details about your plans (e.g., "watching rick and morty in our dorm pu to room ___")...',
           hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.7)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -455,83 +473,102 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _buildGenderSelector() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.people, color: AppColors.primary, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                'Gender preference',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final userGender = authProvider.currentUser?.gender;
+        final genderOptions = _getGenderPreferenceOptions(userGender);
+
+        // If user hasn't selected gender or prefers not to say, don't show the section
+        if (userGender == null || userGender == 'prefer_not_to_say') {
+          return const SizedBox.shrink();
+        }
+
+        // Reset selected gender if it's not in the new options
+        if (!genderOptions.contains(_selectedGender)) {
+          _selectedGender = genderOptions.first;
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _genderOptions.map((option) {
-              final isSelected = _selectedGenders.contains(option);
-              return GestureDetector(
-                onTap: () => _toggleGenderSelection(option),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textSecondary.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Text(
-                    option,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.people, color: AppColors.primary, size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Gender preference',
                     style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      fontSize: 14,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: genderOptions.map((option) {
+                  final isSelected = _selectedGender == option;
+                  return GestureDetector(
+                    onTap: () => _setGenderSelection(option),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.textSecondary.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        option,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildCreateButton() {
     return CustomButton(
-      text: 'Create Post',
+      text: 'Create Hangout',
       onPressed: _createPost,
       width: double.infinity,
       height: 56,
@@ -617,8 +654,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       dateStr = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
 
+    // Convert to 12-hour format with AM/PM
+    int hour = dateTime.hour;
+    String period = hour >= 12 ? 'PM' : 'AM';
+    if (hour == 0) {
+      hour = 12; // 12 AM
+    } else if (hour > 12) {
+      hour = hour - 12; // Convert to 12-hour format
+    }
+
     final timeStr =
-        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        '$hour:${dateTime.minute.toString().padLeft(2, '0')} $period';
     return '$dateStr at $timeStr';
   }
 
@@ -642,28 +688,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
   }
 
-  void _toggleGenderSelection(String gender) {
+  void _setGenderSelection(String gender) {
     setState(() {
-      if (gender == 'Anyone') {
-        // If "Anyone" is selected, clear all others and select only "Anyone"
-        _selectedGenders.clear();
-        _selectedGenders.add('Anyone');
-      } else {
-        // If a specific gender is selected, remove "Anyone" first
-        _selectedGenders.remove('Anyone');
-
-        // Then toggle the selected gender
-        if (_selectedGenders.contains(gender)) {
-          _selectedGenders.remove(gender);
-        } else {
-          _selectedGenders.add(gender);
-        }
-
-        // If no specific genders are selected, default back to "Anyone"
-        if (_selectedGenders.isEmpty) {
-          _selectedGenders.add('Anyone');
-        }
-      }
+      _selectedGender = gender;
     });
   }
 
@@ -680,7 +707,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
 
       final now = DateTime.now();
-      // Allow "now" posts or future posts, but not past posts (unless it's "now")
+      // Allow "now" hangouts or future hangouts, but not past hangouts (unless it's "now")
       if (_selectedDateTime!.isBefore(now) && !_isNow(_selectedDateTime!)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -701,7 +728,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (currentUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('You must be logged in to create a post'),
+            content: Text('You must be logged in to create a hangout'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -718,38 +745,34 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       );
 
       try {
-        // Create the post
+        // Create the hangout
         final success = await postProvider.createPost(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           authorId: currentUser.id,
           authorName: currentUser.displayName ?? 'Unknown User',
           scheduledTime: _selectedDateTime!,
-          genderPreferences: _selectedGenders.toList(),
+          genderPreferences: [_selectedGender],
         );
 
         // Dismiss loading dialog
         if (mounted) Navigator.of(context).pop();
 
         if (success) {
-          // Show success message and navigate back
+          // Show success message with invite option
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Post "${_titleController.text.trim()}" created successfully!',
-                ),
-                backgroundColor: AppColors.success,
-              ),
+            _showSuccessWithInviteOption(
+              hangoutTitle: _titleController.text.trim(),
+              hangoutId: postProvider.lastCreatedPostId ?? '',
+              inviterName: currentUser.displayName ?? 'Unknown User',
             );
-            context.pop();
           }
         } else {
           // Show error message
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(postProvider.error ?? 'Failed to create post'),
+                content: Text(postProvider.error ?? 'Failed to create hangout'),
                 backgroundColor: AppColors.error,
               ),
             );
@@ -763,12 +786,89 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to create post: $e'),
+              content: Text('Failed to create hangout: $e'),
               backgroundColor: AppColors.error,
             ),
           );
         }
       }
     }
+  }
+
+  void _showSuccessWithInviteOption({
+    required String hangoutTitle,
+    required String hangoutId,
+    required String inviterName,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: AppColors.success, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Hangout Created!',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '"$hangoutTitle" has been created successfully!',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Want to invite friends to join?',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.pop(); // Go back to feed
+            },
+            child: const Text(
+              'Maybe Later',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              InviteOptionsModal.show(
+                context,
+                hangoutId: hangoutId,
+                hangoutTitle: hangoutTitle,
+                inviterName: inviterName,
+              ).then((_) {
+                // Navigate back to feed after invite flow - check if context is still mounted
+                if (context.mounted) {
+                  context.pop();
+                }
+              });
+            },
+            icon: const Icon(Icons.person_add, size: 18),
+            label: const Text('Invite Friends'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

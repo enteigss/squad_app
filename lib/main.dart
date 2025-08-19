@@ -7,19 +7,17 @@ import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/post_provider.dart';
+import 'providers/user_preferences_provider.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/auth/preferences_screen.dart';
 import 'screens/auth/availability_screen.dart';
-import 'screens/home/home_screen.dart';
 import 'screens/home/group_screen.dart';
 import 'screens/chat/chat_screen.dart';
-import 'screens/feed/feed_screen.dart';
 import 'screens/feed/create_post_screen.dart';
-import 'screens/profile/profile_screen.dart';
-import 'screens/squads/squads_screen.dart';
+import 'screens/feed/hangout_detail_screen.dart';
 import 'screens/main/main_scaffold.dart';
+import 'services/deep_link_service.dart';
 import 'utils/colors.dart';
 
 void main() async {
@@ -28,8 +26,30 @@ void main() async {
   runApp(const SquadApp());
 }
 
-class SquadApp extends StatelessWidget {
+class SquadApp extends StatefulWidget {
   const SquadApp({super.key});
+
+  @override
+  State<SquadApp> createState() => _SquadAppState();
+}
+
+class _SquadAppState extends State<SquadApp> {
+  final DeepLinkService _deepLinkService = DeepLinkService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize deep linking after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deepLinkService.initialize(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    _deepLinkService.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +59,7 @@ class SquadApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
+        ChangeNotifierProvider(create: (_) => UserPreferencesProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
@@ -80,7 +101,7 @@ class SquadApp extends StatelessWidget {
 
         // If not logged in, redirect to login
         if (!isLoggedIn) {
-          if (currentPath != '/login' && currentPath != '/register') {
+          if (currentPath != '/login') {
             return '/login';
           }
           return null;
@@ -89,7 +110,6 @@ class SquadApp extends StatelessWidget {
         // If logged in and all complete, redirect to main from auth screens
         if (isLoggedIn && profileCompleted) {
           if (currentPath == '/login' ||
-              currentPath == '/register' ||
               currentPath == '/profile-setup' ||
               currentPath == '/preferences' ||
               currentPath == '/availability' ||
@@ -137,10 +157,6 @@ class SquadApp extends StatelessWidget {
           builder: (context, state) => const LoginScreen(),
         ),
         GoRoute(
-          path: '/register',
-          builder: (context, state) => const RegisterScreen(),
-        ),
-        GoRoute(
           path: '/profile-setup',
           builder: (context, state) => const ProfileSetupScreen(),
         ),
@@ -180,6 +196,13 @@ class SquadApp extends StatelessWidget {
         GoRoute(
           path: '/create-post',
           builder: (context, state) => const CreatePostScreen(),
+        ),
+        GoRoute(
+          path: '/hangout/:hangoutId',
+          builder: (context, state) {
+            final hangoutId = state.pathParameters['hangoutId']!;
+            return HangoutDetailScreen(hangoutId: hangoutId);
+          },
         ),
       ],
     );

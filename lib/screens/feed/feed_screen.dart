@@ -31,8 +31,8 @@ class _FeedScreenState extends State<FeedScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final postProvider = Provider.of<PostProvider>(context, listen: false);
       postProvider.initialize();
-      
-      // Load user posts if we have a current user
+
+      // Load user hangouts if we have a current user
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = authProvider.currentUser;
       if (currentUser != null) {
@@ -46,16 +46,21 @@ class _FeedScreenState extends State<FeedScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Who\'s Down'),
+        title: const Text('Hangouts'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: _showHangoutsInfo,
+            tooltip: 'How does hangouts work?',
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             onPressed: _addNewPost,
-            tooltip: 'Add new post',
+            tooltip: 'Add new hangout',
           ),
         ],
       ),
@@ -77,7 +82,7 @@ class _FeedScreenState extends State<FeedScreen> {
         children: [
           _buildTabButton('Upcoming', FeedTab.upcoming),
           _buildTabButton('Ongoing', FeedTab.ongoing),
-          _buildTabButton('My Posts', FeedTab.yourPosts),
+          _buildTabButton('My Hangouts', FeedTab.yourPosts),
         ],
       ),
     );
@@ -129,7 +134,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Error loading posts',
+                  'Error loading hangouts',
                   style: TextStyle(fontSize: 18, color: AppColors.error),
                 ),
                 const SizedBox(height: 8),
@@ -165,12 +170,15 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No posts yet',
-                  style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                  'No hangouts yet',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Be the first to create a post!',
+                  'Be the first to create a hangout!',
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -193,18 +201,26 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   List<Post> _getFilteredPosts(PostProvider postProvider) {
-    final currentUserId =
-        Provider.of<AuthProvider>(context, listen: false).currentUser?.id;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = authProvider.currentUser?.id;
+    final userGender = authProvider.currentUser?.gender;
 
     switch (selectedTab) {
       case FeedTab.upcoming:
-        // Show all upcoming posts from all users
-        return postProvider.upcomingPosts;
+        // Show upcoming hangouts filtered by user's gender
+        return postProvider.getUpcomingPostsForUser(userGender);
       case FeedTab.ongoing:
-        // Show all ongoing posts from all users
-        return postProvider.ongoingPosts;
+        // Show ongoing hangouts filtered by user's gender
+        return postProvider.getOngoingPostsForUser(userGender);
       case FeedTab.yourPosts:
-        return currentUserId != null ? postProvider.userPosts : [];
+        if (currentUserId == null) return [];
+        // Show all posts where user is a participant (including locked ones)
+        return postProvider.allPosts
+            .where(
+              (post) =>
+                  !post.deleted && post.participantIds.contains(currentUserId),
+            )
+            .toList();
     }
   }
 
@@ -248,7 +264,48 @@ class _FeedScreenState extends State<FeedScreen> {
                     ],
                   ),
                 ),
-                _buildStatusChip(post.dynamicStatus),
+                Row(
+                  children: [
+                    if (post.isLocked) ...[
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.textSecondary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.lock,
+                              size: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              'Locked',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    _buildStatusChip(post.dynamicStatus),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -294,7 +351,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${post.participantIds.length}/${post.maxParticipants}',
+                      '${post.participantIds.length} members',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -308,49 +365,84 @@ class _FeedScreenState extends State<FeedScreen> {
                     if (currentUserId == null) return const SizedBox.shrink();
 
                     final isAuthor = post.authorId == currentUserId;
-                    final isParticipant = post.participantIds.contains(currentUserId);
+                    final isParticipant = post.participantIds.contains(
+                      currentUserId,
+                    );
 
                     return Row(
                       children: [
-                        // Show View Group button if user is a participant (author or joined member)
-                        if (isAuthor || isParticipant) ...[
-                          CustomButton(
-                            text: 'View Group',
-                            onPressed: () => _viewGroup(post),
-                            width: 100,
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            backgroundColor: AppColors.primary,
+                        // Always show View Group button
+                        CustomButton(
+                          text: 'View',
+                          onPressed: () => _viewGroup(
+                            post,
+                            isParticipant: isAuthor || isParticipant,
                           ),
-                          const SizedBox(width: 8),
-                        ],
-                        
-                        // Show action button (Delete/Leave/Join)
-                        if (isAuthor) 
+                          width: 65,
+                          height: 32,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          backgroundColor: AppColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+
+                        // Show action buttons for author (Lock/Unlock and Delete)
+                        if (isAuthor) ...[
+                          CustomButton(
+                            text: post.isLocked ? 'Unlock' : 'Lock',
+                            onPressed: () =>
+                                _toggleLockPost(post, postProvider),
+                            width: 65,
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            backgroundColor: post.isLocked
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
                           CustomButton(
                             text: 'Delete',
                             onPressed: () => _deletePost(post, postProvider),
-                            width: 90,
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            width: 65,
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
                             backgroundColor: AppColors.error,
-                          )
-                        else if (isParticipant)
+                          ),
+                        ] else if (isParticipant)
                           CustomButton(
                             text: 'Leave',
-                            onPressed: () => _leavePost(post, currentUserId, postProvider),
-                            width: 90,
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            onPressed: () =>
+                                _leavePost(post, currentUserId, postProvider),
+                            width: 65,
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
                             backgroundColor: AppColors.error,
                           )
-                        else if (postProvider.canUserJoinPost(post, currentUserId))
+                        else if (postProvider.canUserJoinPost(
+                          post,
+                          currentUserId,
+                        ))
                           CustomButton(
                             text: 'Join',
-                            onPressed: () => _joinPost(post, currentUserId, postProvider),
-                            width: 90,
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            onPressed: () =>
+                                _joinPost(post, currentUserId, postProvider),
+                            width: 65,
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
                           )
                         else
                           const SizedBox.shrink(),
@@ -444,39 +536,235 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  void _addNewPost() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CreatePostScreen(),
-      ),
+  Future<void> _addNewPost() async {
+    final shouldContinue = await _showCreatePostInfo();
+    if (shouldContinue == true && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+      );
+    }
+  }
+
+  Future<void> _showHangoutsInfo() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.help_outline, color: AppColors.primary, size: 24),
+              const SizedBox(width: 8),
+              const Text('How does Hangouts work?'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoSection(
+                  icon: Icons.group_add,
+                  title: 'Create & Join',
+                  description:
+                      'Create hangouts for activities you want to do or join existing ones that interest you.',
+                ),
+                const SizedBox(height: 16),
+                _buildInfoSection(
+                  icon: Icons.people,
+                  title: 'View Groups',
+                  description:
+                      'See who\'s joined each hangout and chat with group members before meeting up.',
+                ),
+                const SizedBox(height: 16),
+                _buildInfoSection(
+                  icon: Icons.filter_alt,
+                  title: 'Smart Filtering',
+                  description:
+                      'Hangouts are filtered by your gender preferences for safer, more comfortable experiences.',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Got it!'),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Future<void> _joinPost(Post post, String userId, PostProvider postProvider) async {
+  Widget _buildInfoSection({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<bool?> _showCreatePostInfo() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.primary, size: 24),
+              const SizedBox(width: 8),
+              const Text('Create Hangout'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Before you create your hangout, please note:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Your hangout will stay active until you delete it or it expires',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.close, color: AppColors.primary, size: 18),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Please remember to close your hangout if you\'re no longer looking for people to join',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _joinPost(
+    Post post,
+    String userId,
+    PostProvider postProvider,
+  ) async {
     final success = await postProvider.joinPost(post.id, userId);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success 
-              ? 'Joined "${post.title}"!' 
-              : postProvider.error ?? 'Failed to join post'),
+          content: Text(
+            success
+                ? 'Joined "${post.title}"!'
+                : postProvider.error ?? 'Failed to join hangout',
+          ),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
       );
     }
   }
 
-  Future<void> _leavePost(Post post, String userId, PostProvider postProvider) async {
+  Future<void> _leavePost(
+    Post post,
+    String userId,
+    PostProvider postProvider,
+  ) async {
     final success = await postProvider.leavePost(post.id, userId);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success 
-              ? 'Left "${post.title}"' 
-              : postProvider.error ?? 'Failed to leave post'),
+          content: Text(
+            success
+                ? 'Left "${post.title}"'
+                : postProvider.error ?? 'Failed to leave hangout',
+          ),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
       );
@@ -489,8 +777,10 @@ class _FeedScreenState extends State<FeedScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Post'),
-          content: Text('Are you sure you want to delete "${post.title}"? This action cannot be undone.'),
+          title: const Text('Delete Hangout'),
+          content: Text(
+            'Are you sure you want to delete "${post.title}"? This action cannot be undone.',
+          ),
           backgroundColor: AppColors.surface,
           actions: [
             TextButton(
@@ -509,13 +799,15 @@ class _FeedScreenState extends State<FeedScreen> {
 
     if (shouldDelete == true) {
       final success = await postProvider.deletePost(post.id);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success 
-                ? 'Deleted "${post.title}"' 
-                : postProvider.error ?? 'Failed to delete post'),
+            content: Text(
+              success
+                  ? 'Deleted "${post.title}"'
+                  : postProvider.error ?? 'Failed to delete hangout',
+            ),
             backgroundColor: success ? AppColors.success : AppColors.error,
           ),
         );
@@ -523,11 +815,127 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  void _viewGroup(Post post) {
+  Future<void> _toggleLockPost(Post post, PostProvider postProvider) async {
+    final bool isLocking = !post.isLocked;
+
+    // If locking, show confirmation dialog
+    if (isLocking) {
+      final bool? shouldLock = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: Row(
+              children: [
+                Icon(Icons.lock_outline, color: AppColors.primary, size: 24),
+                const SizedBox(width: 8),
+                const Text('Lock Hangout'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Locking "${post.title}" will:',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.visibility_off,
+                      color: AppColors.textSecondary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Hide it from discovery - no one new can find or join it',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.group, color: AppColors.success, size: 18),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Keep the group active for current members',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lock_open, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Can be unlocked later to make it discoverable again',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Lock Hangout'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldLock != true) return; // User cancelled
+    }
+
+    final String action = isLocking ? 'lock' : 'unlock';
+    final String actionPast = isLocking ? 'locked' : 'unlocked';
+
+    final bool success = isLocking
+        ? await postProvider.lockPost(post.id)
+        : await postProvider.unlockPost(post.id);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Hangout "${post.title}" has been $actionPast'
+                : postProvider.error ?? 'Failed to $action hangout',
+          ),
+          backgroundColor: success ? AppColors.success : AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _viewGroup(Post post, {required bool isParticipant}) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GroupMembersScreen(post: post),
+        builder: (context) =>
+            GroupMembersScreen(post: post, isParticipant: isParticipant),
       ),
     );
   }

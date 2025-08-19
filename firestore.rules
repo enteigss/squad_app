@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function to check if user is participant in a post
+    function isParticipant(postData) {
+      return isAuthenticated() && request.auth.uid in postData.participantIds;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow read: if isAuthenticated(); // Allow reading other users for features
+    }
+
+    // Posts collection
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                       request.auth.uid == resource.data.authorId;
+      allow update: if isAuthenticated() && 
+                       (isOwner(resource.data.authorId) || 
+                        isParticipant(resource.data));
+      allow delete: if isAuthenticated() && 
+                       isOwner(resource.data.authorId);
+    }
+
+    // Post chat messages
+    match /post_chats/{chatId}/messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                       isOwner(resource.data.senderId);
+      allow delete: if isAuthenticated() && 
+                       isOwner(resource.data.senderId);
+    }
+
+    // Post chat metadata
+    match /post_chats/{chatId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // SMS invites collection - for tracking sent invites
+    match /sms_invites/{inviteId} {
+      allow read: if isAuthenticated() && 
+                     (isOwner(resource.data.inviterId) || 
+                      request.auth.uid in resource.data.recipients);
+      allow create: if isAuthenticated() && 
+                       isOwner(request.resource.data.inviterId);
+      allow update: if isAuthenticated() && 
+                       isOwner(resource.data.inviterId);
+    }
+
+    // Invite tracking for analytics (optional)
+    match /invite_analytics/{analyticsId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Party invitations (existing functionality)
+    match /party_invitations/{invitationId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // User preferences
+    match /user_preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Groups/Squads
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                       (isOwner(resource.data.createdBy) || 
+                        request.auth.uid in resource.data.members);
+      allow delete: if isAuthenticated() && 
+                       isOwner(resource.data.createdBy);
+    }
+
+    // Group messages
+    match /groups/{groupId}/messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                       isOwner(resource.data.senderId);
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

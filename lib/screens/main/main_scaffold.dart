@@ -80,7 +80,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.feed),
-            label: 'Who\'s Down',
+            label: 'Hangouts',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.groups),

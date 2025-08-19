@@ -5,6 +5,7 @@ class GoogleSignInButton extends StatelessWidget {
   final bool isLoading;
   final double? width;
   final double height;
+  final String text;
 
   const GoogleSignInButton({
     super.key,
@@ -12,6 +13,7 @@ class GoogleSignInButton extends StatelessWidget {
     this.isLoading = false,
     this.width,
     this.height = 40,
+    this.text = 'Sign in with Google',
   });
 
   @override
@@ -58,9 +60,9 @@ class GoogleSignInButton extends StatelessWidget {
       children: [
         _buildGoogleIcon(),
         const SizedBox(width: 12),
-        const Text(
-          'Sign in with Google',
-          style: TextStyle(
+        Text(
+          text,
+          style: const TextStyle(
             color: Color(0xFF3c4043),
             fontSize: 14,
             fontWeight: FontWeight.w500,

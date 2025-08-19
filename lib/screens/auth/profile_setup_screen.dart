@@ -219,7 +219,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 // Location Field
                 CustomTextField(
                   label: 'Location',
-                  hint: 'Enter your city, country',
+                  hint: 'Enter your dorm',
                   controller: _locationController,
                   keyboardType: TextInputType.text,
                   textInputAction: TextInputAction.next,

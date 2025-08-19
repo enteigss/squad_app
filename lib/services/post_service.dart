@@ -22,18 +22,32 @@ class PostService {
       final postWithId = post.copyWith(id: docRef.id);
 
       await docRef.set(postWithId.toMap());
-      
+
       // Initialize chat for the new post
       await _chatService.initializeChat(docRef.id);
-      
+
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to create post: $e');
     }
   }
 
-  // Get all posts with real-time updates
+  // Get all posts with real-time updates (excludes locked posts for discovery)
   Stream<List<Post>> getPosts() {
+    return _firestore
+        .collection(_collection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => Post.fromMap(doc.data()))
+              .where((post) => !post.deleted && !post.isLocked)
+              .toList();
+        });
+  }
+
+  // Get all posts including locked ones (for user's own hangouts)
+  Stream<List<Post>> getAllPosts() {
     return _firestore
         .collection(_collection)
         .orderBy('createdAt', descending: true)
@@ -55,7 +69,7 @@ class PostService {
         .map((snapshot) {
           return snapshot.docs
               .map((doc) => Post.fromMap(doc.data()))
-              .where((post) => !post.deleted && post.status == status)
+              .where((post) => !post.deleted && !post.isLocked && post.status == status)
               .toList();
         });
   }
@@ -76,56 +90,39 @@ class PostService {
 
   // Get upcoming posts (posts scheduled for the future)
   Stream<List<Post>> getUpcomingPosts() {
-    final now = DateTime.now();
     return _firestore
         .collection(_collection)
         .orderBy('scheduledTime', descending: false)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => Post.fromMap(doc.data()))
-              .where((post) {
-                // Filter out deleted posts
-                if (post.deleted) return false;
-                
-                // Only show posts with upcoming status
-                if (post.status != PostStatus.upcoming) return false;
-                
-                // Filter for upcoming posts (scheduled for the future)
-                if (post.scheduledTime == null) return false;
-                
-                return post.scheduledTime!.isAfter(now);
-              })
-              .toList();
+          return snapshot.docs.map((doc) => Post.fromMap(doc.data())).where((
+            post,
+          ) {
+            // Filter out deleted and locked posts
+            if (post.deleted || post.isLocked) return false;
+
+            // Use dynamic status calculation
+            return post.dynamicStatus == PostStatus.upcoming;
+          }).toList();
         });
   }
 
   // Get ongoing posts (posts scheduled within the last 4 hours)
   Stream<List<Post>> getOngoingPosts() {
-    final now = DateTime.now();
-    final fourHoursAgo = now.subtract(const Duration(hours: 4));
-
     return _firestore
         .collection(_collection)
         .orderBy('scheduledTime', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => Post.fromMap(doc.data()))
-              .where((post) {
-                // Filter out deleted posts
-                if (post.deleted) return false;
-                
-                // Only show posts with ongoing status
-                if (post.status != PostStatus.ongoing) return false;
-                
-                // Filter for ongoing posts (scheduled within last 4 hours)
-                if (post.scheduledTime == null) return false;
-                
-                return post.scheduledTime!.isAfter(fourHoursAgo) &&
-                       post.scheduledTime!.isBefore(now.add(const Duration(minutes: 1)));
-              })
-              .toList();
+          return snapshot.docs.map((doc) => Post.fromMap(doc.data())).where((
+            post,
+          ) {
+            // Filter out deleted and locked posts
+            if (post.deleted || post.isLocked) return false;
+
+            // Use dynamic status calculation
+            return post.dynamicStatus == PostStatus.ongoing;
+          }).toList();
         });
   }
 
@@ -156,15 +153,12 @@ class PostService {
         final updatedParticipants = [...post.participantIds, userId];
         transaction.update(docRef, {'participantIds': updatedParticipants});
       });
-      
+
       // Send chat notification that user joined
       try {
         final user = await _firestoreService.getUser(userId);
         final userName = user?.displayName ?? 'Unknown User';
-        await _chatService.handleUserJoined(
-          postId: postId,
-          userName: userName,
-        );
+        await _chatService.handleUserJoined(postId: postId, userName: userName);
       } catch (e) {
         // Don't fail the join operation if chat notification fails
         debugPrint('Failed to send chat join notification: $e');
@@ -198,15 +192,12 @@ class PostService {
             .toList();
         transaction.update(docRef, {'participantIds': updatedParticipants});
       });
-      
+
       // Send chat notification that user left
       try {
         final user = await _firestoreService.getUser(userId);
         final userName = user?.displayName ?? 'Unknown User';
-        await _chatService.handleUserLeft(
-          postId: postId,
-          userName: userName,
-        );
+        await _chatService.handleUserLeft(postId: postId, userName: userName);
       } catch (e) {
         // Don't fail the leave operation if chat notification fails
         debugPrint('Failed to send chat leave notification: $e');
@@ -231,12 +222,33 @@ class PostService {
   // Soft delete a post (mark as deleted)
   Future<void> deletePost(String postId) async {
     try {
-      await _firestore
-          .collection(_collection)
-          .doc(postId)
-          .update({'deleted': true});
+      await _firestore.collection(_collection).doc(postId).update({
+        'deleted': true,
+      });
     } catch (e) {
       throw Exception('Failed to delete post: $e');
+    }
+  }
+
+  // Lock a post (hide from discovery but keep group functional)
+  Future<void> lockPost(String postId) async {
+    try {
+      await _firestore.collection(_collection).doc(postId).update({
+        'isLocked': true,
+      });
+    } catch (e) {
+      throw Exception('Failed to lock post: $e');
+    }
+  }
+
+  // Unlock a post (make visible for discovery again)
+  Future<void> unlockPost(String postId) async {
+    try {
+      await _firestore.collection(_collection).doc(postId).update({
+        'isLocked': false,
+      });
+    } catch (e) {
+      throw Exception('Failed to unlock post: $e');
     }
   }
 
@@ -261,30 +273,52 @@ class PostService {
     return getPosts().map((posts) {
       return posts.where((post) {
         final searchQuery = query.toLowerCase();
-        return !post.deleted && 
+        return !post.deleted && !post.isLocked &&
             (post.title.toLowerCase().contains(searchQuery) ||
-             post.description.toLowerCase().contains(searchQuery));
+                post.description.toLowerCase().contains(searchQuery));
       }).toList();
     });
   }
 
-  // Get posts filtered by gender preferences
-  Stream<List<Post>> getPostsByGenderPreference(List<String> userGenders) {
-    return getPosts().map((posts) {
-      return posts.where((post) {
-        // Skip deleted posts
-        if (post.deleted) return false;
-        
-        // If post accepts "Anyone", it matches any user
-        if (post.genderPreferences.contains('Anyone')) {
-          return true;
-        }
+  // Helper method to check if user can see a post based on gender
+  bool _canUserSeePost(Post post, String? userGender) {
+    // Skip deleted posts
+    if (post.deleted) return false;
 
-        // Check if user's gender matches any of the post's preferences
-        return userGenders.any(
-          (userGender) => post.genderPreferences.contains(userGender),
-        );
-      }).toList();
+    // If post accepts "Anyone", it matches any user
+    if (post.genderPreferences.contains('Anyone')) {
+      return true;
+    }
+    
+    // If user hasn't specified gender, they can only see "Anyone" posts
+    if (userGender == null || userGender == 'prefer_not_to_say') {
+      return false; // Already checked "Anyone" above
+    }
+    
+    // Map user gender to post preference format
+    String expectedPreference = '';
+    switch (userGender) {
+      case 'woman':
+        expectedPreference = 'Women only';
+        break;
+      case 'man':
+        expectedPreference = 'Men only';
+        break;
+      case 'non_binary':
+        expectedPreference = 'Non-binary only';
+        break;
+      default:
+        return false;
+    }
+    
+    // Check if post's gender preferences include the user's gender
+    return post.genderPreferences.contains(expectedPreference);
+  }
+
+  // Get posts filtered by gender preferences
+  Stream<List<Post>> getPostsByGenderPreference(String? userGender) {
+    return getPosts().map((posts) {
+      return posts.where((post) => _canUserSeePost(post, userGender)).toList();
     });
   }
 
@@ -302,18 +336,19 @@ class PostService {
 
       for (final doc in snapshot.docs) {
         final post = Post.fromMap(doc.data());
-        
+
         // Skip deleted posts
         if (post.deleted) continue;
-        
+
         final newStatus = _calculatePostStatus(post, now, fourHoursAgo);
 
         if (newStatus != post.status) {
           batch.update(doc.reference, {'status': newStatus.name});
           hasUpdates = true;
-          
+
           // If post just became completed, archive the chat
-          if (newStatus == PostStatus.completed && post.status != PostStatus.completed) {
+          if (newStatus == PostStatus.completed &&
+              post.status != PostStatus.completed) {
             _chatService.archiveChat(post.id);
           }
         }

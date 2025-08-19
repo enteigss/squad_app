@@ -6,13 +6,16 @@ import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
 import 'post_chat_screen.dart';
+import '../profile/profile_detail_screen.dart';
 
 class GroupMembersScreen extends StatefulWidget {
   final Post post;
+  final bool isParticipant;
 
   const GroupMembersScreen({
     super.key,
     required this.post,
+    this.isParticipant = true, // Default to true for backward compatibility
   });
 
   @override
@@ -70,17 +73,20 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Group Members (${widget.post.participantIds.length})'),
+        title: Text(widget.isParticipant 
+          ? 'Group Members (${widget.post.participantIds.length})'
+          : 'Group Preview (${widget.post.participantIds.length})'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // Chat button
-          IconButton(
-            icon: const Icon(Icons.chat),
-            onPressed: _openChat,
-            tooltip: 'Group Chat',
-          ),
+          // Chat button - only show for participants
+          if (widget.isParticipant) 
+            IconButton(
+              icon: const Icon(Icons.chat),
+              onPressed: _openChat,
+              tooltip: 'Group Chat',
+            ),
         ],
       ),
       body: Column(
@@ -120,7 +126,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${widget.post.participantIds.length}/${widget.post.maxParticipants} members',
+                      '${widget.post.participantIds.length} members',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -131,6 +137,33 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
               ],
             ),
           ),
+          
+          // Preview notice for non-participants
+          if (!widget.isParticipant)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: AppColors.primary.withValues(alpha: 0.1),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You\'re viewing this group in preview mode. Join the group to access chat and full features.',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           
           // Members list
           Expanded(
@@ -220,9 +253,12 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       color: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _viewProfile(member),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
           children: [
             // Profile picture placeholder
             CircleAvatar(
@@ -244,11 +280,13 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        member.displayName ?? 'Unknown User',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Expanded(
+                        child: Text(
+                          member.displayName ?? 'Unknown User',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                       if (isCurrentUser) ...[
@@ -327,10 +365,162 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
                 ],
               ),
             ),
+            
+            // Profile view indicator and remove button
+            Row(
+              children: [
+                // Tap to view profile indicator
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
+                
+                // Remove button (only show for host when viewing other members)
+                if (_canRemoveMember(currentUserId, member.id)) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => _showRemoveMemberDialog(member),
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      color: AppColors.error,
+                    ),
+                    tooltip: 'Remove member',
+                  ),
+                ],
+              ],
+            ),
           ],
+        ),
         ),
       ),
     );
+  }
+
+  // Check if current user can remove a member
+  bool _canRemoveMember(String? currentUserId, String memberId) {
+    // Only participants can remove members
+    if (!widget.isParticipant) return false;
+    
+    // Only the post author (host) can remove members
+    if (currentUserId != widget.post.authorId) return false;
+    
+    // Can't remove yourself
+    if (currentUserId == memberId) return false;
+    
+    // Must have at least 2 people to show remove option
+    if (widget.post.participantIds.length <= 1) return false;
+    
+    return true;
+  }
+
+  Future<void> _showRemoveMemberDialog(UserModel member) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Remove Group Member'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Do you want to remove ${member.displayName ?? 'this member'} from the group for inactivity?'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'This feature is intended for removing inactive members who haven\'t been participating in the group.',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Remove Member'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _removeMember(member);
+    }
+  }
+
+  Future<void> _removeMember(UserModel member) async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+
+      // Remove member from post
+      await _firestoreService.removeMemberFromPost(widget.post.id, member.id);
+
+      // Dismiss loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${member.displayName ?? 'Member'} has been removed from the group'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+
+      // Reload members list
+      await _loadGroupMembers();
+
+    } catch (e) {
+      // Dismiss loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to remove member: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _openChat() {
@@ -338,6 +528,15 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => PostChatScreen(post: widget.post),
+      ),
+    );
+  }
+
+  void _viewProfile(UserModel member) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileDetailScreen(user: member),
       ),
     );
   }

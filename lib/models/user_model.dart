@@ -8,6 +8,7 @@ class UserModel {
   final int? age;
   final String? location;
   final List<String> interests;
+  final String? gender;
   final DateTime createdAt;
   final DateTime? lastSeen;
   final bool isOnline;
@@ -15,6 +16,7 @@ class UserModel {
   final bool hasCreatedProfile;
   final bool hasCompletedPreferences;
   final bool profileCompleted;
+  final bool squadsOptIn;
 
   UserModel({
     required this.id,
@@ -26,6 +28,7 @@ class UserModel {
     this.age,
     this.location,
     this.interests = const [],
+    this.gender,
     required this.createdAt,
     this.lastSeen,
     this.isOnline = false,
@@ -33,6 +36,7 @@ class UserModel {
     this.hasCreatedProfile = false,
     this.hasCompletedPreferences = false,
     this.profileCompleted = false,
+    this.squadsOptIn = false,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -46,6 +50,7 @@ class UserModel {
       age: map['age'],
       location: map['location'],
       interests: List<String>.from(map['interests'] ?? []),
+      gender: map['gender'],
       createdAt: _parseDateTime(map['createdAt']) ?? DateTime.now(),
       lastSeen: _parseDateTime(map['lastSeen']),
       isOnline: map['isOnline'] ?? false,
@@ -53,6 +58,7 @@ class UserModel {
       hasCreatedProfile: map['hasCreatedProfile'] ?? false,
       hasCompletedPreferences: map['hasCompletedPreferences'] ?? false,
       profileCompleted: map['profileCompleted'] ?? false,
+      squadsOptIn: map['squadsOptIn'] ?? false,
     );
   }
 
@@ -77,6 +83,7 @@ class UserModel {
       'age': age,
       'location': location,
       'interests': interests,
+      'gender': gender,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'lastSeen': lastSeen?.millisecondsSinceEpoch,
       'isOnline': isOnline,
@@ -84,6 +91,7 @@ class UserModel {
       'hasCreatedProfile': hasCreatedProfile,
       'hasCompletedPreferences': hasCompletedPreferences,
       'profileCompleted': profileCompleted,
+      'squadsOptIn': squadsOptIn,
     };
   }
 
@@ -97,6 +105,7 @@ class UserModel {
     int? age,
     String? location,
     List<String>? interests,
+    String? gender,
     DateTime? createdAt,
     DateTime? lastSeen,
     bool? isOnline,
@@ -104,6 +113,7 @@ class UserModel {
     bool? hasCreatedProfile,
     bool? hasCompletedPreferences,
     bool? profileCompleted,
+    bool? squadsOptIn,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -115,6 +125,7 @@ class UserModel {
       age: age ?? this.age,
       location: location ?? this.location,
       interests: interests ?? this.interests,
+      gender: gender ?? this.gender,
       createdAt: createdAt ?? this.createdAt,
       lastSeen: lastSeen ?? this.lastSeen,
       isOnline: isOnline ?? this.isOnline,
@@ -122,6 +133,7 @@ class UserModel {
       hasCreatedProfile: hasCreatedProfile ?? this.hasCreatedProfile,
       hasCompletedPreferences: hasCompletedPreferences ?? this.hasCompletedPreferences,
       profileCompleted: profileCompleted ?? this.profileCompleted,
+      squadsOptIn: squadsOptIn ?? this.squadsOptIn,
     );
   }
 }

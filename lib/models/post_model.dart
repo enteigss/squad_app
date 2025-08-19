@@ -16,6 +16,7 @@ class Post {
   final int maxParticipants;
   final List<String> genderPreferences;
   final bool deleted;
+  final bool isLocked;
   final String? lastChatMessageId;
   final DateTime? lastChatActivity;
   final int unreadChatCount;
@@ -34,6 +35,7 @@ class Post {
     this.maxParticipants = 10,
     this.genderPreferences = const ['Anyone'],
     this.deleted = false,
+    this.isLocked = false,
     this.lastChatMessageId,
     this.lastChatActivity,
     this.unreadChatCount = 0,
@@ -59,6 +61,7 @@ class Post {
       maxParticipants: map['maxParticipants'] ?? 10,
       genderPreferences: List<String>.from(map['genderPreferences'] ?? ['Anyone']),
       deleted: map['deleted'] ?? false,
+      isLocked: map['isLocked'] ?? false,
       lastChatMessageId: map['lastChatMessageId'],
       lastChatActivity: map['lastChatActivity'] != null
           ? (map['lastChatActivity'] as Timestamp).toDate()
@@ -84,6 +87,7 @@ class Post {
       'maxParticipants': maxParticipants,
       'genderPreferences': genderPreferences,
       'deleted': deleted,
+      'isLocked': isLocked,
       'lastChatMessageId': lastChatMessageId,
       'lastChatActivity': lastChatActivity != null
           ? Timestamp.fromDate(lastChatActivity!)
@@ -106,6 +110,7 @@ class Post {
     int? maxParticipants,
     List<String>? genderPreferences,
     bool? deleted,
+    bool? isLocked,
     String? lastChatMessageId,
     DateTime? lastChatActivity,
     int? unreadChatCount,
@@ -124,6 +129,7 @@ class Post {
       maxParticipants: maxParticipants ?? this.maxParticipants,
       genderPreferences: genderPreferences ?? this.genderPreferences,
       deleted: deleted ?? this.deleted,
+      isLocked: isLocked ?? this.isLocked,
       lastChatMessageId: lastChatMessageId ?? this.lastChatMessageId,
       lastChatActivity: lastChatActivity ?? this.lastChatActivity,
       unreadChatCount: unreadChatCount ?? this.unreadChatCount,

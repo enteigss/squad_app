@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Deep linking configuration -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>squad.hangout.invite</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>squadapp</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

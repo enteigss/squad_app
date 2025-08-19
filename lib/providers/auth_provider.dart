@@ -40,51 +40,6 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-  Future<void> signInWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      _setLoading(true);
-      _clearError();
-
-      _currentUser = await _authService.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (_currentUser == null) {
-        throw Exception('Failed to sign in');
-      }
-    } catch (e) {
-      _error = _getErrorMessage(e);
-      rethrow;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<void> signUpWithEmailAndPassword(String email, String password) async {
-    try {
-      _setLoading(true);
-      _clearError();
-
-      _currentUser = await _authService.signUpWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (_currentUser == null) {
-        throw Exception('Failed to create account');
-      }
-    } catch (e) {
-      _error = _getErrorMessage(e);
-      rethrow;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   Future<void> signInWithGoogle() async {
     try {
       _setLoading(true);
@@ -101,6 +56,14 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  bool _isBUEmail(String email) {
+    // Test accounts for development/testing
+    const testAccounts = ['enteigss@gmail.com', 'michael@geml.co'];
+
+    return email.toLowerCase().endsWith('@bu.edu') ||
+        testAccounts.contains(email.toLowerCase());
   }
 
   Future<void> signOut() async {
@@ -164,20 +127,6 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      _setLoading(true);
-      _clearError();
-
-      await _authService.sendPasswordResetEmail(email);
-    } catch (e) {
-      _error = _getErrorMessage(e);
-      rethrow;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   Future<bool> checkUsernameAvailability(String username) async {
     try {
       return await _authService.isUsernameAvailable(username);
@@ -226,10 +175,18 @@ class AuthProvider with ChangeNotifier {
           return error.message ?? 'An authentication error occurred.';
       }
     }
-    return error.toString();
+
+    // Handle regular exceptions by extracting just the message
+    String errorMessage = error.toString();
+    if (errorMessage.startsWith('Exception: ')) {
+      return errorMessage.substring('Exception: '.length);
+    }
+    return errorMessage;
   }
 
-  Future<void> updateAvailability(Map<String, Map<String, bool>> availability) async {
+  Future<void> updateAvailability(
+    Map<String, Map<String, bool>> availability,
+  ) async {
     try {
       _setLoading(true);
       _clearError();
@@ -238,9 +195,7 @@ class AuthProvider with ChangeNotifier {
 
       // Update the current user model to reflect completed profile
       if (_currentUser != null) {
-        _currentUser = _currentUser!.copyWith(
-          profileCompleted: true,
-        );
+        _currentUser = _currentUser!.copyWith(profileCompleted: true);
         notifyListeners();
       }
     } catch (e) {
@@ -251,6 +206,21 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> updateSquadsOptIn(bool optIn) async {
+    try {
+      await _authService.updateSquadsOptIn(optIn);
+
+      // Update the current user model to reflect the change
+      if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(squadsOptIn: optIn);
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      rethrow;
+    }
+  }
+
   Future<void> updatePreferences({
     Map<String, int>? importanceRatings,
     String? personalityType,
@@ -258,6 +228,8 @@ class AuthProvider with ChangeNotifier {
     String? conversationStyle,
     String? socialInteractionPreference,
     List<String>? genderPreferences,
+    Map<String, Map<String, int>>? activityPreferences,
+    String? userGender,
   }) async {
     try {
       _setLoading(true);
@@ -270,12 +242,15 @@ class AuthProvider with ChangeNotifier {
         conversationStyle: conversationStyle,
         socialInteractionPreference: socialInteractionPreference,
         genderPreferences: genderPreferences,
+        activityPreferences: activityPreferences,
+        userGender: userGender,
       );
 
       // Update the current user model to reflect completed preferences
       if (_currentUser != null) {
         _currentUser = _currentUser!.copyWith(
           hasCompletedPreferences: true,
+          gender: userGender ?? _currentUser!.gender,
         );
         notifyListeners();
       }

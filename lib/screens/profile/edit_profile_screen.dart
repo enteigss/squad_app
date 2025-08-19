@@ -28,6 +28,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _bioController;
   late final TextEditingController _locationController;
   late final TextEditingController _ageController;
+  final TextEditingController _interestController = TextEditingController();
 
   // State
   Set<String> _selectedInterests = {};
@@ -78,6 +79,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _bioController.dispose();
     _locationController.dispose();
     _ageController.dispose();
+    _interestController.dispose();
     super.dispose();
   }
 
@@ -94,18 +96,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Profile Picture Section
               _buildProfilePictureSection(),
               
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
               
               // Display Name
               _buildSectionTitle('Display Name'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               CustomTextField(
                 controller: _displayNameController,
                 hint: 'Enter your display name',
@@ -120,11 +122,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 },
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Bio
               _buildSectionTitle('Bio (optional)'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               CustomTextField(
                 controller: _bioController,
                 hint: 'Tell us about yourself...',
@@ -137,21 +139,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 },
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Location
               _buildSectionTitle('Location (optional)'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               CustomTextField(
                 controller: _locationController,
-                hint: 'City, State or University',
+                hint: 'Enter your dorm',
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Age
               _buildSectionTitle('Age (optional)'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               CustomTextField(
                 controller: _ageController,
                 hint: 'Enter your age',
@@ -170,14 +172,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 },
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Interests
               _buildSectionTitle('Interests (optional)'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               _buildInterestsSelector(),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
               // Error message
               if (_error != null)
@@ -213,7 +215,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       children: [
         // Profile Picture
         CircleAvatar(
-          radius: 60,
+          radius: 40,
           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
           backgroundImage: widget.user.photoUrl != null 
             ? NetworkImage(widget.user.photoUrl!) 
@@ -221,13 +223,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: widget.user.photoUrl == null
             ? Icon(
                 Icons.person,
-                size: 60,
+                size: 40,
                 color: AppColors.primary,
               )
             : null,
         ),
         
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         
         // Change Photo Button (placeholder for now)
         TextButton.icon(
@@ -254,44 +256,104 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildInterestsSelector() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Add Custom Interest Field
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  controller: _interestController,
+                  hint: 'Add custom interest',
+                  textInputAction: TextInputAction.done,
+                  onChanged: (value) {
+                    if (value.endsWith('\n')) {
+                      _addCustomInterest(value.trim());
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _addCustomInterest(_interestController.text.trim()),
+                icon: const Icon(Icons.add),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Selected Interests (if any)
+          if (_selectedInterests.isNotEmpty) ...[
+            Text(
+              'Your Interests (${_selectedInterests.length})',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _selectedInterests.map((interest) {
+                return Chip(
+                  label: Text(interest),
+                  onDeleted: () => _removeInterest(interest),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  deleteIconColor: AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          // Available Interests
           Text(
-            'Select your interests (tap to toggle):',
+            'Popular Interests (tap to add):',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _availableInterests.map((interest) {
-              final isSelected = _selectedInterests.contains(interest);
+            spacing: 6,
+            runSpacing: 6,
+            children: _availableInterests
+                .where((interest) => !_selectedInterests.contains(interest))
+                .map((interest) {
               return GestureDetector(
                 onTap: () => _toggleInterest(interest),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isSelected 
-                        ? AppColors.primary 
-                        : AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: AppColors.primary.withValues(alpha: 0.3),
                     ),
@@ -299,8 +361,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Text(
                     interest,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.primary,
-                      fontSize: 14,
+                      color: AppColors.primary,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -308,16 +370,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               );
             }).toList(),
           ),
-          if (_selectedInterests.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${_selectedInterests.length} selected',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -330,6 +382,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       } else {
         _selectedInterests.add(interest);
       }
+    });
+  }
+
+  void _addCustomInterest(String interest) {
+    if (interest.isNotEmpty && !_selectedInterests.contains(interest)) {
+      setState(() {
+        _selectedInterests.add(interest);
+        _interestController.clear();
+      });
+    }
+  }
+
+  void _removeInterest(String interest) {
+    setState(() {
+      _selectedInterests.remove(interest);
     });
   }
 
