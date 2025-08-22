@@ -22,473 +22,344 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hangoutPreview = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const app = (0, express_1.default)();
-app.use((0, cors_1.default)({ origin: true }));
-// Helper function to format date/time for display
-function formatDateTime(timestamp) {
-    if (!timestamp)
-        return "TBD";
-    const date = timestamp.toDate();
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const isTomorrow = date.toDateString() ===
-        new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
-    if (isToday) {
-        return `Today at ${date.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        })}`;
+exports.hangoutPreview = (0, https_1.onRequest)(async (req, res) => {
+    try {
+        // Extract hangout ID from URL path: /hangout/abc123
+        const pathParts = req.path.split('/');
+        const hangoutId = pathParts[2]; // /hangout/[ID]
+        if (!hangoutId) {
+            res.status(404).send(generateErrorPage("Hangout not found"));
+            return;
+        }
+        // Fetch hangout from Firestore
+        const hangoutDoc = await admin.firestore()
+            .collection('posts')
+            .doc(hangoutId)
+            .get();
+        if (!hangoutDoc.exists) {
+            res.status(404).send(generateErrorPage("This hangout doesn't exist"));
+            return;
+        }
+        const hangout = hangoutDoc.data();
+        // Generate the landing page
+        const html = generateHangoutPage(hangout, hangoutId);
+        res.set('Content-Type', 'text/html');
+        res.send(html);
     }
-    else if (isTomorrow) {
-        return `Tomorrow at ${date.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        })}`;
+    catch (error) {
+        console.error('Error generating hangout preview:', error);
+        res.status(500).send(generateErrorPage("Something went wrong"));
     }
-    else {
-        return `${date.toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-        })} at ${date.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        })}`;
-    }
-}
-// Helper function to get relative time
-function getRelativeTime(timestamp) {
-    if (!timestamp)
-        return "";
-    const date = timestamp.toDate();
-    const now = new Date();
-    const diffMs = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    if (diffMs < 0)
-        return "Past event";
-    if (diffDays === 0)
-        return "Today";
-    if (diffDays === 1)
-        return "Tomorrow";
-    if (diffDays < 7)
-        return `In ${diffDays} days`;
-    return `${date.toLocaleDateString()}`;
-}
-// Generate the mobile-optimized HTML page
-function generateHangoutPreviewHTML(hangout, inviterName) {
+});
+function generateHangoutPage(hangout, hangoutId) {
     var _a;
-    const dateTime = formatDateTime(hangout.scheduledTime);
-    const relativeTime = getRelativeTime(hangout.scheduledTime);
-    const location = hangout.location || "Location TBD";
+    // Format date/time
+    let dateTimeStr = "soon";
+    if (hangout.scheduledTime) {
+        const date = hangout.scheduledTime.toDate();
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+        const isTomorrow = date.toDateString() ===
+            new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
+        if (isToday) {
+            dateTimeStr = `today at ${date.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+            })}`;
+        }
+        else if (isTomorrow) {
+            dateTimeStr = `tomorrow at ${date.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+            })}`;
+        }
+        else {
+            dateTimeStr = `${date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+            })} at ${date.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+            })}`;
+        }
+    }
     const participantCount = ((_a = hangout.participantIds) === null || _a === void 0 ? void 0 : _a.length) || 1;
-    const description = hangout.description || "";
-    // Deep link URLs for app stores
-    const appStoreUrl = "https://apps.apple.com/app/squad"; // Replace with actual App Store URL
-    const playStoreUrl = "https://play.google.com/store/apps/details?id=com.squad.app"; // Replace with actual Play Store URL
-    const deepLink = `squadapp://hangout/${hangout.id}?inviter=${hangout.authorId}`;
+    const location = hangout.location || "TBD";
+    const title = hangout.title || "Hangout";
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Join "${hangout.title}" on Squad</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join ${title} - Squad</title>
     
-    <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="${hangout.title} - Squad Hangout">
-    <meta property="og:description" content="${inviterName} invited you to join this hangout. ${participantCount} people going.">
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="You're invited to ${title}">
+    <meta property="og:description" content="${dateTimeStr} at ${location} • ${participantCount} people going">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://${process.env.GCLOUD_PROJECT}.web.app/hangout/${hangout.id}">
+    <meta property="og:url" content="https://${process.env.GCLOUD_PROJECT}.web.app/hangout/${hangoutId}">
     
-    <!-- Twitter Card Meta Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${hangout.title} - Squad Hangout">
-    <meta name="twitter:description" content="${inviterName} invited you to join this hangout">
-    
-    <!-- iOS Smart App Banner -->
-    <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID, app-argument=${deepLink}">
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="You're invited to ${title}">
+    <meta name="twitter:description" content="${dateTimeStr} at ${location} • ${participantCount} people going">
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
-            color: #333;
-        }
-        
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-            animation: slideUp 0.6s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-            padding: 30px 25px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        .header-content {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .invitation {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-        
-        .content {
-            padding: 30px 25px;
-        }
-        
-        .hangout-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #1f2937;
-            line-height: 1.3;
-        }
-        
-        .detail-row {
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
-            padding: 12px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border-left: 4px solid #6366f1;
+            justify-content: center;
         }
-        
-        .detail-icon {
-            width: 20px;
-            height: 20px;
-            margin-right: 12px;
-            opacity: 0.7;
-        }
-        
-        .detail-text {
-            flex: 1;
-            font-size: 14px;
-            color: #4b5563;
-        }
-        
-        .detail-text strong {
-            color: #1f2937;
-            display: block;
-            font-size: 15px;
-        }
-        
-        .description {
-            background: #f1f5f9;
-            padding: 16px;
-            border-radius: 12px;
-            margin: 20px 0;
-            font-size: 14px;
-            line-height: 1.5;
-            color: #475569;
-        }
-        
-        .participants {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .participants-count {
-            font-size: 28px;
-            font-weight: bold;
-            display: block;
-        }
-        
-        .participants-label {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .cta-section {
-            margin-top: 30px;
-            text-align: center;
-        }
-        
-        .join-button {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-            border: none;
-            padding: 18px 32px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        .container { 
+            max-width: 400px; 
             width: 100%;
-            margin-bottom: 15px;
+            background: white; 
+            border-radius: 20px; 
+            padding: 32px 24px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            text-align: center;
         }
-        
-        .join-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
+        .emoji { font-size: 48px; margin-bottom: 16px; }
+        .invite-text { color: #666; font-size: 16px; margin-bottom: 8px; }
+        .title { 
+            font-size: 28px; 
+            font-weight: bold; 
+            margin-bottom: 24px; 
+            color: #333;
+            line-height: 1.2;
         }
-        
-        .app-links {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
+        .details { margin-bottom: 32px; }
+        .detail-item { 
+            margin-bottom: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 16px;
+            color: #555;
         }
-        
-        .app-link {
-            flex: 1;
-            padding: 12px 16px;
-            background: #374151;
-            color: white;
-            text-decoration: none;
-            border-radius: 12px;
+        .detail-emoji { margin-right: 8px; font-size: 18px; }
+        .button { 
+            display: block; 
+            width: 100%; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            text-decoration: none; 
+            text-align: center; 
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .button:hover { transform: translateY(-1px); }
+        .primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .primary:hover { box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4); }
+        .secondary { 
+            background: #f8f9fa; 
+            color: #555; 
+            border: 2px solid #e9ecef;
+        }
+        .secondary:hover { background: #e9ecef; }
+        .hidden { display: none; }
+        .footer { 
+            margin-top: 24px; 
+            padding-top: 24px; 
+            border-top: 1px solid #eee; 
+            color: #999; 
             font-size: 14px;
-            text-align: center;
-            transition: background 0.3s ease;
         }
-        
-        .app-link:hover {
-            background: #4b5563;
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 20px;
-            font-size: 12px;
-            color: #6b7280;
-            background: #f9fafb;
-        }
-        
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
         @media (max-width: 480px) {
-            .container {
-                margin: 10px;
-                border-radius: 16px;
-            }
-            
-            .content {
-                padding: 25px 20px;
-            }
-            
-            .hangout-title {
-                font-size: 22px;
-            }
+            .container { margin: 10px; padding: 24px 20px; }
+            .title { font-size: 24px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="header-content">
-                <div class="logo">🎉 Squad</div>
-                <div class="invitation">${inviterName} invited you!</div>
-            </div>
-        </div>
+        <div class="emoji">🎉</div>
+        <div class="invite-text">You're invited to</div>
+        <div class="title">${title}</div>
         
-        <div class="content">
-            <h1 class="hangout-title">${hangout.title}</h1>
-            
-            <div class="detail-row">
-                <svg class="detail-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                </svg>
-                <div class="detail-text">
-                    <strong>${dateTime}</strong>
-                    ${relativeTime}
-                </div>
+        <div class="details">
+            <div class="detail-item">
+                <span class="detail-emoji">📅</span>
+                <span>${dateTimeStr}</span>
             </div>
-            
-            <div class="detail-row">
-                <svg class="detail-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                </svg>
-                <div class="detail-text">
-                    <strong>${location}</strong>
-                </div>
+            <div class="detail-item">
+                <span class="detail-emoji">📍</span>
+                <span>${location}</span>
             </div>
-            
-            ${description ? `<div class="description">${description}</div>` : ''}
-            
-            <div class="participants">
-                <span class="participants-count">${participantCount}</span>
-                <span class="participants-label">people going</span>
-            </div>
-            
-            <div class="cta-section">
-                <button class="join-button pulse" onclick="tryOpenApp()">
-                    Join Hangout
-                </button>
-                
-                <div class="app-links">
-                    <a href="${appStoreUrl}" class="app-link">📱 App Store</a>
-                    <a href="${playStoreUrl}" class="app-link">🤖 Play Store</a>
-                </div>
+            <div class="detail-item">
+                <span class="detail-emoji">👥</span>
+                <span>${participantCount} people going</span>
             </div>
         </div>
+
+        <!-- Continue in App button (hidden by default) -->
+        <a href="squadapp://hangout/${hangoutId}" class="button primary hidden" id="continueBtn">
+            📱 Continue in App
+        </a>
+        
+        <!-- Download buttons -->
+        <a href="#" class="button primary hidden" id="iosBtn">
+            📲 Download for iPhone
+        </a>
+        
+        <a href="#" class="button primary hidden" id="androidBtn">
+            🤖 Download for Android
+        </a>
+        
+        <a href="#" class="button secondary" onclick="copyLink()">
+            🔗 Copy Invite Link
+        </a>
         
         <div class="footer">
-            Download Squad to join hangouts with friends
+            Join the Squad app to see who's down for anything!
         </div>
     </div>
 
     <script>
-        function tryOpenApp() {
-            const deepLink = "${deepLink}";
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isAndroid = /Android/.test(navigator.userAgent);
-            
-            // Try to open the app
-            window.location.href = deepLink;
-            
-            // Fallback to app store after a delay
-            setTimeout(() => {
-                if (isIOS) {
-                    window.location.href = "${appStoreUrl}";
-                } else if (isAndroid) {
-                    window.location.href = "${playStoreUrl}";
-                } else {
-                    // Desktop users - show app store links
-                    alert("Download the Squad app on your mobile device to join hangouts!");
-                }
-            }, 2000);
+        // Platform detection
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        const isMobile = isIOS || isAndroid;
+        
+        // Show appropriate buttons
+        if (isIOS) {
+            document.getElementById('iosBtn').classList.remove('hidden');
+            // Replace with your actual TestFlight link
+            document.getElementById('iosBtn').href = 'https://testflight.apple.com/join/YOUR_TESTFLIGHT_LINK';
+        } else if (isAndroid) {
+            document.getElementById('androidBtn').classList.remove('hidden');
+            // Replace with your actual APK download link or Firebase App Distribution
+            document.getElementById('androidBtn').href = 'https://appdistribution.firebase.dev/i/YOUR_DISTRIBUTION_LINK';
         }
         
-        // Auto-redirect if coming from SMS on mobile
-        if (window.location.search.includes('src=sms') && 
-            (/iPad|iPhone|iPod|Android/.test(navigator.userAgent))) {
-            // Small delay to let page load
-            setTimeout(tryOpenApp, 1000);
+        // Show "Continue in App" if mobile (user might have app installed)
+        if (isMobile) {
+            document.getElementById('continueBtn').classList.remove('hidden');
+            
+            // Try to detect if app is installed (iOS only)
+            if (isIOS) {
+                // Attempt to open the app, fallback to download if it fails
+                document.getElementById('continueBtn').addEventListener('click', function(e) {
+                    const timeout = setTimeout(function() {
+                        // If we're still here after 500ms, app probably isn't installed
+                        document.getElementById('iosBtn').scrollIntoView();
+                    }, 500);
+                    
+                    window.addEventListener('blur', function() {
+                        clearTimeout(timeout);
+                    });
+                });
+            }
         }
+        
+        function copyLink() {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href).then(function() {
+                    alert('Link copied to clipboard!');
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = window.location.href;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Link copied to clipboard!');
+            }
+        }
+        
+        // Add some loading animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(function() {
+                container.style.transition = 'all 0.5s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        });
     </script>
 </body>
 </html>`;
 }
-// Main handler for hangout preview requests
-app.get('/hangout/:hangoutId', async (req, res) => {
-    try {
-        const { hangoutId } = req.params;
-        const { inviter } = req.query;
-        if (!hangoutId) {
-            return res.status(400).send("Hangout ID is required");
+function generateErrorPage(message) {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squad - ${message}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
         }
-        // Get hangout details from Firestore
-        const hangoutRef = admin.firestore().collection("posts").doc(hangoutId);
-        const hangoutDoc = await hangoutRef.get();
-        if (!hangoutDoc.exists) {
-            return res.status(404).send(`
-        <html>
-          <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1>Hangout Not Found</h1>
-            <p>This hangout may have been deleted or the link is invalid.</p>
-            <a href="https://squad.app">Download Squad App</a>
-          </body>
-        </html>
-      `);
+        .error-container {
+            max-width: 400px;
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
         }
-        const hangout = hangoutDoc.data();
-        // Get inviter name if provided
-        let inviterName = hangout.authorName || "Someone";
-        if (inviter && inviter !== hangout.authorId) {
-            try {
-                const inviterRef = admin.firestore().collection("users").doc(inviter);
-                const inviterDoc = await inviterRef.get();
-                if (inviterDoc.exists) {
-                    const inviterData = inviterDoc.data();
-                    inviterName = inviterData.displayName || inviterData.firstName || "Someone";
-                }
-            }
-            catch (error) {
-                // Use default name if we can't fetch inviter details
-            }
+        h1 { margin-bottom: 16px; color: #333; }
+        p { margin-bottom: 24px; color: #666; }
+        a { 
+            color: #667eea; 
+            text-decoration: none; 
+            font-weight: 600;
+            display: inline-block;
+            padding: 12px 24px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.2s ease;
         }
-        // Generate and send HTML
-        const html = generateHangoutPreviewHTML(hangout, inviterName);
-        res.set('Content-Type', 'text/html');
-        return res.send(html);
-    }
-    catch (error) {
-        console.error("Error generating hangout preview:", error);
-        return res.status(500).send(`
-      <html>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-          <h1>Error Loading Hangout</h1>
-          <p>Something went wrong. Please try again later.</p>
-          <a href="https://squad.app">Download Squad App</a>
-        </body>
-      </html>
-    `);
-    }
-});
-exports.hangoutPreview = (0, https_1.onRequest)(app);
+        a:hover { background: #e9ecef; transform: translateY(-1px); }
+        .emoji { font-size: 48px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="emoji">😕</div>
+        <h1>${message}</h1>
+        <p>Get the Squad app to create and join hangouts with friends!</p>
+        <a href="/">← Back to Squad</a>
+    </div>
+</body>
+</html>`;
+}
 //# sourceMappingURL=web-preview.js.map

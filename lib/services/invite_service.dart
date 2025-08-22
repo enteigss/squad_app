@@ -8,7 +8,7 @@ import '../utils/colors.dart';
 
 class InviteService {
   static const String _functionsBaseUrl =
-      'https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net';
+      'https://us-central1-squad-7bc7e.cloudfunctions.net';
 
   // Track loading dialog state
   static bool _isLoadingDialogShowing = false;
@@ -167,14 +167,43 @@ class InviteService {
     required List<String> phoneNumbers,
     required String inviterName,
   }) async {
+    print('🚀 DEBUG: sendSMSInvites() - Starting SMS invite process');
+    print('📋 DEBUG: sendSMSInvites() - hangoutId: $hangoutId');
+    print('📋 DEBUG: sendSMSInvites() - phoneNumbers: $phoneNumbers');
+    print('📋 DEBUG: sendSMSInvites() - inviterName: $inviterName');
+
     try {
       final user = FirebaseAuth.instance.currentUser;
+      print('👤 DEBUG: sendSMSInvites() - Checking user authentication');
+
       if (user == null) {
+        print('❌ DEBUG: sendSMSInvites() - User not authenticated');
         throw Exception('User not authenticated');
       }
 
+      print('✅ DEBUG: sendSMSInvites() - User authenticated: ${user.uid}');
+
       // Get ID token for authentication
+      print('🔐 DEBUG: sendSMSInvites() - Getting ID token');
       final idToken = await user.getIdToken();
+      print('✅ DEBUG: sendSMSInvites() - ID token obtained');
+
+      final requestBody = {
+        'data': {
+          'hangoutId': hangoutId,
+          'phoneNumbers': phoneNumbers,
+          'inviterName': inviterName,
+          'inviterId': user.uid,
+        },
+      };
+
+      print('📤 DEBUG: sendSMSInvites() - Preparing HTTP request');
+      print(
+        '🌐 DEBUG: sendSMSInvites() - URL: $_functionsBaseUrl/sendSMSInvite',
+      );
+      print(
+        '📋 DEBUG: sendSMSInvites() - Request body: ${jsonEncode(requestBody)}',
+      );
 
       final response = await http.post(
         Uri.parse('$_functionsBaseUrl/sendSMSInvite'),
@@ -182,23 +211,42 @@ class InviteService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
-        body: jsonEncode({
-          'data': {
-            'hangoutId': hangoutId,
-            'phoneNumbers': phoneNumbers,
-            'inviterName': inviterName,
-            'inviterId': user.uid,
-          },
-        }),
+        body: jsonEncode(requestBody),
       );
 
+      print('📥 DEBUG: sendSMSInvites() - HTTP response received');
+      print('📊 DEBUG: sendSMSInvites() - Status code: ${response.statusCode}');
+      print('📋 DEBUG: sendSMSInvites() - Response body: ${response.body}');
+
       if (response.statusCode == 200) {
+        print('✅ DEBUG: sendSMSInvites() - Success response, parsing data');
         final data = jsonDecode(response.body);
-        return SMSInviteResult.fromJson(data['result']);
+        print('📋 DEBUG: sendSMSInvites() - Parsed response data: $data');
+
+        final result = SMSInviteResult.fromJson(data['result']);
+        print(
+          '✅ DEBUG: sendSMSInvites() - SMS invite process completed successfully',
+        );
+        print(
+          '📊 DEBUG: sendSMSInvites() - Result: ${result.success ? "SUCCESS" : "FAILED"}',
+        );
+        print(
+          '📊 DEBUG: sendSMSInvites() - Successful: ${result.successfulInvites}, Failed: ${result.failedInvites}',
+        );
+
+        return result;
       } else {
-        throw Exception('Failed to send invites: ${response.statusCode}');
+        print('❌ DEBUG: sendSMSInvites() - HTTP error: ${response.statusCode}');
+        print(
+          '📋 DEBUG: sendSMSInvites() - Error response body: ${response.body}',
+        );
+        throw Exception(
+          'Failed to send invites: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
+      print('💥 DEBUG: sendSMSInvites() - Exception caught: $e');
+      print('📍 DEBUG: sendSMSInvites() - Exception type: ${e.runtimeType}');
       throw Exception('Error sending SMS invites: $e');
     }
   }

@@ -184,16 +184,23 @@ class AuthService {
               'squadsOptIn': false,
             };
 
-            await _firestore
-                .collection('users')
-                .doc(result.user!.uid)
-                .set(userData);
+            try {
+              await _firestore
+                  .collection('users')
+                  .doc(result.user!.uid)
+                  .set(userData);
 
-            // Check for pending party pack invitations
-            await _processPendingInvitations(result.user!.email ?? '');
+              // Check for pending party pack invitations
+              await _processPendingInvitations(result.user!.email ?? '');
 
-            print('✅ User document created successfully');
-            return newUser;
+              print('✅ User document created successfully');
+              return newUser;
+            } catch (e) {
+              print('❌ Error creating user document: $e');
+              // Still return the user model even if Firestore write fails
+              // The auth state will be valid, and user can retry later
+              return newUser;
+            }
           } else {
             print('🔄 Updating existing user online status');
             // Update online status for existing user
@@ -234,6 +241,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
+      print('❌ getUserData error for uid $uid: $e');
       throw e;
     }
   }
