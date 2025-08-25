@@ -56,6 +56,14 @@
 				<string>squadapp</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google.sign.in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.555170207131-48j27qqt1f1otcb39rm1sl05qn61uone</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
