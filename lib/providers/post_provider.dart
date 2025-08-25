@@ -202,6 +202,22 @@ class PostProvider with ChangeNotifier {
     }
   }
 
+  // Delete a post with hybrid feedback approach
+  Future<bool> deletePostWithFeedback(String postId, String authorId, {bool? authorDidMeetup, String? authorAdditionalFeedback}) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _postService.deletePostWithFeedback(postId, authorId, authorDidMeetup: authorDidMeetup, authorAdditionalFeedback: authorAdditionalFeedback);
+      return true;
+    } catch (e) {
+      _setError('Failed to delete post with feedback: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Lock a post (hide from discovery)
   Future<bool> lockPost(String postId) async {
     try {

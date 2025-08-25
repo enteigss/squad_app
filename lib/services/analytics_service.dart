@@ -309,6 +309,27 @@ class AnalyticsService {
     );
   }
 
+  // Meetup feedback tracking
+  Future<void> trackMeetupFeedbackSubmitted({
+    required String hangoutId,
+    required bool didMeetup,
+    bool hasAdditionalFeedback = false,
+  }) async {
+    await _analytics.logEvent(
+      name: 'meetup_feedback_submitted',
+      parameters: {
+        'hangout_id': hangoutId,
+        'did_meetup': didMeetup ? 1 : 0,
+        'has_additional_feedback': hasAdditionalFeedback ? 1 : 0,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+    
+    if (kDebugMode) {
+      print('Analytics: Meetup feedback submitted - hangout: $hangoutId, success: $didMeetup');
+    }
+  }
+
   // Reset first-time flags (useful for testing or if user logs out and back in)
   void resetFirstTimeFlags() {
     _isFirstHangoutView = true;

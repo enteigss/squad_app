@@ -59,7 +59,7 @@ class AuthProvider with ChangeNotifier {
           method: 'google',
           userId: _currentUser!.id,
         );
-        
+
         // Set user properties for analytics
         await AnalyticsService().setUserId(_currentUser!.id);
         await AnalyticsService().setUserProperties(
@@ -94,10 +94,10 @@ class AuthProvider with ChangeNotifier {
       _clearError();
 
       await _authService.signOut();
-      
+
       // Reset analytics first-time flags for new user session
       AnalyticsService().resetFirstTimeFlags();
-      
+
       _currentUser = null;
     } catch (e) {
       _error = _getErrorMessage(e);

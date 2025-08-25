@@ -7,6 +7,7 @@ import '../../providers/post_provider.dart';
 import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/deletion_feedback_dialog.dart';
 import 'create_post_screen.dart';
 import 'group_members_screen.dart';
 
@@ -785,47 +786,49 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<void> _deletePost(Post post, PostProvider postProvider) async {
-    // Show confirmation dialog
-    final bool? shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Hangout'),
-          content: Text(
-            'Are you sure you want to delete "${post.title}"? This action cannot be undone.',
-          ),
-          backgroundColor: AppColors.surface,
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('Delete'),
-            ),
-          ],
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+    
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Authentication error'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Show feedback dialog for immediate author feedback
+    await DeletionFeedbackDialog.show(
+      context,
+      hangoutTitle: post.title,
+      onCancel: () {
+        // User cancelled deletion - do nothing
+      },
+      onConfirmDelete: (didMeetup, additionalFeedback) async {
+        // User confirmed deletion with feedback - proceed with hybrid deletion
+        final success = await postProvider.deletePostWithFeedback(
+          post.id,
+          currentUser.id,
+          authorDidMeetup: didMeetup,
+          authorAdditionalFeedback: additionalFeedback,
         );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                success
+                    ? 'Deleted "${post.title}" and saved feedback'
+                    : postProvider.error ?? 'Failed to delete hangout',
+              ),
+              backgroundColor: success ? AppColors.success : AppColors.error,
+            ),
+          );
+        }
       },
     );
-
-    if (shouldDelete == true) {
-      final success = await postProvider.deletePost(post.id);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? 'Deleted "${post.title}"'
-                  : postProvider.error ?? 'Failed to delete hangout',
-            ),
-            backgroundColor: success ? AppColors.success : AppColors.error,
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _toggleLockPost(Post post, PostProvider postProvider) async {

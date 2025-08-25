@@ -20,6 +20,7 @@ class Post {
   final String? lastChatMessageId;
   final DateTime? lastChatActivity;
   final int unreadChatCount;
+  final bool feedbackCollected;
 
   Post({
     required this.id,
@@ -39,6 +40,7 @@ class Post {
     this.lastChatMessageId,
     this.lastChatActivity,
     this.unreadChatCount = 0,
+    this.feedbackCollected = false,
   });
 
   factory Post.fromMap(Map<String, dynamic> map) {
@@ -67,6 +69,7 @@ class Post {
           ? (map['lastChatActivity'] as Timestamp).toDate()
           : null,
       unreadChatCount: map['unreadChatCount'] ?? 0,
+      feedbackCollected: map['feedbackCollected'] ?? false,
     );
   }
 
@@ -93,6 +96,7 @@ class Post {
           ? Timestamp.fromDate(lastChatActivity!)
           : null,
       'unreadChatCount': unreadChatCount,
+      'feedbackCollected': feedbackCollected,
     };
   }
 
@@ -114,6 +118,7 @@ class Post {
     String? lastChatMessageId,
     DateTime? lastChatActivity,
     int? unreadChatCount,
+    bool? feedbackCollected,
   }) {
     return Post(
       id: id ?? this.id,
@@ -133,6 +138,7 @@ class Post {
       lastChatMessageId: lastChatMessageId ?? this.lastChatMessageId,
       lastChatActivity: lastChatActivity ?? this.lastChatActivity,
       unreadChatCount: unreadChatCount ?? this.unreadChatCount,
+      feedbackCollected: feedbackCollected ?? this.feedbackCollected,
     );
   }
 

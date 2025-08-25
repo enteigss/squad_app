@@ -8,6 +8,7 @@ import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/user_preferences_provider.dart';
+import 'providers/feedback_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/auth/preferences_screen.dart';
@@ -65,6 +66,7 @@ class _SquadAppState extends State<SquadApp> {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => UserPreferencesProvider()),
+        ChangeNotifierProvider(create: (_) => FeedbackProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {

@@ -23,6 +23,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   DateTime? _selectedDateTime;
   String _selectedGender = 'Anyone';
   bool _showSuggestions = false;
+  int _maxParticipants = 10;
 
   // Dynamic gender preference options based on user's gender
   List<String> _getGenderPreferenceOptions(String? userGender) {
@@ -119,6 +120,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               _buildSectionTitle('Who are you looking to hang out with?'),
               const SizedBox(height: 8),
               _buildGenderSelector(),
+
+              const SizedBox(height: 24),
+
+              // Max Participants Section
+              _buildSectionTitle('How many people can join?'),
+              const SizedBox(height: 8),
+              _buildMaxParticipantsSelector(),
 
               const SizedBox(height: 40),
 
@@ -567,6 +575,123 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
+  Widget _buildMaxParticipantsSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.group, color: AppColors.primary, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Maximum participants',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              // Decrease button
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  onPressed: _maxParticipants > 2 ? _decreaseMaxParticipants : null,
+                  icon: Icon(
+                    Icons.remove,
+                    color: _maxParticipants > 2 
+                        ? AppColors.primary 
+                        : AppColors.textSecondary.withOpacity(0.5),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Number display
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '$_maxParticipants people',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Increase button
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  onPressed: _maxParticipants < 20 ? _increaseMaxParticipants : null,
+                  icon: Icon(
+                    Icons.add,
+                    color: _maxParticipants < 20 
+                        ? AppColors.primary 
+                        : AppColors.textSecondary.withOpacity(0.5),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Choose between 2-20 people. Your hangout will automatically close when this limit is reached.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCreateButton() {
     return CustomButton(
       text: 'Create Hangout',
@@ -695,6 +820,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
   }
 
+  void _increaseMaxParticipants() {
+    if (_maxParticipants < 20) {
+      setState(() {
+        _maxParticipants++;
+      });
+    }
+  }
+
+  void _decreaseMaxParticipants() {
+    if (_maxParticipants > 2) {
+      setState(() {
+        _maxParticipants--;
+      });
+    }
+  }
+
   Future<void> _createPost() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedDateTime == null) {
@@ -754,6 +895,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           authorName: currentUser.displayName ?? 'Unknown User',
           scheduledTime: _selectedDateTime!,
           genderPreferences: [_selectedGender],
+          maxParticipants: _maxParticipants,
         );
 
         // Dismiss loading dialog

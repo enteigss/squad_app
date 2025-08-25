@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
 import 'edit_profile_screen.dart';
 import 'edit_matching_preferences_screen.dart';
+import 'analytics_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -135,6 +137,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
+
+                // Analytics Button (Debug only)
+                if (kDebugMode) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _viewAnalytics,
+                      icon: const Icon(Icons.analytics, size: 18),
+                      label: const Text('View Analytics (Debug)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.textSecondary.withOpacity(0.1),
+                        foregroundColor: AppColors.textSecondary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: AppColors.textSecondary.withOpacity(0.3), width: 1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           );
@@ -259,6 +283,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     }
+  }
+
+  void _viewAnalytics() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AnalyticsScreen(),
+      ),
+    );
   }
 
   void _showSignOutDialog() {
