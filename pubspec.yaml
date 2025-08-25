@@ -56,9 +56,6 @@ dependencies:
   intl: ^0.19.0
   uuid: ^4.3.3
   
-  # Contact picking for SMS invites
-  flutter_contacts: ^1.1.9
-  permission_handler: ^11.3.0
   
   # HTTP requests for cloud functions
   http: ^1.1.0
