@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/post_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
+import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import 'create_post_screen.dart';
@@ -735,6 +736,18 @@ class _FeedScreenState extends State<FeedScreen> {
     PostProvider postProvider,
   ) async {
     final success = await postProvider.joinPost(post.id, userId);
+
+    // Track hangout join attempt from feed screen
+    await AnalyticsService().trackHangoutJoined(
+      hangoutId: post.id,
+      hangoutTitle: post.title,
+      userId: userId,
+      authorId: post.authorId,
+      participantsAfterJoin: success ? post.participantIds.length + 1 : post.participantIds.length,
+      maxParticipants: post.maxParticipants,
+      isSuccessful: success,
+      joinSource: 'feed_screen',
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
+import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/invite_options_modal.dart';
@@ -759,11 +760,28 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         if (mounted) Navigator.of(context).pop();
 
         if (success) {
-          // Show success message with invite option
+          // Track hangout creation in analytics
+          final hangoutId = postProvider.lastCreatedPostId ?? '';
+          await AnalyticsService().trackHangoutCreated(
+            hangoutId: hangoutId,
+            title: _titleController.text.trim(),
+            authorId: currentUser.id,
+            scheduledTime: _selectedDateTime!,
+            genderPreference: _selectedGender,
+            hasDescription: _descriptionController.text.trim().isNotEmpty,
+          );
+
+          // Navigate back to hangouts page first
           if (mounted) {
+            print(
+              'DEBUG: Hangout created successfully, navigating to hangouts page',
+            );
+            context.pop(); // Return to hangouts page
+
+            // Then show success message with invite option on hangouts page
             _showSuccessWithInviteOption(
               hangoutTitle: _titleController.text.trim(),
-              hangoutId: postProvider.lastCreatedPostId ?? '',
+              hangoutId: hangoutId,
               inviterName: currentUser.displayName ?? 'Unknown User',
             );
           }
@@ -837,8 +855,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              context.pop(); // Go back to feed
+              print(
+                'DEBUG: Maybe Later button pressed - closing success dialog',
+              );
+              Navigator.of(context).pop(); // Just close the dialog
             },
             child: const Text(
               'Maybe Later',
@@ -847,18 +867,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () {
-              Navigator.of(context).pop();
+              print(
+                'DEBUG: Invite Friends button pressed - closing success dialog and opening invite modal',
+              );
+              Navigator.of(context).pop(); // Close success dialog
               InviteOptionsModal.show(
                 context,
                 hangoutId: hangoutId,
                 hangoutTitle: hangoutTitle,
                 inviterName: inviterName,
-              ).then((_) {
-                // Navigate back to feed after invite flow - check if context is still mounted
-                if (context.mounted) {
-                  context.pop();
-                }
-              });
+              );
+              // No .then() callback needed - user is already on hangouts page
             },
             icon: const Icon(Icons.person_add, size: 18),
             label: const Text('Invite Friends'),

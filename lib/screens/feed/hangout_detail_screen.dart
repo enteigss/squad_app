@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/post_model.dart';
+import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 
@@ -27,6 +28,26 @@ class HangoutDetailScreen extends StatelessWidget {
       body: Consumer2<PostProvider, AuthProvider>(
         builder: (context, postProvider, authProvider, child) {
           final hangout = postProvider.getPostById(hangoutId);
+          final currentUser = authProvider.currentUser;
+          
+          // Track hangout view when we have data
+          if (hangout != null && currentUser != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final canJoin = postProvider.canUserJoinPost(hangout, currentUser.id);
+              final isParticipant = hangout.participantIds.contains(currentUser.id);
+              
+              AnalyticsService().trackHangoutViewed(
+                hangoutId: hangoutId,
+                hangoutTitle: hangout.title,
+                viewerId: currentUser.id,
+                authorId: hangout.authorId,
+                canJoin: canJoin,
+                isParticipant: isParticipant,
+                currentParticipants: hangout.participantIds.length,
+                maxParticipants: hangout.maxParticipants,
+              );
+            });
+          }
           
           if (hangout == null) {
             return const Center(
@@ -59,7 +80,6 @@ class HangoutDetailScreen extends StatelessWidget {
             );
           }
 
-          final currentUser = authProvider.currentUser;
           final isParticipant = currentUser != null && 
               hangout.participantIds.contains(currentUser.id);
           final canJoin = currentUser != null && 
@@ -309,6 +329,18 @@ class HangoutDetailScreen extends StatelessWidget {
     try {
       final postProvider = Provider.of<PostProvider>(context, listen: false);
       final success = await postProvider.joinPost(hangout.id, userId);
+      
+      // Track hangout join attempt
+      await AnalyticsService().trackHangoutJoined(
+        hangoutId: hangout.id,
+        hangoutTitle: hangout.title,
+        userId: userId,
+        authorId: hangout.authorId,
+        participantsAfterJoin: success ? hangout.participantIds.length + 1 : hangout.participantIds.length,
+        maxParticipants: hangout.maxParticipants,
+        isSuccessful: success,
+        joinSource: 'detail_screen',
+      );
       
       // Dismiss loading
       if (context.mounted) Navigator.of(context).pop();

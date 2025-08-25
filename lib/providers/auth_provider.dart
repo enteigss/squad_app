@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -45,10 +46,31 @@ class AuthProvider with ChangeNotifier {
       _setLoading(true);
       _clearError();
 
+      final isNewUser = _currentUser == null;
       _currentUser = await _authService.signInWithGoogle();
 
       if (_currentUser == null) {
         throw Exception('Failed to sign in with Google');
+      }
+
+      // Track signup for new users, login for returning users
+      if (isNewUser) {
+        await AnalyticsService().trackUserSignup(
+          method: 'google',
+          userId: _currentUser!.id,
+        );
+        
+        // Set user properties for analytics
+        await AnalyticsService().setUserId(_currentUser!.id);
+        await AnalyticsService().setUserProperties(
+          signupDate: DateTime.now().toIso8601String().split('T')[0],
+          gender: _currentUser!.gender,
+        );
+      } else {
+        await AnalyticsService().trackLogin(
+          method: 'google',
+          userId: _currentUser!.id,
+        );
       }
     } catch (e) {
       _error = _getErrorMessage(e);
@@ -72,6 +94,10 @@ class AuthProvider with ChangeNotifier {
       _clearError();
 
       await _authService.signOut();
+      
+      // Reset analytics first-time flags for new user session
+      AnalyticsService().resetFirstTimeFlags();
+      
       _currentUser = null;
     } catch (e) {
       _error = _getErrorMessage(e);

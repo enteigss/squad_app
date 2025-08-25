@@ -18,11 +18,16 @@ import 'screens/feed/create_post_screen.dart';
 import 'screens/feed/hangout_detail_screen.dart';
 import 'screens/main/main_scaffold.dart';
 import 'services/deep_link_service.dart';
+import 'services/analytics_service.dart';
 import 'utils/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  
+  // Initialize Firebase Analytics
+  AnalyticsService().initialize();
+  
   runApp(const SquadApp());
 }
 
@@ -84,6 +89,7 @@ class _SquadAppState extends State<SquadApp> {
   GoRouter _createRouter(AuthProvider authProvider) {
     return GoRouter(
       initialLocation: '/',
+      observers: [AnalyticsService().observer],
       redirect: (context, state) {
         final isLoggedIn = authProvider.isAuthenticated;
         final hasProfile = authProvider.currentUser?.hasCreatedProfile ?? false;
