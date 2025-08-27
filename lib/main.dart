@@ -115,7 +115,7 @@ class _SquadAppState extends State<SquadApp> {
           return null;
         }
 
-        // If logged in and all complete, redirect to main from auth screens
+        // If logged in and all complete, redirect to main from auth screens only
         if (isLoggedIn && profileCompleted) {
           if (currentPath == '/login' ||
               currentPath == '/profile-setup' ||
@@ -124,6 +124,7 @@ class _SquadAppState extends State<SquadApp> {
               currentPath == '/') {
             return '/main';
           }
+          // Don't redirect if already on main app screens like /squads, /feed, /profile, etc.
           return null;
         }
 

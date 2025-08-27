@@ -17,28 +17,43 @@ class SquadsScreen extends StatefulWidget {
 }
 
 class _SquadsScreenState extends State<SquadsScreen> {
-  final _emailController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
-  String? _currentPartyPackMember;
-  bool _isMutualPartyPack = false;
-  List<String> _incomingDesignations = [];
-  String? _error;
-  bool? _localSquadsOptIn; // Local override for immediate UI updates
+  // NEW: Simple state for interest survey
+  bool _hasResponded = false;
+  bool _isSubmitting = false;
+  String? _feedbackText;
+  final _feedbackController = TextEditingController();
+
+  // ARCHIVED: Original complex state variables
+  // final _emailController = TextEditingController();
+  // final _formKey = GlobalKey<FormState>();
+  // bool _isLoading = false;
+  // String? _currentPartyPackMember;
+  // bool _isMutualPartyPack = false;
+  // List<String> _incomingDesignations = [];
+  // String? _error;
+  // bool? _localSquadsOptIn; // Local override for immediate UI updates
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentPartyPackMember();
-    _initializePreferences();
+    _checkUserResponse();
+    // ARCHIVED: Original initialization
+    // _loadCurrentPartyPackMember();
+    // _initializePreferences();
   }
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _feedbackController.dispose();
+    // ARCHIVED: _emailController.dispose();
     super.dispose();
   }
 
+  // ============================================================================
+  // ARCHIVED FUNCTIONALITY - Methods from original complex squads implementation
+  // ============================================================================
+
+  /*
   void _initializePreferences() {
     final authProvider = Provider.of<app_auth.AuthProvider>(
       context,
@@ -70,7 +85,7 @@ class _SquadsScreenState extends State<SquadsScreen> {
         listen: false,
       );
 
-      await preferencesProvider.updateSquadsOptIn(value);
+      await preferencesProvider.updateSquadsOptIn(value, context);
 
       // Clear local override since preferences provider has the updated state
       setState(() {
@@ -225,83 +240,23 @@ class _SquadsScreenState extends State<SquadsScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: _showSquadsInfo,
-            tooltip: 'How does squads work?',
-          ),
-        ],
       ),
-      body: Consumer2<app_auth.AuthProvider, UserPreferencesProvider>(
-        builder: (context, authProvider, preferencesProvider, child) {
+      body: Consumer<app_auth.AuthProvider>(
+        builder: (context, authProvider, child) {
           final user = authProvider.currentUser;
           if (user == null) {
             return const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
-          final isInSquad = user.groupId != null && user.groupId!.isNotEmpty;
 
-          return Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Squads Opt-In Section
-                  _buildSquadsOptInSection(user, preferencesProvider),
-
-                  const SizedBox(height: 12),
-
-                  // Only show squad features if user has opted in
-                  if ((_localSquadsOptIn ?? 
-                      (preferencesProvider.squadsOptIn ?? user.squadsOptIn ?? false)) ==
-                      true) ...[
-                    // Squad Status Section
-                    _buildSquadStatusSection(isInSquad, user.groupId),
-
-                    const SizedBox(height: 12),
-
-                    // Current Party Pack Member Status
-                    _buildCurrentPartyPackSection(),
-
-                    const SizedBox(height: 12),
-
-                    // Designate Party Pack Member Section
-                    _buildDesignatePartyPackSection(),
-
-                    if (_incomingDesignations.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-
-                      // Incoming Party Pack Requests Section
-                      _buildIncomingRequestsSection(),
-                    ],
-                  ] else ...[
-                    // Show message when not opted in
-                    _buildOptOutMessage(),
-                  ],
-
-                  if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Text(
-                        _error!,
-                        style: TextStyle(color: AppColors.error, fontSize: 14),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildInterestSurvey(),
+              ],
             ),
           );
         },
@@ -309,6 +264,326 @@ class _SquadsScreenState extends State<SquadsScreen> {
     );
   }
 
+  // NEW: Check if user has already responded to the interest survey
+  Future<void> _checkUserResponse() async {
+    try {
+      final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
+      final user = authProvider.currentUser;
+      
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.id)
+            .get();
+        
+        if (doc.exists && mounted) {
+          final data = doc.data()!;
+          final hasResponded = data['squadsInterestSubmittedAt'] != null;
+          
+          setState(() {
+            _hasResponded = hasResponded;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error checking user response: $e');
+    }
+  }
+
+  // NEW: Submit user's interest response to Firestore
+  Future<void> _submitInterestResponse(bool isInterested) async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
+      final user = authProvider.currentUser;
+      
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.id)
+            .update({
+          'squadsInterest': isInterested,
+          'squadsInterestFeedback': _feedbackText?.trim().isNotEmpty == true ? _feedbackText!.trim() : null,
+          'squadsInterestSubmittedAt': FieldValue.serverTimestamp(),
+        });
+
+        setState(() {
+          _hasResponded = true;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Thank you for your feedback!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit response: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  // NEW: Build the interest survey UI
+  Widget _buildInterestSurvey() {
+    if (_hasResponded) {
+      return _buildThankYouMessage();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Main question
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.group, color: AppColors.primary, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Would you be interested in using a Squads feature?',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.construction, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Squads is currently in development - we\'re gauging interest!',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Explanation section
+        _buildSquadExplanation(),
+
+        const SizedBox(height: 20),
+
+        // Feedback text field
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Any additional thoughts? (Optional)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              CustomTextField(
+                controller: _feedbackController,
+                hint: 'Share your thoughts on the squads concept...',
+                maxLines: 3,
+                onChanged: (value) {
+                  _feedbackText = value;
+                },
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Response buttons
+        Row(
+          children: [
+            Expanded(
+              child: CustomButton(
+                text: _isSubmitting ? 'Submitting...' : 'Yes, I\'m interested',
+                onPressed: _isSubmitting ? null : () => _submitInterestResponse(true),
+                backgroundColor: AppColors.success,
+                isLoading: _isSubmitting,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: CustomButton(
+                text: _isSubmitting ? 'Submitting...' : 'Not interested',
+                onPressed: _isSubmitting ? null : () => _submitInterestResponse(false),
+                backgroundColor: AppColors.textSecondary,
+                isLoading: _isSubmitting,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // NEW: Build squad explanation section
+  Widget _buildSquadExplanation() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What is Squads?',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSquadInfoSection(
+            icon: Icons.group,
+            title: 'Squad Formation',
+            description: 'Squads would be formed automatically based on your compatibility preferences and matching criteria.',
+          ),
+          const SizedBox(height: 12),
+          _buildSquadInfoSection(
+            icon: Icons.people_alt,
+            title: 'Party Pack System',
+            description: 'Designate a party pack partner to be matched together in the same squad.',
+          ),
+          const SizedBox(height: 12),
+          _buildSquadInfoSection(
+            icon: Icons.chat,
+            title: 'Squad Chat',
+            description: 'Once in a squad, you could chat with your squad members and plan activities together.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NEW: Thank you message after response
+  Widget _buildThankYouMessage() {
+    return Container(
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.check_circle,
+            size: 64,
+            color: AppColors.success,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Thank you for your feedback!',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'We\'ve recorded your interest in the Squads feature. We\'ll keep you updated on development progress!',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  */
+
+  // ============================================================================
+  // ARCHIVED FUNCTIONALITY - All original complex squads UI widgets preserved below
+  // ============================================================================
+
+  /*
   Widget _buildOptOutMessage() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1387,6 +1662,7 @@ class _SquadsScreenState extends State<SquadsScreen> {
     );
   }
 
+  // NEW: Helper method for building info sections in the interest survey
   Widget _buildSquadInfoSection({
     required IconData icon,
     required String title,

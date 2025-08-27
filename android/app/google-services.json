@@ -37,6 +37,49 @@
             {
               "client_id": "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "555170207131-48j27qqt1f1otcb39rm1sl05qn61uone.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jordan.linkupbu"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:555170207131:android:efaee16b02e7276d74bd3e",
+        "android_client_info": {
+          "package_name": "com.jordan.linkupbu"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcVW6-QpS0QKb5GKLetrDMSOOwzErRLQ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "555170207131-48j27qqt1f1otcb39rm1sl05qn61uone.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jordan.linkupbu"
+              }
             }
           ]
         }

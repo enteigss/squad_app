@@ -370,7 +370,14 @@ class AuthService {
 
   bool _isBUEmail(String email) {
     // Test accounts for development/testing
-    const testAccounts = ['enteigss@gmail.com', 'michael@geml.co'];
+    const testAccounts = [
+      'enteigss@gmail.com',
+      'michael@geml.co',
+      'green.wb.evan@gmail.com',
+      'alexhu124@gmail.com',
+      'greenmichaeltodd@gmail.com',
+      'sheriese@gmail.com',
+    ];
 
     return email.toLowerCase().endsWith('@bu.edu') ||
         testAccounts.contains(email.toLowerCase());

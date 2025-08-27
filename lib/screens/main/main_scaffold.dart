@@ -9,7 +9,7 @@ import '../../widgets/meetup_feedback_dialog.dart';
 import '../home/home_screen.dart';
 import '../feed/feed_screen.dart';
 import '../profile/profile_screen.dart';
-import '../squads/squads_screen.dart';
+import '../squads/squads_interest_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   final int initialIndex;
@@ -36,7 +36,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const FeedScreen(),
-    const SquadsScreen(),
+    const SquadsInterestScreen(),
     const ProfileScreen(),
   ];
 

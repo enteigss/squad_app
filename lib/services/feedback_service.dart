@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/meetup_feedback.dart';
 import '../models/post_model.dart';
@@ -137,6 +138,9 @@ class FeedbackService {
     String? additionalFeedback,
   }) async {
     try {
+      // Ensure user is authenticated before proceeding
+      await FirebaseAuth.instance.currentUser?.getIdToken(true); // Force token refresh
+      
       // Create the feedback document
       final feedbackRef = _firestore.collection(_feedbackCollection).doc();
       final feedback = MeetupFeedback(
@@ -149,21 +153,32 @@ class FeedbackService {
         submittedAt: DateTime.now(),
       );
 
-      // Save feedback and remove the pending prompt in a batch
-      final batch = _firestore.batch();
+      // Debug: Check feedback data
+      debugPrint('FeedbackService: Submitting feedback for userId: $userId');
+      debugPrint('FeedbackService: Feedback document userId: ${feedback.userId}');
+      debugPrint('FeedbackService: Current Firebase user: ${FirebaseAuth.instance.currentUser?.uid}');
+      debugPrint('FeedbackService: User authenticated: ${FirebaseAuth.instance.currentUser != null}');
+      debugPrint('FeedbackService: Feedback data: ${feedback.toMap()}');
 
-      // Add the feedback
-      batch.set(feedbackRef, feedback.toMap());
+      // First, save the feedback separately
+      debugPrint('FeedbackService: Saving feedback document...');
+      await feedbackRef.set(feedback.toMap());
+      debugPrint('FeedbackService: Feedback saved successfully!');
 
-      // Remove the pending prompt
+      // Then, try to remove the pending prompt
       final promptId = '${hangoutId}_$userId';
       debugPrint('FeedbackService: Deleting prompt with ID: $promptId');
       final promptRef = _firestore
           .collection(_pendingPromptsCollection)
           .doc(promptId);
-      batch.delete(promptRef);
-
-      await batch.commit();
+      
+      try {
+        await promptRef.delete();
+        debugPrint('FeedbackService: Prompt deleted successfully!');
+      } catch (e) {
+        debugPrint('FeedbackService: Failed to delete prompt (this is OK if it doesn\'t exist): $e');
+        // Don't throw - feedback was saved successfully
+      }
 
       debugPrint(
         'Submitted feedback for hangout $hangoutId: didMeetup=$didMeetup',

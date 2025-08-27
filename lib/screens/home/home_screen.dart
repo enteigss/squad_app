@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Squad App'),
+        title: const Text('LinkUp BU'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Icon(Icons.info_outline, color: AppColors.primary, size: 28),
               const SizedBox(width: 12),
               Text(
-                'How Squad Works',
+                'How LinkUp BU Works',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -160,27 +160,27 @@ class _HomeScreenState extends State<HomeScreen> {
           // Steps
           _buildStepItem(
             '1',
-            'Browse Hangouts',
-            'Check out activities others have shared or create your own',
-            Icons.feed,
+            'Create or Browse',
+            'Post a hangout activity or browse what others have shared',
+            Icons.add_circle_outline,
           ),
           
           const SizedBox(height: 16),
           
           _buildStepItem(
             '2',
-            'Find Your Squad',
-            'Get matched with people who share your interests and vibe',
-            Icons.group_add,
+            'Connect with Others',
+            'Join hangouts that interest you and meet like-minded people',
+            Icons.connect_without_contact,
           ),
           
           const SizedBox(height: 16),
           
           _buildStepItem(
             '3',
-            'Party Pack',
-            'Set up a party pack partner for activities and events',
-            Icons.people_alt,
+            'Plan Together',
+            'Chat with participants to coordinate details and logistics',
+            Icons.chat_bubble_outline,
           ),
           
           const SizedBox(height: 16),
@@ -188,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildStepItem(
             '4',
             'Have Fun!',
-            'Chat, plan activities, and make lasting friendships',
+            'Enjoy your hangout and build meaningful connections',
             Icons.celebration,
           ),
         ],

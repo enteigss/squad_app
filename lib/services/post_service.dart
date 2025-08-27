@@ -272,6 +272,11 @@ class PostService {
         'DeletePostWithFeedback: Retrieved post $postId, participants: ${post?.participantIds.length}',
       );
 
+      // Debug: Check authorization details
+      debugPrint('DeletePostWithFeedback: Current user ID: $authorId');
+      debugPrint('DeletePostWithFeedback: Post authorId: ${post?.authorId}');
+      debugPrint('DeletePostWithFeedback: IDs match: ${authorId == post?.authorId}');
+
       await _firestore.collection(_collection).doc(postId).update({
         'deleted': true,
       });
@@ -287,9 +292,11 @@ class PostService {
         // TODO: Change back to >= 2 for production
 
         // Mark as feedback collected
+        debugPrint('DeletePostWithFeedback: Marking post as feedbackCollected=true');
         await _firestore.collection(_collection).doc(postId).update({
           'feedbackCollected': true,
         });
+        debugPrint('DeletePostWithFeedback: Successfully marked feedbackCollected=true');
 
         // If author provided immediate feedback, save it
         if (authorDidMeetup != null) {
@@ -322,12 +329,15 @@ class PostService {
           );
 
           // Create feedback prompts for other participants
-          _feedbackService
+          debugPrint('DeletePostWithFeedback: About to create prompts for ${otherParticipants.length} participants');
+          await _feedbackService
               .createFeedbackPromptsForCompletedHangout(deletedPost)
               .catchError((e) {
                 debugPrint(
                   'Failed to create feedback prompts for deleted post $postId: $e',
                 );
+                // Re-throw so we can see the full error
+                throw e;
               });
         }
       }

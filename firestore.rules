@@ -26,27 +26,23 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && 
-                       request.auth.uid == resource.data.authorId;
+                       request.auth.uid == request.resource.data.authorId;
       allow update: if isAuthenticated() && 
                        (isOwner(resource.data.authorId) || 
-                        isParticipant(resource.data));
+                        isParticipant(resource.data) ||
+                        request.auth.uid in request.resource.data.participantIds);
       allow delete: if isAuthenticated() && 
                        isOwner(resource.data.authorId);
     }
 
-    // Post chat messages
-    match /post_chats/{chatId}/messages/{messageId} {
+    // Post chat messages (subcollection of posts)
+    match /posts/{postId}/chat/{messageId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && 
                        isOwner(resource.data.senderId);
       allow delete: if isAuthenticated() && 
                        isOwner(resource.data.senderId);
-    }
-
-    // Post chat metadata
-    match /post_chats/{chatId} {
-      allow read, write: if isAuthenticated();
     }
 
     // SMS invites collection - for tracking sent invites
@@ -92,6 +88,26 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && 
                        isOwner(resource.data.senderId);
+    }
+
+    // Meetup feedback collection
+    match /meetup_feedback/{feedbackId} {
+      allow read: if isAuthenticated() && 
+                     request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated(); // Temporary: allow any authenticated user
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == resource.data.userId;
+      allow delete: if false; // Feedback should not be deletable
+    }
+
+    // Pending feedback prompts collection
+    match /pending_feedback_prompts/{promptId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated(); // Allow authenticated users to create prompts
+      allow update: if isAuthenticated() && 
+                       isOwner(resource.data.userId); // For marking as shown
+      allow delete: if isAuthenticated() && 
+                       isOwner(resource.data.userId); // For cleanup after submission
     }
 
     // Default deny all other paths

@@ -9,7 +9,7 @@ class PostChatService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get real-time stream of messages for a post's chat
+  // Get real-time stream of chat for a post's chat
   Stream<List<PostChatMessage>> getChatMessages(String postId) {
     return _firestore
         .collection('posts')
@@ -107,10 +107,10 @@ class PostChatService {
     }
   }
 
-  // Mark messages as read by a user
+  // Mark chat as read by a user
   Future<void> markMessagesAsRead(String postId, String userId) async {
     try {
-      // Get unread messages for this user
+      // Get unread chat for this user
       final unreadMessages = await _firestore
           .collection('posts')
           .doc(postId)
@@ -118,7 +118,7 @@ class PostChatService {
           .where('readBy', whereNotIn: [userId])
           .get();
 
-      // Batch update to mark messages as read
+      // Batch update to mark chat as read
       final batch = _firestore.batch();
       for (final doc in unreadMessages.docs) {
         final readBy = List<String>.from(doc.data()['readBy'] ?? []);
@@ -130,7 +130,7 @@ class PostChatService {
 
       await batch.commit();
     } catch (e) {
-      throw Exception('Failed to mark messages as read: $e');
+      throw Exception('Failed to mark chat as read: $e');
     }
   }
 
@@ -142,7 +142,7 @@ class PostChatService {
           .doc(postId)
           .collection('chat')
           .where('readBy', whereNotIn: [userId])
-          .where('senderId', isNotEqualTo: userId) // Don't count own messages
+          .where('senderId', isNotEqualTo: userId) // Don't count own chat
           .get();
 
       return unreadMessages.docs.length;
@@ -172,7 +172,7 @@ class PostChatService {
 
       final message = PostChatMessage.fromMap(messageDoc.data()!);
       if (message.senderId != userId) {
-        throw Exception('You can only edit your own messages');
+        throw Exception('You can only edit your own chat');
       }
 
       await _firestore
@@ -210,7 +210,7 @@ class PostChatService {
 
       final message = PostChatMessage.fromMap(messageDoc.data()!);
       if (message.senderId != userId) {
-        throw Exception('You can only delete your own messages');
+        throw Exception('You can only delete your own chat');
       }
 
       await _firestore
@@ -227,7 +227,7 @@ class PostChatService {
   // Initialize chat when first user joins a post
   Future<void> initializeChat(String postId) async {
     try {
-      // Check if chat already has messages
+      // Check if chat already has chat
       final existingMessages = await _firestore
           .collection('posts')
           .doc(postId)
@@ -305,7 +305,7 @@ class PostChatService {
 
       final batch = _firestore.batch();
       for (final postDoc in oldPosts.docs) {
-        // Delete chat subcollection by deleting all messages
+        // Delete chat subcollection by deleting all chat
         final chatMessages = await _firestore
             .collection('posts')
             .doc(postDoc.id)
