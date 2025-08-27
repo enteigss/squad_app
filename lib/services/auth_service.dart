@@ -432,6 +432,7 @@ class AuthService {
       'alexhu124@gmail.com',
       'greenmichaeltodd@gmail.com',
       'sheriese@gmail.com',
+      'stosh.janik@gmail.com'
     ];
 
     return email.toLowerCase().endsWith('@bu.edu') ||
