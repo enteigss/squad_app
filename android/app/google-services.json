@@ -58,6 +58,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "555170207131-k8ja4cemagjrdt5ttqi0fuo5t15gdk2s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jordan.linkupbu",
+            "certificate_hash": "f802d0f9f9e4dce139b63f589e0b5c807a5cf992"
+          }
+        },
+        {
+          "client_id": "555170207131-lq31bsj4ja351d7pffqo5pc5f2m2td48.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jordan.linkupbu",
+            "certificate_hash": "d705c1286c3b70cdbf51331f06a49d2ddb4cb61f"
+          }
+        },
+        {
           "client_id": "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
           "client_type": 3
         }

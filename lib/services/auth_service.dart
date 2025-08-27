@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -112,23 +114,36 @@ class AuthService {
 
   Future<UserModel?> signInWithGoogle() async {
     try {
+      debugPrint('🚀 AuthService.signInWithGoogle: Starting Google Sign-In process');
+      
+      // Log sign-in attempt to Crashlytics
+      await FirebaseCrashlytics.instance.log('Google Sign-In attempt started');
+      await FirebaseCrashlytics.instance.setCustomKey('signin_attempt', DateTime.now().toIso8601String());
+      
       final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      debugPrint('🔧 Initializing GoogleSignIn with server client ID');
       googleSignIn.initialize(
         serverClientId:
             "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
       );
 
       // Check if authenticate() is supported
+      debugPrint('🔍 Checking if authenticate() is supported: ${GoogleSignIn.instance.supportsAuthenticate()}');
       if (GoogleSignIn.instance.supportsAuthenticate()) {
+        debugPrint('🔐 Attempting Google authentication...');
         final GoogleSignInAccount? googleUser = await googleSignIn
             .authenticate();
 
         if (googleUser == null) {
+          debugPrint('❌ Google authentication cancelled by user');
           return null; // User cancelled
         }
 
+        debugPrint('✅ Google authentication successful for: ${googleUser.email}');
+        
         // Validate BU email domain before creating Firebase account
         final email = googleUser.email;
+        debugPrint('🎓 Validating BU email domain for: $email');
         if (!_isBUEmail(email)) {
           await googleSignIn.signOut(); // Sign out from Google
           throw Exception(
@@ -136,25 +151,34 @@ class AuthService {
           );
         }
 
+        debugPrint('✅ BU email validation passed');
+        
         // Get authentication details
+        debugPrint('🔑 Getting Google authentication details...');
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
+        debugPrint('🔑 Google auth tokens received: idToken=${googleAuth.idToken != null}');
 
         // Create Firebase credential and sign in
+        debugPrint('🔥 Creating Firebase credential...');
         final credential = GoogleAuthProvider.credential(
           idToken: googleAuth.idToken,
         );
 
+        debugPrint('🔥 Signing in to Firebase with Google credential...');
         final UserCredential result = await _auth.signInWithCredential(
           credential,
         );
 
         if (result.user != null) {
-          print('🔐 Google sign-in successful for user: ${result.user!.uid}');
+          debugPrint('✅ Firebase authentication successful for user: ${result.user!.uid}');
+          debugPrint('📧 User email: ${result.user!.email}');
+          debugPrint('👤 User display name: ${result.user!.displayName}');
 
           // Check if user document exists in Firestore
+          debugPrint('🔍 Checking for existing user document in Firestore...');
           final existingUser = await getUserData(result.user!.uid);
-          print('🔍 Existing user in Firestore: ${existingUser?.toMap()}');
+          debugPrint('🔍 Existing user in Firestore: ${existingUser?.toMap()}');
 
           if (existingUser == null) {
             print('➕ Creating new user document in Firestore');
@@ -194,6 +218,11 @@ class AuthService {
               await _processPendingInvitations(result.user!.email ?? '');
 
               print('✅ User document created successfully');
+              
+              // Log successful sign-in to Crashlytics
+              await FirebaseCrashlytics.instance.log('Google Sign-In completed successfully');
+              await FirebaseCrashlytics.instance.setCustomKey('signin_success', DateTime.now().toIso8601String());
+              
               return newUser;
             } catch (e) {
               print('❌ Error creating user document: $e');
@@ -205,6 +234,11 @@ class AuthService {
             print('🔄 Updating existing user online status');
             // Update online status for existing user
             await _updateUserOnlineStatus(result.user!.uid, true);
+            
+            // Log successful sign-in to Crashlytics
+            await FirebaseCrashlytics.instance.log('Google Sign-In completed successfully (existing user)');
+            await FirebaseCrashlytics.instance.setCustomKey('signin_success', DateTime.now().toIso8601String());
+            
             return existingUser;
           }
         }
@@ -214,6 +248,27 @@ class AuthService {
         return null;
       }
     } catch (e) {
+      debugPrint('❌ AuthService.signInWithGoogle error: $e');
+      debugPrint('🔍 Error type: ${e.runtimeType}');
+      
+      if (e is FirebaseAuthException) {
+        debugPrint('🔥 Firebase Auth Error - Code: ${e.code}, Message: ${e.message}');
+      }
+      
+      // Log to Crashlytics for production debugging
+      await FirebaseCrashlytics.instance.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Google Sign-In failed',
+        information: [
+          'Platform: ${defaultTargetPlatform.name}',
+          'Build mode: ${kReleaseMode ? "release" : "debug"}',
+          'Error type: ${e.runtimeType}',
+          if (e is FirebaseAuthException) 'Firebase Auth Code: ${e.code}',
+        ],
+        fatal: false,
+      );
+      
       rethrow;
     }
   }

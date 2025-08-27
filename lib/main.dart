@@ -1,5 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,11 +26,32 @@ import 'utils/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  
-  // Initialize Firebase Analytics
-  AnalyticsService().initialize();
-  
+
+  try {
+    debugPrint('🔥 Initializing Firebase...');
+    await Firebase.initializeApp();
+    debugPrint('✅ Firebase initialized successfully');
+
+    // Initialize Firebase Crashlytics
+    debugPrint('💥 Initializing Firebase Crashlytics...');
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    
+    // Pass all uncaught "fatal" errors from the framework to Crashlytics
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+    debugPrint('✅ Firebase Crashlytics initialized successfully');
+
+    // Initialize Firebase Analytics
+    debugPrint('📊 Initializing Firebase Analytics...');
+    AnalyticsService().initialize();
+    debugPrint('✅ Firebase Analytics initialized successfully');
+  } catch (e) {
+    debugPrint('❌ Firebase initialization error: $e');
+    rethrow;
+  }
+
   runApp(const SquadApp());
 }
 
@@ -94,18 +117,30 @@ class _SquadAppState extends State<SquadApp> {
       observers: [AnalyticsService().observer],
       redirect: (context, state) {
         final isLoggedIn = authProvider.isAuthenticated;
-        final hasProfile = authProvider.currentUser?.hasCreatedProfile ?? false;
+        final currentUserInfo = authProvider.currentUser;
+        final hasProfile = currentUserInfo?.hasCreatedProfile ?? false;
         final hasCompletedPreferences =
-            authProvider.currentUser?.hasCompletedPreferences ?? false;
-        final profileCompleted =
-            authProvider.currentUser?.profileCompleted ?? false;
+            currentUserInfo?.hasCompletedPreferences ?? false;
+        final profileCompleted = currentUserInfo?.profileCompleted ?? false;
+        final isLoading = authProvider.isLoading;
 
         final currentPath = state.uri.toString();
 
-        // Debug: Prevent infinite loops by not redirecting if already on target path
-        print(
-          'GoRouter Debug: isLoggedIn=$isLoggedIn, hasProfile=$hasProfile, hasCompletedPreferences=$hasCompletedPreferences, profileCompleted=$profileCompleted, currentPath=$currentPath',
-        );
+        // Enhanced Debug Logging
+        debugPrint('🚦 GoRouter Debug: === NAVIGATION DECISION ===');
+        debugPrint('🚦 Current path: $currentPath');
+        debugPrint('🚦 AuthProvider.isAuthenticated: $isLoggedIn');
+        debugPrint('🚦 AuthProvider.currentUser: ${currentUserInfo?.toMap()}');
+        debugPrint('🚦 hasProfile: $hasProfile');
+        debugPrint('🚦 hasCompletedPreferences: $hasCompletedPreferences');
+        debugPrint('🚦 profileCompleted: $profileCompleted');
+
+        if (isLoading) {
+          debugPrint(
+            ' GoRouter: AuthProvider is loading - preventing navigation',
+          );
+          return null;
+        }
 
         // If not logged in, redirect to login
         if (!isLoggedIn) {
@@ -153,6 +188,7 @@ class _SquadAppState extends State<SquadApp> {
           return null;
         }
 
+        debugPrint('✅ No redirect needed');
         return null;
       },
       routes: [

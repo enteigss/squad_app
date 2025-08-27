@@ -15,29 +15,47 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _signInWithGoogle() async {
+    debugPrint('🖱️ LoginScreen: _signInWithGoogle called');
     setState(() {
       _isLoading = true;
     });
 
     try {
+      debugPrint('🖱️ LoginScreen: About to call authProvider.signInWithGoogle()');
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signInWithGoogle();
+      debugPrint('🖱️ LoginScreen: authProvider.signInWithGoogle() completed successfully');
     } catch (e) {
+      debugPrint('🚨 LoginScreen: Exception caught: $e');
+      debugPrint('🚨 LoginScreen: Exception type: ${e.runtimeType}');
+      debugPrint('🚨 LoginScreen: mounted = $mounted');
       if (mounted) {
+        debugPrint('🚨 LoginScreen: Showing snackbar with error: ${e.toString()}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
             backgroundColor: AppColors.error,
           ),
         );
+        debugPrint('🚨 LoginScreen: Snackbar shown successfully');
+      } else {
+        debugPrint('🚨 LoginScreen: Widget not mounted - skipping snackbar');
       }
     } finally {
+      debugPrint('🔄 LoginScreen: Finally block - mounted = $mounted');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
+        debugPrint('🔄 LoginScreen: Loading set to false');
       }
     }
+  }
+
+  @override
+  void dispose() {
+    debugPrint('🗑️ LoginScreen: Widget is being disposed!');
+    super.dispose();
   }
 
   @override
@@ -132,6 +150,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 height: 56,
                 text: 'Sign in with BU Google Account',
+              ),
+
+              const SizedBox(height: 24),
+
+              // Test Crash Button (for debugging Crashlytics)
+              TextButton(
+                onPressed: () => throw Exception('Test crash for Crashlytics verification'),
+                child: const Text("Throw Test Exception"),
               ),
 
               const SizedBox(height: 24),

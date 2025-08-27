@@ -14,28 +14,48 @@ class AuthProvider with ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isAuthenticated => _currentUser != null;
+  bool get isAuthenticated {
+    final authenticated = _currentUser != null;
+    debugPrint(
+      '🔐 AuthProvider.isAuthenticated: $authenticated (user: ${_currentUser?.id})',
+    );
+    return authenticated;
+  }
 
   AuthProvider() {
     _initializeAuth();
   }
 
   void _initializeAuth() {
+    debugPrint(
+      '🚀 AuthProvider._initializeAuth: Setting up auth state listener',
+    );
     _authService.authStateChanges.listen((User? user) async {
       if (user != null) {
         try {
-          print('🔄 Auth state changed: User ${user.uid} signed in');
-          _currentUser = await _authService.getUserData(user.uid);
-          print('📊 User data from Firestore: ${_currentUser?.toMap()}');
+          debugPrint('🔄 Auth state changed: User ${user.uid} signed in');
+          debugPrint(
+            '👤 Firebase User details: email=${user.email}, verified=${user.emailVerified}',
+          );
+
+          final userData = await _authService.getUserData(user.uid);
+          debugPrint('📊 User data from Firestore: ${userData?.toMap()}');
+
+          _currentUser = userData;
+          debugPrint(
+            '✅ AuthProvider._currentUser updated: ${_currentUser != null}',
+          );
           notifyListeners();
         } catch (e) {
-          print('❌ Error getting user data: $e');
+          debugPrint('❌ Error getting user data: $e');
+          debugPrint('🔍 Error type: ${e.runtimeType}');
           _error = e.toString();
           notifyListeners();
         }
       } else {
-        print('🔄 Auth state changed: User signed out');
+        debugPrint('🔄 Auth state changed: User signed out');
         _currentUser = null;
+        debugPrint('🚪 AuthProvider._currentUser set to null');
         notifyListeners();
       }
     });
@@ -43,15 +63,35 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signInWithGoogle() async {
     try {
+      debugPrint('🔑 AuthProvider.signInWithGoogle: Starting Google sign-in');
       _setLoading(true);
       _clearError();
 
       final isNewUser = _currentUser == null;
-      _currentUser = await _authService.signInWithGoogle();
+      debugPrint('👶 Is new user: $isNewUser');
+
+      debugPrint(
+        '📞 AuthProvider: About to call AuthService.signInWithGoogle()',
+      );
+      final signInResult = await _authService.signInWithGoogle();
+      debugPrint(
+        '📞 AuthProvider: AuthService.signInWithGoogle() completed successfully',
+      );
+      debugPrint(
+        '📝 Sign-in result from AuthService: ${signInResult?.toMap()}',
+      );
+      _currentUser = signInResult;
 
       if (_currentUser == null) {
+        debugPrint(
+          '❌ AuthProvider.signInWithGoogle: _currentUser is null after sign-in',
+        );
         throw Exception('Failed to sign in with Google');
       }
+
+      debugPrint(
+        '✅ AuthProvider.signInWithGoogle: Sign-in successful for user ${_currentUser!.id}',
+      );
 
       // Track signup for new users, login for returning users
       if (isNewUser) {
@@ -73,9 +113,14 @@ class AuthProvider with ChangeNotifier {
         );
       }
     } catch (e) {
+      debugPrint('🚨 AuthProvider.signInWithGoogle: Exception caught: $e');
+      debugPrint('🚨 AuthProvider: Exception type: ${e.runtimeType}');
       _error = _getErrorMessage(e);
+      debugPrint('🚨 AuthProvider: Processed error message: $_error');
+      debugPrint('🚨 AuthProvider: About to rethrow exception to LoginScreen');
       rethrow;
     } finally {
+      debugPrint('🔄 AuthProvider: Finally block - setting loading to false');
       _setLoading(false);
     }
   }
