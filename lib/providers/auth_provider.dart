@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/analytics_service.dart';
+import '../services/notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -45,6 +46,18 @@ class AuthProvider with ChangeNotifier {
           debugPrint(
             '✅ AuthProvider._currentUser updated: ${_currentUser != null}',
           );
+          
+          // Request notification permissions for returning users
+          try {
+            debugPrint('🔔 Requesting notification permissions for returning user...');
+            final notificationService = NotificationService();
+            await notificationService.requestPermission();
+            debugPrint('✅ Notification permissions requested successfully for returning user');
+          } catch (e) {
+            debugPrint('⚠️ Warning: Failed to request notification permissions for returning user: $e');
+            // Don't fail the auth state change if notification setup fails
+          }
+          
           notifyListeners();
         } catch (e) {
           debugPrint('❌ Error getting user data: $e');
@@ -93,6 +106,17 @@ class AuthProvider with ChangeNotifier {
         '✅ AuthProvider.signInWithGoogle: Sign-in successful for user ${_currentUser!.id}',
       );
 
+      // Request notification permissions and get FCM token
+      try {
+        debugPrint('🔔 Requesting notification permissions...');
+        final notificationService = NotificationService();
+        await notificationService.requestPermission();
+        debugPrint('✅ Notification permissions requested successfully');
+      } catch (e) {
+        debugPrint('⚠️ Warning: Failed to request notification permissions: $e');
+        // Don't fail the sign-in process if notification setup fails
+      }
+
       // Track signup for new users, login for returning users
       if (isNewUser) {
         await AnalyticsService().trackUserSignup(
@@ -130,6 +154,17 @@ class AuthProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
+
+      // Remove FCM token before signing out
+      try {
+        debugPrint('🔔 Removing FCM token before sign out...');
+        final notificationService = NotificationService();
+        await notificationService.removeToken();
+        debugPrint('✅ FCM token removed successfully');
+      } catch (e) {
+        debugPrint('⚠️ Warning: Failed to remove FCM token: $e');
+        // Don't fail the sign out process if token removal fails
+      }
 
       await _authService.signOut();
 

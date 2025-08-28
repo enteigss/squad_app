@@ -25,6 +25,7 @@ import 'screens/main/main_scaffold.dart';
 import 'services/deep_link_service.dart';
 import 'services/analytics_service.dart';
 import 'services/navigation_service.dart';
+import 'services/notification_service.dart';
 import 'utils/colors.dart';
 
 void main() async {
@@ -50,6 +51,12 @@ void main() async {
     debugPrint('📊 Initializing Firebase Analytics...');
     AnalyticsService().initialize();
     debugPrint('✅ Firebase Analytics initialized successfully');
+
+    // Initialize Notification Service for FCM token management
+    debugPrint('🔔 Initializing Notification Service...');
+    final notificationService = NotificationService();
+    notificationService.initializeTokenRefresh();
+    debugPrint('✅ Notification Service initialized successfully');
   } catch (e) {
     debugPrint('❌ Firebase initialization error: $e');
     rethrow;

@@ -17,6 +17,7 @@ class UserModel {
   final bool hasCompletedPreferences;
   final bool profileCompleted;
   final bool squadsOptIn;
+  final String? fcmToken;
 
   UserModel({
     required this.id,
@@ -37,6 +38,7 @@ class UserModel {
     this.hasCompletedPreferences = false,
     this.profileCompleted = false,
     this.squadsOptIn = false,
+    this.fcmToken,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -59,6 +61,7 @@ class UserModel {
       hasCompletedPreferences: map['hasCompletedPreferences'] ?? false,
       profileCompleted: map['profileCompleted'] ?? false,
       squadsOptIn: map['squadsOptIn'] ?? false,
+      fcmToken: map['fcmToken'],
     );
   }
 
@@ -92,6 +95,7 @@ class UserModel {
       'hasCompletedPreferences': hasCompletedPreferences,
       'profileCompleted': profileCompleted,
       'squadsOptIn': squadsOptIn,
+      'fcmToken': fcmToken,
     };
   }
 
@@ -114,6 +118,7 @@ class UserModel {
     bool? hasCompletedPreferences,
     bool? profileCompleted,
     bool? squadsOptIn,
+    String? fcmToken,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -134,6 +139,7 @@ class UserModel {
       hasCompletedPreferences: hasCompletedPreferences ?? this.hasCompletedPreferences,
       profileCompleted: profileCompleted ?? this.profileCompleted,
       squadsOptIn: squadsOptIn ?? this.squadsOptIn,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 }
