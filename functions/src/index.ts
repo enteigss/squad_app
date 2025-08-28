@@ -14,6 +14,9 @@ export {sendSMSInvite} from "./sms-invites";
 // Web Preview Functions  
 export {hangoutPreview} from "./web-preview";
 
+// App Invite Functions
+export {appPreview} from "./app-preview";
+
 // Health check endpoint
 export const healthCheck = onRequest((req, res) => {
   res.json({

@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:squad_app/main.dart';
 
 void main() {
-  testWidgets('Squad app loads correctly', (WidgetTester tester) async {
+  testWidgets('LinkUp BU app loads correctly', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SquadApp());
 

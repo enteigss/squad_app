@@ -4,6 +4,7 @@ import '../../models/post_model.dart';
 import '../../models/post_chat_message.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/post_chat_service.dart';
+import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 
@@ -80,6 +81,13 @@ class _PostChatScreenState extends State<PostChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Use stack navigation to pop back to previous screen
+            Navigator.of(context).pop();
+          },
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

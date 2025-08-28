@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../utils/colors.dart';
 import '../group/group_screen.dart';
+import '../../widgets/app_invite_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -256,40 +257,60 @@ class _HomeScreenState extends State<HomeScreen> {
         final user = authProvider.currentUser;
         final isInSquad = user?.groupId != null && user!.groupId!.isNotEmpty;
 
-        if (!isInSquad) {
-          return const SizedBox.shrink();
-        }
-
         return Column(
           children: [
-            // View My Group Button
+            // Invite Friends Button (always show)
             CustomButton(
-              text: 'View My Group',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const GroupScreen()),
-                );
-              },
+              text: 'Invite Friends to LinkUp BU',
+              onPressed: () => _openInviteModal(authProvider),
               width: double.infinity,
               height: 56,
+              backgroundColor: AppColors.success,
             ),
 
-            const SizedBox(height: 16),
+            if (isInSquad) ...[
+              const SizedBox(height: 16),
 
-            // Chat with Squad Button
-            CustomButton(
-              text: 'Chat with Squad',
-              onPressed: () {
-                context.push('/chat');
-              },
-              width: double.infinity,
-              height: 56,
-              backgroundColor: AppColors.secondary,
-            ),
+              // View My Group Button
+              CustomButton(
+                text: 'View My Group',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const GroupScreen()),
+                  );
+                },
+                width: double.infinity,
+                height: 56,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Chat with Squad Button
+              CustomButton(
+                text: 'Chat with Squad',
+                onPressed: () {
+                  context.push('/chat');
+                },
+                width: double.infinity,
+                height: 56,
+                backgroundColor: AppColors.secondary,
+              ),
+            ],
           ],
         );
       },
+    );
+  }
+
+  void _openInviteModal(AuthProvider authProvider) {
+    final currentUser = authProvider.currentUser;
+    if (currentUser == null) return;
+
+    AppInviteModal.show(
+      context,
+      inviterName: currentUser.displayName ?? 'A friend',
+      inviterUserId: currentUser.id,
     );
   }
 

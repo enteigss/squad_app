@@ -4,6 +4,7 @@ import '../../models/post_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
+import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
 import 'post_chat_screen.dart';
 import '../profile/profile_detail_screen.dart';
@@ -76,6 +77,13 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Use stack navigation to pop back to previous screen
+            Navigator.of(context).pop();
+          },
+        ),
         title: Text(
           widget.isParticipant
               ? 'Group Members (${widget.post.participantIds.length})'

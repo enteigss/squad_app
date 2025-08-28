@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'Squad App';
+  static const String appName = 'LinkUp BU';
   static const String appVersion = '1.0.0';
   
   static const Duration animationDuration = Duration(milliseconds: 300);

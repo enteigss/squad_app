@@ -2,42 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/colors.dart';
+import '../services/analytics_service.dart';
 
-class InviteOptionsModal extends StatefulWidget {
-  final String hangoutId;
-  final String hangoutTitle;
+class AppInviteModal extends StatefulWidget {
   final String inviterName;
+  final String inviterUserId;
 
-  const InviteOptionsModal({
+  const AppInviteModal({
     super.key,
-    required this.hangoutId,
-    required this.hangoutTitle,
     required this.inviterName,
+    required this.inviterUserId,
   });
 
   @override
-  State<InviteOptionsModal> createState() => _InviteOptionsModalState();
+  State<AppInviteModal> createState() => _AppInviteModalState();
 
   static Future<void> show(
     BuildContext context, {
-    required String hangoutId,
-    required String hangoutTitle,
     required String inviterName,
+    required String inviterUserId,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => InviteOptionsModal(
-        hangoutId: hangoutId,
-        hangoutTitle: hangoutTitle,
+      builder: (context) => AppInviteModal(
         inviterName: inviterName,
+        inviterUserId: inviterUserId,
       ),
     );
   }
 }
 
-class _InviteOptionsModalState extends State<InviteOptionsModal> {
+class _AppInviteModalState extends State<AppInviteModal> {
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +71,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'to "${widget.hangoutTitle}"',
+                  'to LinkUp BU - the app for spontaneous hangouts',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -96,6 +93,16 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
                     title: 'Share Link',
                     subtitle: 'Share via messages, social media, or any app',
                     onTap: () => _handleShareLink(context),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  _buildInviteOption(
+                    context: context,
+                    icon: Icons.copy,
+                    title: 'Copy Link',
+                    subtitle: 'Copy the invite link to your clipboard',
+                    onTap: () => _handleCopyLink(context),
                   ),
                 ],
               ),
@@ -209,31 +216,37 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
 
 
   void _handleShareLink(BuildContext context) async {
-    print('DEBUG: _handleShareLink() called');
+    print('DEBUG: _handleShareLink() called for app invite');
     try {
-      // Generate the invite URL
+      // Track app invite sent
+      await AnalyticsService().trackAppInviteSent(
+        inviterId: widget.inviterUserId,
+        method: 'share_link',
+      );
+
+      // Generate the app invite URL
       final shareUrl =
-          'https://squad-7bc7e.web.app/hangout/${widget.hangoutId}';
-      final shareText = 'Join me for "${widget.hangoutTitle}"! $shareUrl';
+          'https://squad-7bc7e.web.app/invite/${widget.inviterUserId}';
+      final shareText = 'Join me on LinkUp BU - the app for spontaneous hangouts! $shareUrl';
 
       // Close the modal first
-      print('DEBUG: Closing InviteOptionsModal with result "completed"');
+      print('DEBUG: Closing AppInviteModal with result "completed"');
       Navigator.of(context).pop('completed');
 
       // Add a small delay to ensure modal is closed before sharing
       await Future.delayed(const Duration(milliseconds: 200));
-      print('DEBUG: About to open native share dialog');
+      print('DEBUG: About to open native share dialog for app invite');
 
       // Try native sharing first, fallback to clipboard
       try {
-        print('DEBUG: Calling SharePlus.instance.share()');
+        print('DEBUG: Calling SharePlus.instance.share() for app invite');
         await SharePlus.instance.share(
           ShareParams(
             text: shareText,
-            subject: 'You\'re invited to ${widget.hangoutTitle}',
+            subject: '${widget.inviterName} invited you to LinkUp BU!',
           ),
         );
-        print('DEBUG: SharePlus.instance.share() completed');
+        print('DEBUG: SharePlus.instance.share() completed for app invite');
       } catch (shareError) {
         print('Native share failed, using clipboard fallback: $shareError');
 
@@ -243,7 +256,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Invite link copied to clipboard! 📋'),
+              content: Text('App invite link copied to clipboard! 📋'),
               backgroundColor: AppColors.primary,
               duration: Duration(seconds: 3),
             ),
@@ -251,7 +264,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
         }
       }
     } catch (e) {
-      print('Error sharing: $e');
+      print('Error sharing app invite: $e');
       // Show error if everything fails
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -264,4 +277,45 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
     }
   }
 
+  void _handleCopyLink(BuildContext context) async {
+    try {
+      // Track app invite sent via copy
+      await AnalyticsService().trackAppInviteSent(
+        inviterId: widget.inviterUserId,
+        method: 'copy_link',
+      );
+
+      // Generate the app invite URL
+      final shareUrl =
+          'https://squad-7bc7e.web.app/invite/${widget.inviterUserId}';
+      final shareText = 'Join me on LinkUp BU - the app for spontaneous hangouts! $shareUrl';
+
+      // Copy to clipboard
+      await Clipboard.setData(ClipboardData(text: shareText));
+
+      // Close the modal
+      Navigator.of(context).pop('completed');
+
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('App invite link copied to clipboard! 📋'),
+            backgroundColor: AppColors.primary,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error copying app invite link: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error copying link. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 }

@@ -19,9 +19,12 @@ import 'screens/home/group_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/feed/create_post_screen.dart';
 import 'screens/feed/hangout_detail_screen.dart';
+import 'screens/feed/post_chat_screen.dart';
+import 'screens/feed/group_members_screen.dart';
 import 'screens/main/main_scaffold.dart';
 import 'services/deep_link_service.dart';
 import 'services/analytics_service.dart';
+import 'services/navigation_service.dart';
 import 'utils/colors.dart';
 
 void main() async {
@@ -94,7 +97,7 @@ class _SquadAppState extends State<SquadApp> {
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           return MaterialApp.router(
-            title: 'Squad App',
+            title: 'LinkUp BU',
             theme: ThemeData(
               primarySwatch: Colors.blue,
               primaryColor: AppColors.primary,
@@ -113,6 +116,7 @@ class _SquadAppState extends State<SquadApp> {
 
   GoRouter _createRouter(AuthProvider authProvider) {
     return GoRouter(
+      navigatorKey: NavigationService.navigatorKey,
       initialLocation: '/',
       observers: [AnalyticsService().observer],
       redirect: (context, state) {
@@ -247,6 +251,58 @@ class _SquadAppState extends State<SquadApp> {
           builder: (context, state) {
             final hangoutId = state.pathParameters['hangoutId']!;
             return HangoutDetailScreen(hangoutId: hangoutId);
+          },
+        ),
+        GoRoute(
+          path: '/post-chat/:postId',
+          builder: (context, state) {
+            final postId = state.pathParameters['postId']!;
+            debugPrint('🎯 POST CHAT ROUTE - Route hit with postId: $postId');
+            
+            return Consumer<PostProvider>(
+              builder: (context, postProvider, child) {
+                debugPrint('🔍 POST CHAT ROUTE - Consumer builder called');
+                debugPrint('🔍 Getting post by ID: $postId');
+                
+                final post = postProvider.getPostById(postId);
+                debugPrint('📋 Post found: ${post != null}');
+                
+                if (post != null) {
+                  debugPrint('✅ Post details - ID: ${post.id}, Title: ${post.title}');
+                }
+                
+                if (post == null) {
+                  debugPrint('❌ Post not found! Showing error screen');
+                  return const Scaffold(
+                    body: Center(
+                      child: Text('Post not found'),
+                    ),
+                  );
+                }
+                
+                debugPrint('🎉 Returning PostChatScreen with post');
+                return PostChatScreen(post: post);
+              },
+            );
+          },
+        ),
+        GoRoute(
+          path: '/group-members/:postId',
+          builder: (context, state) {
+            final postId = state.pathParameters['postId']!;
+            return Consumer<PostProvider>(
+              builder: (context, postProvider, child) {
+                final post = postProvider.getPostById(postId);
+                if (post == null) {
+                  return const Scaffold(
+                    body: Center(
+                      child: Text('Post not found'),
+                    ),
+                  );
+                }
+                return GroupMembersScreen(post: post);
+              },
+            );
           },
         ),
       ],

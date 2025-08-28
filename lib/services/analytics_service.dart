@@ -271,6 +271,65 @@ class AnalyticsService {
     );
   }
 
+  // App invite tracking
+  Future<void> trackAppInviteSent({
+    required String inviterId,
+    required String method, // 'share_link', 'copy_link', etc.
+  }) async {
+    await _analytics.logEvent(
+      name: 'app_invite_sent',
+      parameters: {
+        'inviter_id': inviterId,
+        'method': method,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+    
+    if (kDebugMode) {
+      print('Analytics: App invite sent - inviter: $inviterId, method: $method');
+    }
+  }
+
+  Future<void> trackAppInviteClicked({
+    required String inviterId,
+    required String platform, // 'ios', 'android', 'desktop', 'unknown'
+    required String source, // 'web_preview', 'direct_link', etc.
+  }) async {
+    await _analytics.logEvent(
+      name: 'app_invite_clicked',
+      parameters: {
+        'inviter_id': inviterId,
+        'platform': platform,
+        'source': source,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+    
+    if (kDebugMode) {
+      print('Analytics: App invite clicked - inviter: $inviterId, platform: $platform, source: $source');
+    }
+  }
+
+  Future<void> trackAppDownloadAttempt({
+    required String inviterId,
+    required String platform, // 'ios', 'android'
+    required String source, // 'app_invite', 'direct', etc.
+  }) async {
+    await _analytics.logEvent(
+      name: 'app_download_attempt',
+      parameters: {
+        'inviter_id': inviterId,
+        'platform': platform,
+        'source': source,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+    
+    if (kDebugMode) {
+      print('Analytics: App download attempt - inviter: $inviterId, platform: $platform, source: $source');
+    }
+  }
+
   Future<void> trackFeatureUsage({
     required String featureName,
     Map<String, Object>? additionalParams,

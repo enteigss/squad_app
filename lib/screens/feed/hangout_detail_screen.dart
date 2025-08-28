@@ -4,6 +4,7 @@ import '../../providers/post_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/post_model.dart';
 import '../../services/analytics_service.dart';
+import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 
@@ -317,7 +318,14 @@ class HangoutDetailScreen extends StatelessWidget {
   }
 
   void _joinHangout(BuildContext context, Post hangout, String userId) async {
+    debugPrint('🚀 JOIN HANGOUT FLOW - Starting join process');
+    debugPrint('📋 Hangout ID: ${hangout.id}');
+    debugPrint('📋 User ID: $userId');
+    debugPrint('📋 Hangout Title: ${hangout.title}');
+    debugPrint('📋 Current Participants: ${hangout.participantIds.length}/${hangout.maxParticipants}');
+    
     // Show loading
+    debugPrint('⏳ Showing loading dialog');
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -327,10 +335,15 @@ class HangoutDetailScreen extends StatelessWidget {
     );
 
     try {
+      debugPrint('🔄 Getting PostProvider instance');
       final postProvider = Provider.of<PostProvider>(context, listen: false);
+      
+      debugPrint('📞 Calling postProvider.joinPost()');
       final success = await postProvider.joinPost(hangout.id, userId);
+      debugPrint('✅ joinPost() completed with success: $success');
       
       // Track hangout join attempt
+      debugPrint('📊 Tracking analytics for join attempt');
       await AnalyticsService().trackHangoutJoined(
         hangoutId: hangout.id,
         hangoutTitle: hangout.title,
@@ -341,37 +354,74 @@ class HangoutDetailScreen extends StatelessWidget {
         isSuccessful: success,
         joinSource: 'detail_screen',
       );
+      debugPrint('✅ Analytics tracking completed');
       
       // Dismiss loading
-      if (context.mounted) Navigator.of(context).pop();
+      debugPrint('❌ Dismissing loading dialog');
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        debugPrint('✅ Loading dialog dismissed');
+      } else {
+        debugPrint('⚠️  Context not mounted, could not dismiss loading dialog');
+      }
       
       if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Successfully joined "${hangout.title}"!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        debugPrint('🎉 Join was successful! Proceeding to navigation');
+        
+        // Navigate to feed hangouts tab after successful join
+        debugPrint('🧭 Preparing to navigate to feed hangouts tab');
+        debugPrint('🔗 Target route: /feed?tab=hangouts');
+        
+        // Navigate immediately to show user their joined hangout
+        debugPrint('🚀 Attempting navigation to feed hangouts tab');
+        debugPrint('📍 Calling NavigationService.goToPath("/feed?tab=hangouts")');
+        
+        try {
+          NavigationService.goToPath('/feed?tab=hangouts');
+          debugPrint('✅ Navigation call completed successfully');
+        } catch (e) {
+          debugPrint('💥 ERROR during navigation: $e');
+          debugPrint('🔍 Error type: ${e.runtimeType}');
+        }
       } else if (context.mounted) {
+        debugPrint('❌ Join failed! Showing error snackbar');
+        debugPrint('🔍 PostProvider error: ${postProvider.error}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to join hangout: ${postProvider.error}'),
             backgroundColor: AppColors.error,
           ),
         );
+      } else {
+        debugPrint('⚠️  Join failed and context not mounted');
       }
     } catch (e) {
+      debugPrint('💥 EXCEPTION in _joinHangout: $e');
+      debugPrint('🔍 Exception type: ${e.runtimeType}');
+      debugPrint('📚 Stack trace: ${StackTrace.current}');
+      
       // Dismiss loading
-      if (context.mounted) Navigator.of(context).pop();
+      debugPrint('❌ Dismissing loading dialog due to exception');
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        debugPrint('✅ Loading dialog dismissed after exception');
+      } else {
+        debugPrint('⚠️  Context not mounted, could not dismiss loading dialog after exception');
+      }
       
       if (context.mounted) {
+        debugPrint('🚨 Showing exception error snackbar');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error joining hangout: $e'),
             backgroundColor: AppColors.error,
           ),
         );
+      } else {
+        debugPrint('⚠️  Context not mounted, could not show exception error snackbar');
       }
     }
+    
+    debugPrint('🏁 JOIN HANGOUT FLOW - Method completed');
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  static const String appName = 'Squad App';
+  static const String appName = 'LinkUp BU';
   static const String appVersion = '1.0.0';
   static const String buildNumber = '1';
 
@@ -30,9 +30,9 @@ class AppConfig {
 
   static const Map<String, String> socialLinks = {
     'website': 'https://example.com',
-    'twitter': 'https://twitter.com/squadapp',
-    'instagram': 'https://instagram.com/squadapp',
-    'facebook': 'https://facebook.com/squadapp',
+    'twitter': 'https://twitter.com/linkupbu',
+    'instagram': 'https://instagram.com/linkupbu',
+    'facebook': 'https://facebook.com/linkupbu',
   };
 
   static const int cacheExpirationHours = 24;

@@ -32,6 +32,10 @@
         "function": "hangoutPreview"
       },
       {
+        "source": "/invite/**",
+        "function": "appPreview"
+      },
+      {
         "source": "/data-deletion",
         "destination": "/data-deletion.html"
       },

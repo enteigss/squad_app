@@ -61,6 +61,13 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // App invite analytics collection - for tracking app invite performance
+    match /app_invite_analytics/{analyticsId} {
+      allow read: if isAuthenticated();
+      allow create: if true; // Allow anonymous creation for web tracking
+      allow update, delete: if false; // Analytics data should not be modified
+    }
+
     // Party invitations (existing functionality)
     match /party_invitations/{invitationId} {
       allow read, write: if isAuthenticated();

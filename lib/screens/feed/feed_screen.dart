@@ -29,6 +29,38 @@ class _FeedScreenState extends State<FeedScreen> {
     _initializePostProvider();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Check for tab query parameter from route
+    final routeState = GoRouterState.of(context);
+    final tabParam = routeState.uri.queryParameters['tab'];
+    
+    if (tabParam != null) {
+      debugPrint('🎯 Feed screen received tab parameter: $tabParam');
+      
+      // Set initial tab based on parameter
+      switch (tabParam) {
+        case 'upcoming':
+          selectedTab = FeedTab.upcoming;
+          break;
+        case 'ongoing':
+          selectedTab = FeedTab.ongoing;
+          break;
+        case 'hangouts':
+        case 'yourPosts':
+          selectedTab = FeedTab.yourPosts;
+          break;
+        default:
+          debugPrint('⚠️ Unknown tab parameter: $tabParam, using default');
+          selectedTab = FeedTab.upcoming;
+      }
+      
+      debugPrint('✅ Set feed tab to: $selectedTab');
+    }
+  }
+
   void _initializePostProvider() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final postProvider = Provider.of<PostProvider>(context, listen: false);

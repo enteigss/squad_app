@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
 
               Text(
-                'Squad App',
+                'LinkUp BU',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'To access Squad App, you must sign in with your Boston University Google account (@bu.edu)',
+                      'To access LinkUp BU, you must sign in with your Boston University Google account (@bu.edu)',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.primary,
                         height: 1.4,
