@@ -114,12 +114,17 @@ class AuthService {
 
   Future<UserModel?> signInWithGoogle() async {
     try {
-      debugPrint('🚀 AuthService.signInWithGoogle: Starting Google Sign-In process');
-      
+      debugPrint(
+        '🚀 AuthService.signInWithGoogle: Starting Google Sign-In process',
+      );
+
       // Log sign-in attempt to Crashlytics
       await FirebaseCrashlytics.instance.log('Google Sign-In attempt started');
-      await FirebaseCrashlytics.instance.setCustomKey('signin_attempt', DateTime.now().toIso8601String());
-      
+      await FirebaseCrashlytics.instance.setCustomKey(
+        'signin_attempt',
+        DateTime.now().toIso8601String(),
+      );
+
       final GoogleSignIn googleSignIn = GoogleSignIn.instance;
       debugPrint('🔧 Initializing GoogleSignIn with server client ID');
       googleSignIn.initialize(
@@ -128,7 +133,9 @@ class AuthService {
       );
 
       // Check if authenticate() is supported
-      debugPrint('🔍 Checking if authenticate() is supported: ${GoogleSignIn.instance.supportsAuthenticate()}');
+      debugPrint(
+        '🔍 Checking if authenticate() is supported: ${GoogleSignIn.instance.supportsAuthenticate()}',
+      );
       if (GoogleSignIn.instance.supportsAuthenticate()) {
         debugPrint('🔐 Attempting Google authentication...');
         final GoogleSignInAccount? googleUser = await googleSignIn
@@ -139,12 +146,14 @@ class AuthService {
           return null; // User cancelled
         }
 
-        debugPrint('✅ Google authentication successful for: ${googleUser.email}');
-        
+        debugPrint(
+          '✅ Google authentication successful for: ${googleUser.email}',
+        );
+
         // Validate BU email domain before creating Firebase account
         final email = googleUser.email;
         debugPrint('🎓 Validating BU email domain for: $email');
-        if (!_isBUEmail(email)) {
+        if (!await _isBUEmail(email)) {
           await googleSignIn.signOut(); // Sign out from Google
           throw Exception(
             'Access restricted to Boston University students only. Please use your @bu.edu email address.',
@@ -152,12 +161,14 @@ class AuthService {
         }
 
         debugPrint('✅ BU email validation passed');
-        
+
         // Get authentication details
         debugPrint('🔑 Getting Google authentication details...');
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
-        debugPrint('🔑 Google auth tokens received: idToken=${googleAuth.idToken != null}');
+        debugPrint(
+          '🔑 Google auth tokens received: idToken=${googleAuth.idToken != null}',
+        );
 
         // Create Firebase credential and sign in
         debugPrint('🔥 Creating Firebase credential...');
@@ -171,7 +182,9 @@ class AuthService {
         );
 
         if (result.user != null) {
-          debugPrint('✅ Firebase authentication successful for user: ${result.user!.uid}');
+          debugPrint(
+            '✅ Firebase authentication successful for user: ${result.user!.uid}',
+          );
           debugPrint('📧 User email: ${result.user!.email}');
           debugPrint('👤 User display name: ${result.user!.displayName}');
 
@@ -218,11 +231,16 @@ class AuthService {
               await _processPendingInvitations(result.user!.email ?? '');
 
               print('✅ User document created successfully');
-              
+
               // Log successful sign-in to Crashlytics
-              await FirebaseCrashlytics.instance.log('Google Sign-In completed successfully');
-              await FirebaseCrashlytics.instance.setCustomKey('signin_success', DateTime.now().toIso8601String());
-              
+              await FirebaseCrashlytics.instance.log(
+                'Google Sign-In completed successfully',
+              );
+              await FirebaseCrashlytics.instance.setCustomKey(
+                'signin_success',
+                DateTime.now().toIso8601String(),
+              );
+
               return newUser;
             } catch (e) {
               print('❌ Error creating user document: $e');
@@ -234,11 +252,16 @@ class AuthService {
             print('🔄 Updating existing user online status');
             // Update online status for existing user
             await _updateUserOnlineStatus(result.user!.uid, true);
-            
+
             // Log successful sign-in to Crashlytics
-            await FirebaseCrashlytics.instance.log('Google Sign-In completed successfully (existing user)');
-            await FirebaseCrashlytics.instance.setCustomKey('signin_success', DateTime.now().toIso8601String());
-            
+            await FirebaseCrashlytics.instance.log(
+              'Google Sign-In completed successfully (existing user)',
+            );
+            await FirebaseCrashlytics.instance.setCustomKey(
+              'signin_success',
+              DateTime.now().toIso8601String(),
+            );
+
             return existingUser;
           }
         }
@@ -250,11 +273,13 @@ class AuthService {
     } catch (e) {
       debugPrint('❌ AuthService.signInWithGoogle error: $e');
       debugPrint('🔍 Error type: ${e.runtimeType}');
-      
+
       if (e is FirebaseAuthException) {
-        debugPrint('🔥 Firebase Auth Error - Code: ${e.code}, Message: ${e.message}');
+        debugPrint(
+          '🔥 Firebase Auth Error - Code: ${e.code}, Message: ${e.message}',
+        );
       }
-      
+
       // Log to Crashlytics for production debugging
       await FirebaseCrashlytics.instance.recordError(
         e,
@@ -268,7 +293,7 @@ class AuthService {
         ],
         fatal: false,
       );
-      
+
       rethrow;
     }
   }
@@ -423,20 +448,57 @@ class AuthService {
     }
   }
 
-  bool _isBUEmail(String email) {
-    // Test accounts for development/testing
-    const testAccounts = [
+  Future<bool> _isBUEmail(String email) async {
+    final emailLower = email.toLowerCase();
+
+    // Check BU domain first
+    if (emailLower.endsWith('@bu.edu')) {
+      return true;
+    }
+
+    // Check server-side test accounts from Firestore
+    try {
+      debugPrint('🔍 Checking server-side test emails for: $email');
+      final testAccountsDoc = await _firestore
+          .collection('config')
+          .doc('test_accounts')
+          .get();
+
+      if (testAccountsDoc.exists) {
+        final data = testAccountsDoc.data() as Map<String, dynamic>;
+        final serverTestEmails = List<String>.from(data['emails'] ?? []);
+        debugPrint('📋 Server test emails: $serverTestEmails');
+
+        if (serverTestEmails.contains(emailLower)) {
+          debugPrint('✅ Email found in server test list');
+          return true;
+        }
+      } else {
+        debugPrint('📄 No server test accounts document found');
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking server test accounts: $e');
+    }
+
+    // Fallback to hardcoded test accounts if Firestore fails or email not found
+    const fallbackTestAccounts = [
       'enteigss@gmail.com',
       'michael@geml.co',
       'green.wb.evan@gmail.com',
       'alexhu124@gmail.com',
       'greenmichaeltodd@gmail.com',
       'sheriese@gmail.com',
-      'stosh.janik@gmail.com'
+      'stosh.janik@gmail.com',
     ];
 
-    return email.toLowerCase().endsWith('@bu.edu') ||
-        testAccounts.contains(email.toLowerCase());
+    final isInFallback = fallbackTestAccounts.contains(emailLower);
+    if (isInFallback) {
+      debugPrint('✅ Email found in fallback hardcoded list');
+    } else {
+      debugPrint('❌ Email not found in any test lists');
+    }
+
+    return isInFallback;
   }
 
   Future<void> updateSquadsOptIn(bool optIn) async {

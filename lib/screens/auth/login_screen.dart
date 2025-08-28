@@ -160,7 +160,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text("Throw Test Exception"),
               ),
 
-              const SizedBox(height: 24),
 
               // Help Text
               Container(

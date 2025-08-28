@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Deletion - LinkUp BU</title>
+    <meta name="description" content="Learn how to delete your LinkUp BU account and personal data">
+    
+    <!-- Open Graph tags -->
+    <meta property="og:title" content="Data Deletion - LinkUp BU">
+    <meta property="og:description" content="Learn how to delete your LinkUp BU account and personal data">
+    <meta property="og:type" content="website">
+    
+    <link rel="icon" type="image/png" href="/favicon.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .app-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .app-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .app-details h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .developer-info {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .content {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 16px;
+            margin-top: 24px;
+        }
+
+        .steps {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+
+        .step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+            padding-top: 4px;
+        }
+
+        .contact-box {
+            background: #e8f4fd;
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .email-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .email-link:hover {
+            text-decoration: underline;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table th {
+            background: #f8f9ff;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                margin-bottom: 20px;
+            }
+            
+            .app-info {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .data-table {
+                font-size: 14px;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="app-info">
+                <div class="app-icon">🔗</div>
+                <div class="app-details">
+                    <h1>LinkUp BU</h1>
+                    <div class="developer-info">by LinkUp BU Team</div>
+                </div>
+            </div>
+            <p>Account & Data Deletion Policy</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>🗑️ How to Delete Your Account</h2>
+                <p>You have the right to request deletion of your LinkUp BU account and all associated personal data at any time. We make this process simple and straightforward.</p>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Send us an email</strong><br>
+                            Email us from the same email address associated with your LinkUp BU account
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Include "Delete My Account" in the subject line</strong><br>
+                            This helps us quickly identify and prioritize your request
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <strong>We'll process your request</strong><br>
+                            Your account and data will be permanently deleted within 30 days
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <strong>Receive confirmation</strong><br>
+                            We'll send you an email confirmation once deletion is complete
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-box">
+                    <p><strong>Contact us at:</strong></p>
+                    <a href="mailto:jordan@linkupbu.com?subject=Delete My Account" class="email-link">
+                        jordan@linkupbu.com
+                    </a>
+                    <p style="margin-top: 12px; font-size: 14px; color: #666;">
+                        Make sure to email from your account's registered email address
+                    </p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📊 What Data Gets Deleted</h2>
+                <p>When you request account deletion, we permanently remove the following data from our systems:</p>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data Type</th>
+                            <th>Action</th>
+                            <th>Timeframe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Profile Information</td>
+                            <td>Permanently Deleted</td>
+                            <td>Within 30 days</td>
+                        </tr>
+                        <tr>
+                            <td>Photos & Images</td>
+                            <td>Permanently Deleted</td>
+                            <td>Within 30 days</td>
+                        </tr>
+                        <tr>
+                            <td>Messages & Chat History</td>
+                            <td>Permanently Deleted</td>
+                            <td>Within 30 days</td>
+                        </tr>
+                        <tr>
+                            <td>Hangout Participation</td>
+                            <td>Permanently Deleted</td>
+                            <td>Within 30 days</td>
+                        </tr>
+                        <tr>
+                            <td>App Usage Analytics</td>
+                            <td>Permanently Deleted</td>
+                            <td>Within 30 days</td>
+                        </tr>
+                        <tr>
+                            <td>Account Authentication</td>
+                            <td>Permanently Deleted</td>
+                            <td>Within 30 days</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>📝 Data That May Be Retained</h3>
+                <p>For legal, security, and operational reasons, we may retain certain non-personal information:</p>
+                <ul style="margin: 16px 0; padding-left: 24px;">
+                    <li>Anonymized usage statistics (no personal identifiers)</li>
+                    <li>Records required for legal compliance (fraud prevention, etc.)</li>
+                    <li>Technical logs necessary for app security (anonymized)</li>
+                </ul>
+
+                <div class="highlight">
+                    <strong>⚠️ Important:</strong> Account deletion is permanent and cannot be undone. You will need to create a new account if you wish to use LinkUp BU again in the future.
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>⏱️ Processing Timeline</h2>
+                <ul style="margin: 16px 0; padding-left: 24px;">
+                    <li><strong>Request Acknowledgment:</strong> Within 3 business days</li>
+                    <li><strong>Identity Verification:</strong> 1-2 business days</li>
+                    <li><strong>Data Deletion:</strong> Within 30 days of verified request</li>
+                    <li><strong>Confirmation Email:</strong> Sent upon completion</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>❓ Questions or Concerns</h2>
+                <p>If you have any questions about our data deletion process, privacy practices, or need assistance with your account, please don't hesitate to contact us.</p>
+                
+                <div class="contact-box">
+                    <p><strong>Get in touch:</strong></p>
+                    <a href="mailto:jordan@linkupbu.com" class="email-link">
+                        jordan@linkupbu.com
+                    </a>
+                    <p style="margin-top: 12px; font-size: 14px; color: #666;">
+                        We typically respond within 24-48 hours
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 LinkUp BU. This page complies with Google Play Console data deletion requirements.</p>
+            <p style="margin-top: 8px;">Last updated: August 2024</p>
+        </div>
+    </div>
+</body>
+</html>

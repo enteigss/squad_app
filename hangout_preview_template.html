@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{hangoutTitle}} - LinkUp BU Invite</title>
+    <meta name="description" content="You're invited to join {{hangoutTitle}} on LinkUp BU!">
+    
+    <!-- Open Graph tags for better sharing preview -->
+    <meta property="og:title" content="{{hangoutTitle}} - LinkUp BU Invite">
+    <meta property="og:description" content="You're invited to join {{hangoutTitle}} on LinkUp BU!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{currentUrl}}">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #667eea;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 20px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        .app-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .beta-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .invite-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .hangout-title {
+            font-size: 18px;
+            color: #667eea;
+            margin-bottom: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .invite-message {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .platform-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .footer {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="app-icon">🔗</div>
+            <div class="app-name">LinkUp BU</div>
+            <div class="beta-badge">Beta</div>
+        </div>
+
+        <div class="content">
+            <h1 class="invite-title">You're Invited!</h1>
+            <h2 class="hangout-title">"{{hangoutTitle}}"</h2>
+            <p class="invite-message">
+                {{inviterName}} has invited you to join this hangout on LinkUp BU.
+            </p>
+
+            <div class="buttons">
+                <!-- Deep link button - shows for mobile users who might have the app -->
+                <a href="linkupbu://hangout/{{hangoutId}}?inviter={{inviterId}}" 
+                   class="btn btn-primary" 
+                   id="openAppBtn"
+                   onclick="trackClick('open_app')">
+                    📱 Open in LinkUp BU
+                </a>
+
+                <!-- iOS Beta button -->
+                <a href="{{testflightUrl}}" 
+                   class="btn btn-secondary hidden" 
+                   id="iosBtn"
+                   onclick="trackClick('ios_beta')">
+                    🍎 Join iOS Beta
+                </a>
+
+                <!-- Android Beta button -->
+                <a href="{{androidBetaUrl}}" 
+                   class="btn btn-secondary hidden" 
+                   id="androidBtn"
+                   onclick="trackClick('android_beta')">
+                    🤖 Join Android Beta
+                </a>
+
+                <!-- Desktop fallback -->
+                <div id="desktopButtons" class="hidden">
+                    <a href="{{testflightUrl}}" 
+                       class="btn btn-secondary"
+                       onclick="trackClick('ios_beta_desktop')">
+                        🍎 Join iOS Beta
+                    </a>
+                    <a href="{{androidBetaUrl}}" 
+                       class="btn btn-secondary"
+                       onclick="trackClick('android_beta_desktop')">
+                        🤖 Join Android Beta
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>LinkUp BU is currently in beta testing.</p>
+            <p>By joining, you'll help us improve the app!</p>
+        </div>
+    </div>
+
+    <script>
+        // Device detection
+        function detectDevice() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            
+            const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+            const isAndroid = /android/i.test(userAgent);
+            const isMobile = isIOS || isAndroid;
+            
+            return { isIOS, isAndroid, isMobile };
+        }
+
+        // Show appropriate buttons based on device
+        function setupButtons() {
+            const device = detectDevice();
+            const openAppBtn = document.getElementById('openAppBtn');
+            const iosBtn = document.getElementById('iosBtn');
+            const androidBtn = document.getElementById('androidBtn');
+            const desktopButtons = document.getElementById('desktopButtons');
+
+            if (device.isIOS) {
+                // iOS device - show deep link and iOS beta
+                iosBtn.classList.remove('hidden');
+            } else if (device.isAndroid) {
+                // Android device - show deep link and Android beta
+                androidBtn.classList.remove('hidden');
+            } else {
+                // Desktop/other - hide deep link, show both beta options
+                openAppBtn.classList.add('hidden');
+                desktopButtons.classList.remove('hidden');
+            }
+        }
+
+        // Track button clicks (optional analytics)
+        function trackClick(action) {
+            console.log('Button clicked:', action);
+            // Add your analytics tracking here if needed
+            // e.g., gtag('event', 'click', { button: action });
+        }
+
+        // Handle deep link fallback
+        function handleDeepLinkFallback() {
+            const openAppBtn = document.getElementById('openAppBtn');
+            
+            openAppBtn.addEventListener('click', function(e) {
+                // Start a timer to detect if the deep link worked
+                const startTime = Date.now();
+                
+                // If user comes back to the page within 3 seconds, 
+                // the deep link probably failed (app not installed)
+                setTimeout(() => {
+                    if (Date.now() - startTime < 3000) {
+                        // Deep link likely failed, could show a message or redirect
+                        console.log('Deep link may have failed - app might not be installed');
+                    }
+                }, 100);
+            });
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setupButtons();
+            handleDeepLinkFallback();
+        });
+    </script>
+</body>
+</html>

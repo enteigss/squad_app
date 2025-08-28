@@ -32,6 +32,18 @@
         "function": "hangoutPreview"
       },
       {
+        "source": "/data-deletion",
+        "destination": "/data-deletion.html"
+      },
+      {
+        "source": "/privacy-policy",
+        "destination": "/privacy-policy.html"
+      },
+      {
+        "source": "/child-safety",
+        "destination": "/child-safety.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

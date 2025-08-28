@@ -125,13 +125,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  bool _isBUEmail(String email) {
-    // Test accounts for development/testing
-    const testAccounts = ['enteigss@gmail.com', 'michael@geml.co'];
-
-    return email.toLowerCase().endsWith('@bu.edu') ||
-        testAccounts.contains(email.toLowerCase());
-  }
 
   Future<void> signOut() async {
     try {

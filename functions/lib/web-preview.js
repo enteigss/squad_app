@@ -26,6 +26,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.hangoutPreview = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 exports.hangoutPreview = (0, https_1.onRequest)(async (req, res) => {
     try {
         // Extract hangout ID from URL path: /hangout/abc123
@@ -45,9 +47,28 @@ exports.hangoutPreview = (0, https_1.onRequest)(async (req, res) => {
             return;
         }
         const hangout = hangoutDoc.data();
-        // Generate the landing page
-        const html = generateHangoutPage(hangout, hangoutId);
+        // Get inviter data if available
+        let inviterName = 'Someone';
+        if (hangout.authorId) {
+            try {
+                const inviterDoc = await admin.firestore()
+                    .collection('users')
+                    .doc(hangout.authorId)
+                    .get();
+                if (inviterDoc.exists) {
+                    const inviterData = inviterDoc.data();
+                    inviterName = (inviterData === null || inviterData === void 0 ? void 0 : inviterData.displayName) || (inviterData === null || inviterData === void 0 ? void 0 : inviterData.username) || 'Someone';
+                }
+            }
+            catch (error) {
+                console.error('Error fetching inviter data:', error);
+                // Continue with default name
+            }
+        }
+        // Generate the landing page using template
+        const html = generateHangoutPageFromTemplate(hangout, hangoutId, inviterName);
         res.set('Content-Type', 'text/html');
+        res.set('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
         res.send(html);
     }
     catch (error) {
@@ -55,6 +76,28 @@ exports.hangoutPreview = (0, https_1.onRequest)(async (req, res) => {
         res.status(500).send(generateErrorPage("Something went wrong"));
     }
 });
+function generateHangoutPageFromTemplate(hangout, hangoutId, inviterName) {
+    try {
+        // Load the HTML template
+        const templatePath = path.join(__dirname, 'hangout_preview_template.html');
+        const template = fs.readFileSync(templatePath, 'utf8');
+        // Replace template variables with actual data
+        const html = template
+            .replace(/\{\{hangoutTitle\}\}/g, hangout.title || 'LinkUp BU Hangout')
+            .replace(/\{\{hangoutId\}\}/g, hangoutId)
+            .replace(/\{\{inviterName\}\}/g, inviterName)
+            .replace(/\{\{inviterId\}\}/g, hangout.authorId || '')
+            .replace(/\{\{currentUrl\}\}/g, `https://squad-7bc7e.web.app/hangout/${hangoutId}`)
+            .replace(/\{\{testflightUrl\}\}/g, 'https://testflight.apple.com/join/11Dg3Zh8')
+            .replace(/\{\{androidBetaUrl\}\}/g, 'https://play.google.com/store/apps/details?id=com.jordan.linkupbu');
+        return html;
+    }
+    catch (error) {
+        console.error('Error loading template:', error);
+        // Fallback to the original inline HTML generation
+        return generateHangoutPage(hangout, hangoutId);
+    }
+}
 function generateHangoutPage(hangout, hangoutId) {
     var _a;
     // Format date/time
@@ -215,7 +258,7 @@ function generateHangoutPage(hangout, hangoutId) {
         </div>
 
         <!-- Continue in App button (hidden by default) -->
-        <a href="squadapp://hangout/${hangoutId}" class="button primary hidden" id="continueBtn">
+        <a href="linkupbu://hangout/${hangoutId}" class="button primary hidden" id="continueBtn">
             📱 Continue in App
         </a>
         
@@ -247,11 +290,11 @@ function generateHangoutPage(hangout, hangoutId) {
         if (isIOS) {
             document.getElementById('iosBtn').classList.remove('hidden');
             // Replace with your actual TestFlight link
-            document.getElementById('iosBtn').href = 'https://testflight.apple.com/join/YOUR_TESTFLIGHT_LINK';
+            document.getElementById('iosBtn').href = 'https://testflight.apple.com/join/11Dg3Zh8';
         } else if (isAndroid) {
             document.getElementById('androidBtn').classList.remove('hidden');
             // Replace with your actual APK download link or Firebase App Distribution
-            document.getElementById('androidBtn').href = 'https://appdistribution.firebase.dev/i/YOUR_DISTRIBUTION_LINK';
+            document.getElementById('androidBtn').href = 'https://play.google.com/store/apps/details?id=com.jordan.linkupbu';
         }
         
         // Show "Continue in App" if mobile (user might have app installed)
