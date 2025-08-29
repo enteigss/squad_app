@@ -117,6 +117,12 @@ service cloud.firestore {
                        isOwner(resource.data.userId); // For cleanup after submission
     }
 
+    // Test emails
+    match /config/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Default deny all other paths
     match /{document=**} {
       allow read, write: if false;

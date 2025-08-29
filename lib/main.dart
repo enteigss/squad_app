@@ -39,7 +39,7 @@ void main() async {
     // Initialize Firebase Crashlytics
     debugPrint('💥 Initializing Firebase Crashlytics...');
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    
+
     // Pass all uncaught "fatal" errors from the framework to Crashlytics
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -265,28 +265,28 @@ class _SquadAppState extends State<SquadApp> {
           builder: (context, state) {
             final postId = state.pathParameters['postId']!;
             debugPrint('🎯 POST CHAT ROUTE - Route hit with postId: $postId');
-            
+
             return Consumer<PostProvider>(
               builder: (context, postProvider, child) {
                 debugPrint('🔍 POST CHAT ROUTE - Consumer builder called');
                 debugPrint('🔍 Getting post by ID: $postId');
-                
+
                 final post = postProvider.getPostById(postId);
                 debugPrint('📋 Post found: ${post != null}');
-                
+
                 if (post != null) {
-                  debugPrint('✅ Post details - ID: ${post.id}, Title: ${post.title}');
+                  debugPrint(
+                    '✅ Post details - ID: ${post.id}, Title: ${post.title}',
+                  );
                 }
-                
+
                 if (post == null) {
                   debugPrint('❌ Post not found! Showing error screen');
                   return const Scaffold(
-                    body: Center(
-                      child: Text('Post not found'),
-                    ),
+                    body: Center(child: Text('Post not found')),
                   );
                 }
-                
+
                 debugPrint('🎉 Returning PostChatScreen with post');
                 return PostChatScreen(post: post);
               },
@@ -302,9 +302,7 @@ class _SquadAppState extends State<SquadApp> {
                 final post = postProvider.getPostById(postId);
                 if (post == null) {
                   return const Scaffold(
-                    body: Center(
-                      child: Text('Post not found'),
-                    ),
+                    body: Center(child: Text('Post not found')),
                   );
                 }
                 return GroupMembersScreen(post: post);

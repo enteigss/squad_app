@@ -46,18 +46,48 @@ class AuthProvider with ChangeNotifier {
           debugPrint(
             '✅ AuthProvider._currentUser updated: ${_currentUser != null}',
           );
-          
+
           // Request notification permissions for returning users
           try {
-            debugPrint('🔔 Requesting notification permissions for returning user...');
+            debugPrint(
+              '🔔 Requesting notification permissions for returning user...',
+            );
             final notificationService = NotificationService();
             await notificationService.requestPermission();
-            debugPrint('✅ Notification permissions requested successfully for returning user');
+            debugPrint(
+              '✅ Notification permissions requested successfully for returning user',
+            );
+
+            // Unsubscribe from hangout topics then subscribe based on gender
+            debugPrint(
+              '🔕 Unsubscribing from all hangout notification topics...',
+            );
+            await notificationService.unsubscribeFromTopics([
+              'new_hangouts_bu_men',
+              'new_hangouts_bu_women',
+              'new_hangouts_bu_anyone',
+            ]);
+            debugPrint(
+              '✅ Successfully unsubscribed from all hangout topics for returning user',
+            );
+
+            // Subscribe to appropriate topics based on user gender
+            debugPrint(
+              '🔔 Subscribing to hangout topics based on gender: ${userData?.gender}',
+            );
+            await notificationService.subscribeToHangoutTopicsBasedOnGender(
+              userData?.gender,
+            );
+            debugPrint(
+              '✅ Successfully subscribed to appropriate hangout topics for returning user',
+            );
           } catch (e) {
-            debugPrint('⚠️ Warning: Failed to request notification permissions for returning user: $e');
+            debugPrint(
+              '⚠️ Warning: Failed to setup notifications for returning user: $e',
+            );
             // Don't fail the auth state change if notification setup fails
           }
-          
+
           notifyListeners();
         } catch (e) {
           debugPrint('❌ Error getting user data: $e');
@@ -112,8 +142,26 @@ class AuthProvider with ChangeNotifier {
         final notificationService = NotificationService();
         await notificationService.requestPermission();
         debugPrint('✅ Notification permissions requested successfully');
+
+        // Unsubscribe from hangout topics then subscribe based on gender
+        debugPrint('🔕 Unsubscribing from all hangout notification topics...');
+        await notificationService.unsubscribeFromTopics([
+          'new_hangouts_bu_men',
+          'new_hangouts_bu_women',
+          'new_hangouts_bu_anyone',
+        ]);
+        debugPrint('✅ Successfully unsubscribed from all hangout topics');
+
+        // Subscribe to appropriate topics based on user gender
+        debugPrint(
+          '🔔 Subscribing to hangout topics based on gender: ${_currentUser?.gender}',
+        );
+        await notificationService.subscribeToHangoutTopicsBasedOnGender(
+          _currentUser?.gender,
+        );
+        debugPrint('✅ Successfully subscribed to appropriate hangout topics');
       } catch (e) {
-        debugPrint('⚠️ Warning: Failed to request notification permissions: $e');
+        debugPrint('⚠️ Warning: Failed to setup notifications: $e');
         // Don't fail the sign-in process if notification setup fails
       }
 
@@ -148,7 +196,6 @@ class AuthProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
-
 
   Future<void> signOut() async {
     try {
@@ -344,6 +391,25 @@ class AuthProvider with ChangeNotifier {
         activityPreferences: activityPreferences,
         userGender: userGender,
       );
+
+      // Subscribe to gender-specific hangout topic if gender was provided
+      if (userGender != null) {
+        try {
+          debugPrint(
+            '🔔 Subscribing to gender-specific hangout topic for gender: $userGender',
+          );
+          final notificationService = NotificationService();
+          await notificationService.subscribeToGenderSpecificTopic(userGender);
+          debugPrint(
+            '✅ Successfully subscribed to gender-specific hangout topic',
+          );
+        } catch (e) {
+          debugPrint(
+            '⚠️ Warning: Failed to subscribe to gender-specific topic: $e',
+          );
+          // Don't fail the preferences update if topic subscription fails
+        }
+      }
 
       // Update the current user model to reflect completed preferences
       if (_currentUser != null) {

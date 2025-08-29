@@ -182,7 +182,7 @@ class HangoutDetailScreen extends StatelessWidget {
                 
                 const SizedBox(height: 32),
                 
-                // Action button
+                // Action buttons
                 if (isParticipant)
                   CustomButton(
                     text: 'Already Joined ✓',
@@ -191,10 +191,22 @@ class HangoutDetailScreen extends StatelessWidget {
                     backgroundColor: AppColors.success,
                   )
                 else if (canJoin)
-                  CustomButton(
-                    text: 'Join Hangout',
-                    onPressed: () => _joinHangout(context, hangout, currentUser!.id),
-                    width: double.infinity,
+                  Column(
+                    children: [
+                      CustomButton(
+                        text: 'Join Hangout',
+                        onPressed: () => _joinHangout(context, hangout, currentUser!.id),
+                        width: double.infinity,
+                      ),
+                      const SizedBox(height: 12),
+                      CustomButton(
+                        text: 'Not Right Now',
+                        onPressed: () => _notRightNow(context),
+                        width: double.infinity,
+                        backgroundColor: AppColors.surface,
+                        textColor: AppColors.textPrimary,
+                      ),
+                    ],
                   )
                 else
                   CustomButton(
@@ -423,5 +435,25 @@ class HangoutDetailScreen extends StatelessWidget {
     }
     
     debugPrint('🏁 JOIN HANGOUT FLOW - Method completed');
+  }
+
+  void _notRightNow(BuildContext context) {
+    debugPrint('👋 NOT RIGHT NOW - User declined to join hangout');
+    
+    // Navigate back to feed, same as successful join
+    debugPrint('🧭 Navigating back to feed hangouts tab');
+    
+    try {
+      NavigationService.goToPath('/feed?tab=hangouts');
+      debugPrint('✅ Navigation to feed completed successfully');
+    } catch (e) {
+      debugPrint('💥 ERROR during navigation: $e');
+      debugPrint('🔍 Error type: ${e.runtimeType}');
+      
+      // Fallback: just pop the current screen
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
   }
 }

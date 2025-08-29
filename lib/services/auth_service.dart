@@ -482,7 +482,6 @@ class AuthService {
 
     // Fallback to hardcoded test accounts if Firestore fails or email not found
     const fallbackTestAccounts = [
-      'enteigss@gmail.com',
       'michael@geml.co',
       'green.wb.evan@gmail.com',
       'alexhu124@gmail.com',

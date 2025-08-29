@@ -141,5 +141,108 @@ class NotificationService {
     }
   }
 
+  // Method to unsubscribe from a specific topic
+  Future<void> unsubscribeFromTopic(String topic) async {
+    try {
+      await _firebaseMessaging.unsubscribeFromTopic(topic);
+      if (kDebugMode) {
+        print('Successfully unsubscribed from topic: $topic');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error unsubscribing from topic $topic: $e');
+      }
+      // Don't throw error - this shouldn't block the user flow
+    }
+  }
+
+  // Method to unsubscribe from multiple topics
+  Future<void> unsubscribeFromTopics(List<String> topics) async {
+    if (kDebugMode) {
+      print('Unsubscribing from topics: ${topics.join(", ")}');
+    }
+    
+    for (final topic in topics) {
+      await unsubscribeFromTopic(topic);
+    }
+    
+    if (kDebugMode) {
+      print('Completed unsubscribing from ${topics.length} topics');
+    }
+  }
+
+  // Method to subscribe to a specific topic (for future use)
+  Future<void> subscribeToTopic(String topic) async {
+    try {
+      await _firebaseMessaging.subscribeToTopic(topic);
+      if (kDebugMode) {
+        print('Successfully subscribed to topic: $topic');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error subscribing to topic $topic: $e');
+      }
+      // Don't throw error - this shouldn't block the user flow
+    }
+  }
+
+  // Method to subscribe to hangout topics based on user gender
+  Future<void> subscribeToHangoutTopicsBasedOnGender(String? gender) async {
+    if (kDebugMode) {
+      print('Subscribing to hangout topics for gender: ${gender ?? "null"}');
+    }
+    
+    // Everyone gets the universal topic
+    List<String> topics = ['new_hangouts_bu_anyone'];
+    
+    // Add gender-specific topic if gender is known
+    if (gender?.toLowerCase() == 'male') {
+      topics.add('new_hangouts_bu_men');
+    } else if (gender?.toLowerCase() == 'female') {
+      topics.add('new_hangouts_bu_women');
+    }
+    
+    if (kDebugMode) {
+      print('Subscribing to topics: ${topics.join(", ")}');
+    }
+    
+    // Subscribe to all appropriate topics
+    for (final topic in topics) {
+      await subscribeToTopic(topic);
+    }
+    
+    if (kDebugMode) {
+      print('Completed subscribing to ${topics.length} hangout topics');
+    }
+  }
+
+  // Method to subscribe to gender-specific topic only (for preferences completion)
+  Future<void> subscribeToGenderSpecificTopic(String? gender) async {
+    if (gender == null) {
+      if (kDebugMode) {
+        print('No gender provided, skipping gender-specific topic subscription');
+      }
+      return;
+    }
+    
+    String? topicToSubscribe;
+    if (gender.toLowerCase() == 'male') {
+      topicToSubscribe = 'new_hangouts_bu_men';
+    } else if (gender.toLowerCase() == 'female') {
+      topicToSubscribe = 'new_hangouts_bu_women';
+    }
+    
+    if (topicToSubscribe != null) {
+      if (kDebugMode) {
+        print('Subscribing to gender-specific topic: $topicToSubscribe for gender: $gender');
+      }
+      await subscribeToTopic(topicToSubscribe);
+    } else {
+      if (kDebugMode) {
+        print('Unknown gender value: $gender, no gender-specific topic subscription');
+      }
+    }
+  }
+
   // You can add other methods here for handling incoming messages, etc.
 }
