@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.healthCheck = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
+exports.healthCheck = exports.hangoutNotifications = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
@@ -40,6 +40,9 @@ Object.defineProperty(exports, "hangoutPreview", { enumerable: true, get: functi
 // App Invite Functions
 var app_preview_1 = require("./app-preview");
 Object.defineProperty(exports, "appPreview", { enumerable: true, get: function () { return app_preview_1.appPreview; } });
+// Hangout Notification Functions
+var hangout_notifications_1 = require("./hangout-notifications");
+Object.defineProperty(exports, "hangoutNotifications", { enumerable: true, get: function () { return hangout_notifications_1.hangoutNotifications; } });
 // Health check endpoint
 exports.healthCheck = (0, https_1.onRequest)((req, res) => {
     res.json({

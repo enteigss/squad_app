@@ -17,6 +17,9 @@ export {hangoutPreview} from "./web-preview";
 // App Invite Functions
 export {appPreview} from "./app-preview";
 
+// Hangout Notification Functions
+export {hangoutNotifications} from "./hangout-notifications";
+
 // Health check endpoint
 export const healthCheck = onRequest((req, res) => {
   res.json({
