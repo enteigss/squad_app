@@ -5,6 +5,7 @@ import '../models/user_model.dart';
 import 'post_chat_service.dart';
 import 'firestore_service.dart';
 import 'feedback_service.dart';
+import 'analytics_service.dart';
 
 class PostService {
   static final PostService _instance = PostService._internal();
@@ -16,6 +17,7 @@ class PostService {
   final PostChatService _chatService = PostChatService();
   final FirestoreService _firestoreService = FirestoreService();
   final FeedbackService _feedbackService = FeedbackService();
+  final AnalyticsService _analyticsService = AnalyticsService();
 
   // Create a new post
   Future<String> createPost(Post post) async {
@@ -281,6 +283,18 @@ class PostService {
         'deleted': true,
       });
 
+      // Track deletion feedback in analytics if feedback was provided
+      if (post != null && authorDidMeetup != null) {
+        await _analyticsService.trackHangoutDeletionFeedback(
+          hangoutId: postId,
+          authorId: authorId,
+          didMeetupHappen: authorDidMeetup,
+          participantCount: post.participantIds.length,
+          hangoutCreatedAt: post.createdAt,
+          additionalFeedback: authorAdditionalFeedback,
+        );
+      }
+
       // If the post had participants and wasn't already completed, handle feedback
       debugPrint(
         'DeletePostWithFeedback: Checking feedback conditions - feedbackCollected: ${post?.feedbackCollected}, status: ${post?.status}, participants: ${post?.participantIds.length}',
@@ -402,30 +416,29 @@ class PostService {
     // Skip deleted posts
     if (post.deleted) return false;
 
-    // If post accepts "Anyone", it matches any user
-    if (post.genderPreferences.contains('Anyone')) {
-      return true;
-    }
-
-    // If user hasn't specified gender, they can only see "Anyone" posts
+    // If user hasn't specified gender, they can only see posts that include ALL three options
     if (userGender == null || userGender == 'prefer_not_to_say') {
-      return false; // Already checked "Anyone" above
+      return post.genderPreferences.contains('Men') &&
+             post.genderPreferences.contains('Women') &&
+             post.genderPreferences.contains('Other');
     }
 
-    // Map user gender to post preference format
+    // Map user gender to new preference format
     String expectedPreference = '';
     switch (userGender) {
       case 'woman':
-        expectedPreference = 'Women only';
+        expectedPreference = 'Women';
         break;
       case 'man':
-        expectedPreference = 'Men only';
+        expectedPreference = 'Men';
         break;
       case 'non_binary':
-        expectedPreference = 'Non-binary only';
+        expectedPreference = 'Other';
         break;
       default:
-        return false;
+        // For any other gender identities, map to 'Other'
+        expectedPreference = 'Other';
+        break;
     }
 
     // Check if post's gender preferences include the user's gender

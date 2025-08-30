@@ -87,13 +87,18 @@ class AnalyticsService {
     required String title,
     required String authorId,
     required DateTime scheduledTime,
-    required String genderPreference,
+    required String genderPreference, // This is now a comma-separated list
     int? maxParticipants,
     bool hasDescription = false,
   }) async {
     final now = DateTime.now();
     final isNow = scheduledTime.difference(now).inMinutes.abs() < 1;
     final scheduledType = isNow ? 'now' : 'scheduled';
+    
+    // Parse gender preferences for analytics
+    final genderList = genderPreference.split(', ');
+    final isAllGenders = genderList.length == 3;
+    final genderCount = genderList.length;
     
     await _analytics.logEvent(
       name: 'hangout_created',
@@ -102,7 +107,12 @@ class AnalyticsService {
         'title_length': title.length,
         'author_id': authorId,
         'scheduled_type': scheduledType,
-        'gender_preference': genderPreference,
+        'gender_preferences': genderPreference,
+        'gender_count': genderCount,
+        'includes_men': genderList.contains('Men') ? 1 : 0,
+        'includes_women': genderList.contains('Women') ? 1 : 0,
+        'includes_other': genderList.contains('Other') ? 1 : 0,
+        'is_all_genders': isAllGenders ? 1 : 0,
         'max_participants': maxParticipants ?? 0,
         'has_description': hasDescription ? 1 : 0,
         'time_to_event_hours': isNow ? 0 : scheduledTime.difference(now).inHours,
@@ -111,7 +121,7 @@ class AnalyticsService {
     );
     
     if (kDebugMode) {
-      print('Analytics: Hangout created - id: $hangoutId, type: $scheduledType');
+      print('Analytics: Hangout created - id: $hangoutId, type: $scheduledType, genders: $genderPreference');
     }
   }
 
@@ -386,6 +396,37 @@ class AnalyticsService {
     
     if (kDebugMode) {
       print('Analytics: Meetup feedback submitted - hangout: $hangoutId, success: $didMeetup');
+    }
+  }
+
+  // Hangout deletion feedback tracking
+  Future<void> trackHangoutDeletionFeedback({
+    required String hangoutId,
+    required String authorId,
+    required bool didMeetupHappen,
+    required int participantCount,
+    required DateTime hangoutCreatedAt,
+    String? additionalFeedback,
+  }) async {
+    final now = DateTime.now();
+    final hangoutAgeHours = now.difference(hangoutCreatedAt).inHours;
+    
+    await _analytics.logEvent(
+      name: 'hangout_deletion_feedback',
+      parameters: {
+        'hangout_id': hangoutId,
+        'author_id': authorId,
+        'did_meetup_happen': didMeetupHappen ? 1 : 0,
+        'participant_count': participantCount,
+        'has_additional_feedback': (additionalFeedback?.isNotEmpty ?? false) ? 1 : 0,
+        'hangout_age_hours': hangoutAgeHours,
+        'deletion_reason': 'author_deleted',
+        'feedback_timestamp': now.toIso8601String(),
+      },
+    );
+    
+    if (kDebugMode) {
+      print('Analytics: Hangout deletion feedback - id: $hangoutId, meetup happened: $didMeetupHappen, participants: $participantCount');
     }
   }
 

@@ -21,35 +21,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _descriptionController = TextEditingController();
 
   DateTime? _selectedDateTime;
-  String _selectedGender = 'Anyone';
+  Set<String> _selectedGenders = {'Men', 'Women', 'Other'}; // All selected by default
   bool _showSuggestions = false;
   int _maxParticipants = 10;
 
-  // Dynamic gender preference options based on user's gender
-  List<String> _getGenderPreferenceOptions(String? userGender) {
-    if (userGender == null || userGender == 'prefer_not_to_say') {
-      return [
-        'Anyone',
-      ]; // Only "Anyone" if user hasn't selected gender or prefers not to say
-    }
-
-    final baseOptions = ['Anyone'];
-
-    // Add gender-specific option based on user's selection
-    switch (userGender) {
-      case 'woman':
-        baseOptions.insert(0, 'Women only');
-        break;
-      case 'man':
-        baseOptions.insert(0, 'Men only');
-        break;
-      case 'non_binary':
-        baseOptions.insert(0, 'Non-binary only');
-        break;
-    }
-
-    return baseOptions;
-  }
+  // Gender preference options - now fixed for all users
+  final List<String> _genderPreferenceOptions = ['Men', 'Women', 'Other'];
 
   final Map<String, List<String>> _activitySuggestions = {
     'Boston Hotspots': [
@@ -482,77 +459,80 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _buildGenderSelector() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        final userGender = authProvider.currentUser?.gender;
-        final genderOptions = _getGenderPreferenceOptions(userGender);
-
-        // If user hasn't selected gender or prefers not to say, don't show the section
-        if (userGender == null || userGender == 'prefer_not_to_say') {
-          return const SizedBox.shrink();
-        }
-
-        // Reset selected gender if it's not in the new options
-        if (!genderOptions.contains(_selectedGender)) {
-          _selectedGender = genderOptions.first;
-        }
-
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.people, color: AppColors.primary, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Gender preference',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ],
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.people, color: AppColors.primary, size: 24),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Gender preference',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+          const SizedBox(height: 8),
+          Text(
+            'Select who can join this hangout (multiple allowed)',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _genderPreferenceOptions.map((option) {
+              final isSelected = _selectedGenders.contains(option);
+              return GestureDetector(
+                onTap: () => _toggleGenderSelection(option),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textSecondary.withValues(alpha: 0.3),
+                      width: 1.5,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: genderOptions.map((option) {
-                  final isSelected = _selectedGender == option;
-                  return GestureDetector(
-                    onTap: () => _setGenderSelection(option),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textSecondary.withValues(alpha: 0.3),
-                          width: 1.5,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSelected)
+                        Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 16,
                         ),
-                      ),
-                      child: Text(
+                      if (isSelected) const SizedBox(width: 4),
+                      Text(
                         option,
                         style: TextStyle(
                           color: isSelected
@@ -564,14 +544,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           fontSize: 14,
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-        );
-      },
+          if (_selectedGenders.length == 3)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'All genders selected - everyone can join!',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -814,9 +806,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
   }
 
-  void _setGenderSelection(String gender) {
+  void _toggleGenderSelection(String gender) {
     setState(() {
-      _selectedGender = gender;
+      if (_selectedGenders.contains(gender)) {
+        // Don't allow deselecting if it's the last one
+        if (_selectedGenders.length > 1) {
+          _selectedGenders.remove(gender);
+        }
+      } else {
+        _selectedGenders.add(gender);
+      }
     });
   }
 
@@ -894,7 +893,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           authorId: currentUser.id,
           authorName: currentUser.displayName ?? 'Unknown User',
           scheduledTime: _selectedDateTime!,
-          genderPreferences: [_selectedGender],
+          genderPreferences: _selectedGenders.toList(),
           maxParticipants: _maxParticipants,
         );
 
@@ -909,7 +908,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             title: _titleController.text.trim(),
             authorId: currentUser.id,
             scheduledTime: _selectedDateTime!,
-            genderPreference: _selectedGender,
+            genderPreference: _selectedGenders.join(', '),
             hasDescription: _descriptionController.text.trim().isNotEmpty,
           );
 

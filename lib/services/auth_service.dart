@@ -4,9 +4,11 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   AuthService() {
     _auth.authStateChanges().listen((User? user) {
@@ -187,6 +189,12 @@ class AuthService {
           );
           debugPrint('📧 User email: ${result.user!.email}');
           debugPrint('👤 User display name: ${result.user!.displayName}');
+
+          // Set user ID for analytics after a successful sign-in
+          await _analytics.setUserId(id: result.user!.uid);
+          debugPrint(
+            'Successfully set User ID for Analytics: ${result.user!.uid}',
+          );
 
           // Check if user document exists in Firestore
           debugPrint('🔍 Checking for existing user document in Firestore...');

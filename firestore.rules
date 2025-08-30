@@ -37,8 +37,11 @@ service cloud.firestore {
 
     // Post chat messages (subcollection of posts)
     match /posts/{postId}/chat/{messageId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() &&
+        (isOwner(get(/databases/$(database)/documents/posts/$(postId)).data.authorId) ||
+         isParticipant(get(/databases/$(database)/documents/posts/$(postId)).data));
+      allow create: if isAuthenticated() &&
+        isParticipant(get(/databases/$(database)/documents/posts/$(postId)).data);
       allow update: if isAuthenticated() && 
                        isOwner(resource.data.senderId);
       allow delete: if isAuthenticated() && 
@@ -56,17 +59,7 @@ service cloud.firestore {
                        isOwner(resource.data.inviterId);
     }
 
-    // Invite tracking for analytics (optional)
-    match /invite_analytics/{analyticsId} {
-      allow read, write: if isAuthenticated();
-    }
-
-    // App invite analytics collection - for tracking app invite performance
-    match /app_invite_analytics/{analyticsId} {
-      allow read: if isAuthenticated();
-      allow create: if true; // Allow anonymous creation for web tracking
-      allow update, delete: if false; // Analytics data should not be modified
-    }
+    // Analytics collections removed - now using Firebase Analytics instead of Firestore
 
     // Party invitations (existing functionality)
     match /party_invitations/{invitationId} {

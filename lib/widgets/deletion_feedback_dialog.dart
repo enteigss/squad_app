@@ -17,7 +17,8 @@ class DeletionFeedbackDialog extends StatefulWidget {
     BuildContext context, {
     required String hangoutTitle,
     required VoidCallback onCancel,
-    required Function(bool didMeetup, String? additionalFeedback) onConfirmDelete,
+    required Function(bool didMeetup, String? additionalFeedback)
+    onConfirmDelete,
   }) {
     return showDialog<void>(
       context: context,
@@ -35,8 +36,9 @@ class DeletionFeedbackDialog extends StatefulWidget {
 }
 
 class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
-  final TextEditingController _additionalFeedbackController = TextEditingController();
-  
+  final TextEditingController _additionalFeedbackController =
+      TextEditingController();
+
   bool _isSubmitting = false;
   bool? _didMeetup;
   bool _showAdditionalFeedback = false;
@@ -57,11 +59,11 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
     try {
       widget.onConfirmDelete(
         _didMeetup!,
-        _additionalFeedbackController.text.trim().isEmpty 
-            ? null 
+        _additionalFeedbackController.text.trim().isEmpty
+            ? null
             : _additionalFeedbackController.text.trim(),
       );
-      
+
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -95,11 +97,7 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
           // Header
           Row(
             children: [
-              Icon(
-                Icons.delete_outline,
-                color: AppColors.error,
-                size: 28,
-              ),
+              Icon(Icons.delete_outline, color: AppColors.error, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -114,7 +112,7 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Hangout title
           Container(
             padding: const EdgeInsets.all(12),
@@ -128,11 +126,7 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.event,
-                  color: AppColors.error,
-                  size: 20,
-                ),
+                Icon(Icons.event, color: AppColors.error, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -151,18 +145,12 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
           // Main question
           Text(
             'Before deleting, did this hangout actually happen?',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textPrimary,
-            ),
+            style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           Text(
             'This helps us understand how successful our hangouts are.',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
 
@@ -221,20 +209,24 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
                 ),
               ],
             ),
-            
+
             if (_showAdditionalFeedback) ...[
               const SizedBox(height: 8),
               TextField(
                 controller: _additionalFeedbackController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: _didMeetup! 
+                  hintText: _didMeetup!
                       ? 'Tell us what made this hangout great...'
                       : 'What could we improve for next time?',
-                  hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.7)),
+                  hintStyle: TextStyle(
+                    color: AppColors.textSecondary.withOpacity(0.7),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                    borderSide: BorderSide(
+                      color: AppColors.primary.withOpacity(0.3),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -250,10 +242,12 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
       actions: [
         // Cancel button
         TextButton(
-          onPressed: _isSubmitting ? null : () {
-            Navigator.of(context).pop();
-            widget.onCancel();
-          },
+          onPressed: _isSubmitting
+              ? null
+              : () {
+                  Navigator.of(context).pop();
+                  widget.onCancel();
+                },
           child: Text(
             'Cancel',
             style: TextStyle(color: AppColors.textSecondary),
@@ -262,7 +256,9 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
 
         // Delete button
         ElevatedButton(
-          onPressed: (_didMeetup != null && !_isSubmitting) ? _confirmDelete : null,
+          onPressed: (_didMeetup != null && !_isSubmitting)
+              ? _confirmDelete
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.error,
             foregroundColor: Colors.white,
@@ -292,7 +288,7 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
     required IconData icon,
   }) {
     final isSelected = _didMeetup == value;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -305,7 +301,9 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
           color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? color : AppColors.textSecondary.withOpacity(0.3),
+            color: isSelected
+                ? color
+                : AppColors.textSecondary.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
         ),

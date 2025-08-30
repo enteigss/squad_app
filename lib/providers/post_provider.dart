@@ -242,30 +242,29 @@ class PostProvider with ChangeNotifier {
 
   // Helper method to check if user can see a post based on gender
   bool _canUserSeePost(Post post, String? userGender) {
-    // If post accepts "Anyone", it matches any user
-    if (post.genderPreferences.contains('Anyone')) {
-      return true;
-    }
-    
-    // If user hasn't specified gender, they can only see "Anyone" posts
+    // If user hasn't specified gender, they can only see posts that include ALL three options
     if (userGender == null || userGender == 'prefer_not_to_say') {
-      return false; // Already checked "Anyone" above
+      return post.genderPreferences.contains('Men') &&
+             post.genderPreferences.contains('Women') &&
+             post.genderPreferences.contains('Other');
     }
     
-    // Map user gender to post preference format
+    // Map user gender to new preference format
     String expectedPreference = '';
     switch (userGender) {
       case 'woman':
-        expectedPreference = 'Women only';
+        expectedPreference = 'Women';
         break;
       case 'man':
-        expectedPreference = 'Men only';
+        expectedPreference = 'Men';
         break;
       case 'non_binary':
-        expectedPreference = 'Non-binary only';
+        expectedPreference = 'Other';
         break;
       default:
-        return false;
+        // For any other gender identities, map to 'Other'
+        expectedPreference = 'Other';
+        break;
     }
     
     // Check if post's gender preferences include the user's gender

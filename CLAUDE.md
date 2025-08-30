@@ -9,7 +9,7 @@ This is a Flutter application named "squad_app" - a cross-platform mobile app su
 ## Common Development Commands
 
 ### Dependencies and Setup
-```bash
+```bashB
 flutter pub get          # Install dependencies
 flutter pub upgrade      # Upgrade dependencies to latest versions
 ```
