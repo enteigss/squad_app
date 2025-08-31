@@ -16,7 +16,6 @@ class UserModel {
   final bool hasCreatedProfile;
   final bool hasCompletedPreferences;
   final bool profileCompleted;
-  final bool squadsOptIn;
   final String? fcmToken;
 
   UserModel({
@@ -37,7 +36,6 @@ class UserModel {
     this.hasCreatedProfile = false,
     this.hasCompletedPreferences = false,
     this.profileCompleted = false,
-    this.squadsOptIn = false,
     this.fcmToken,
   });
 
@@ -60,7 +58,6 @@ class UserModel {
       hasCreatedProfile: map['hasCreatedProfile'] ?? false,
       hasCompletedPreferences: map['hasCompletedPreferences'] ?? false,
       profileCompleted: map['profileCompleted'] ?? false,
-      squadsOptIn: map['squadsOptIn'] ?? false,
       fcmToken: map['fcmToken'],
     );
   }
@@ -94,7 +91,6 @@ class UserModel {
       'hasCreatedProfile': hasCreatedProfile,
       'hasCompletedPreferences': hasCompletedPreferences,
       'profileCompleted': profileCompleted,
-      'squadsOptIn': squadsOptIn,
       'fcmToken': fcmToken,
     };
   }
@@ -117,7 +113,6 @@ class UserModel {
     bool? hasCreatedProfile,
     bool? hasCompletedPreferences,
     bool? profileCompleted,
-    bool? squadsOptIn,
     String? fcmToken,
   }) {
     return UserModel(
@@ -138,7 +133,6 @@ class UserModel {
       hasCreatedProfile: hasCreatedProfile ?? this.hasCreatedProfile,
       hasCompletedPreferences: hasCompletedPreferences ?? this.hasCompletedPreferences,
       profileCompleted: profileCompleted ?? this.profileCompleted,
-      squadsOptIn: squadsOptIn ?? this.squadsOptIn,
       fcmToken: fcmToken ?? this.fcmToken,
     );
   }

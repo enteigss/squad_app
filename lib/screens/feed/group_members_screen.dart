@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/post_model.dart';
 import '../../models/user_model.dart';
+import '../../models/report_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/navigation_service.dart';
+import '../../services/report_service.dart';
 import '../../utils/colors.dart';
 import 'post_chat_screen.dart';
 import '../profile/profile_detail_screen.dart';
 import '../../widgets/invite_options_modal.dart';
+import '../../widgets/report_dialog.dart';
 
 class GroupMembersScreen extends StatefulWidget {
   final Post post;
@@ -26,6 +29,7 @@ class GroupMembersScreen extends StatefulWidget {
 
 class _GroupMembersScreenState extends State<GroupMembersScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final ReportService _reportService = ReportService();
   List<UserModel> _members = [];
   bool _isLoading = true;
   String? _error;
@@ -93,6 +97,13 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Report button - only show for participants who are not the host
+          if (widget.isParticipant && _canShowReportButton())
+            IconButton(
+              icon: const Icon(Icons.flag_outlined),
+              onPressed: _showReportDialog,
+              tooltip: 'Report Hangout',
+            ),
           // Chat button - only show for participants
           if (widget.isParticipant)
             IconButton(
@@ -604,5 +615,101 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         builder: (context) => ProfileDetailScreen(user: member),
       ),
     );
+  }
+
+  // Check if current user can see the report button
+  bool _canShowReportButton() {
+    final currentUserId = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).currentUser?.id;
+    
+    // Don't show report button to the host
+    return currentUserId != widget.post.authorId;
+  }
+
+  // Show report dialog
+  Future<void> _showReportDialog() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+    
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be signed in to report content'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await ReportDialog.show(
+        context,
+        contentType: 'hangout',
+        contentId: widget.post.id,
+        contentTitle: widget.post.title,
+        authorId: widget.post.authorId,
+        contentSnippet: ReportService.createHangoutContentSnippet(
+          title: widget.post.title,
+          description: widget.post.description,
+          location: widget.post.location,
+          participantCount: widget.post.participantIds.length,
+          scheduledTime: widget.post.scheduledTime,
+        ),
+        onSubmit: (ReportReason reason) => _submitReport(reason, currentUser),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error showing report dialog: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  // Submit report
+  Future<void> _submitReport(ReportReason reason, UserModel currentUser) async {
+    try {
+      await _reportService.submitReport(
+        contentType: 'hangout',
+        contentId: widget.post.id,
+        contentTitle: widget.post.title,
+        authorId: widget.post.authorId,
+        contentSnippet: ReportService.createHangoutContentSnippet(
+          title: widget.post.title,
+          description: widget.post.description,
+          location: widget.post.location,
+          participantCount: widget.post.participantIds.length,
+          scheduledTime: widget.post.scheduledTime,
+        ),
+        reason: reason,
+        reporterUid: currentUser.id,
+        reporterDisplayName: currentUser.displayName ?? 'Unknown User',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Report submitted successfully. Thank you for helping keep our community safe.'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit report: $e'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 }

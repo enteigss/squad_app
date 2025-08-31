@@ -20,6 +20,9 @@ export {appPreview} from "./app-preview";
 // Hangout Notification Functions
 export {hangoutNotifications} from "./hangout-notifications";
 
+// Report Submission Functions
+export {submitReport} from "./report-submissions";
+
 // Health check endpoint
 export const healthCheck = onRequest((req, res) => {
   res.json({

@@ -75,7 +75,6 @@ class AuthService {
           createdAt: DateTime.now(),
           isOnline: true,
           hasCreatedProfile: false,
-          squadsOptIn: false,
         );
 
         final userData = {
@@ -86,7 +85,6 @@ class AuthService {
           'createdAt': DateTime.now(),
           'isOnline': true,
           'hasCreatedProfile': false,
-          'squadsOptIn': false,
         };
 
         await _firestore
@@ -214,8 +212,7 @@ class AuthService {
               createdAt: DateTime.now(),
               isOnline: true,
               hasCreatedProfile: false,
-              squadsOptIn: false,
-            );
+                );
 
             final userData = {
               'id': result.user!.uid,
@@ -226,8 +223,7 @@ class AuthService {
               'createdAt': DateTime.now(),
               'isOnline': true,
               'hasCreatedProfile': false,
-              'squadsOptIn': false,
-            };
+                };
 
             try {
               await _firestore
@@ -341,6 +337,7 @@ class AuthService {
     int? age,
     String? location,
     List<String>? interests,
+    String? gender,
   }) async {
     try {
       if (currentUser != null) {
@@ -352,6 +349,7 @@ class AuthService {
         if (age != null) updates['age'] = age;
         if (location != null) updates['location'] = location;
         if (interests != null) updates['interests'] = interests;
+        if (gender != null) updates['gender'] = gender;
 
         // Basic profile created, but not preferences yet
         updates['hasCreatedProfile'] = true;
@@ -508,18 +506,6 @@ class AuthService {
     return isInFallback;
   }
 
-  Future<void> updateSquadsOptIn(bool optIn) async {
-    try {
-      if (currentUser != null) {
-        await _firestore.collection('users').doc(currentUser!.uid).update({
-          'squadsOptIn': optIn,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      throw e;
-    }
-  }
 
   Future<void> _processPendingInvitations(String userEmail) async {
     try {

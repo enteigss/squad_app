@@ -14,7 +14,7 @@ class PreferencesScreen extends StatefulWidget {
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
   bool _isLoading = false;
-  
+
   // Importance ratings
   Map<String, int> _importanceRatings = {
     'deep_conversation': 2, // Default to neutral (index 2)
@@ -23,18 +23,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     'big_events_parties_nightlife': 2,
     'studies': 2,
   };
-  
+
   // Frequency preferences
-  String? _hangoutFrequency; // 'everyday', 'multiple_times_per_week', 'weekly', 'less_than_weekly'
+  String?
+  _hangoutFrequency; // 'everyday', 'multiple_times_per_week', 'weekly', 'less_than_weekly'
   String? _conversationStyle; // 'yapper', 'moderate', 'listener', 'not_sure'
-  String? _socialInteractionPreference; // 'no_constant_conversation', 'presence_enough', 'live_for_conversation', 'not_sure'
-  
-  // User's own gender identity
-  String? _userGender;
-  
-  // Gender preference for group
-  String? _genderPreference;
-  
+  String?
+  _socialInteractionPreference; // 'no_constant_conversation', 'presence_enough', 'live_for_conversation', 'not_sure'
+
   // Activity preferences - storing as maps with fun level and frequency
   Map<String, Map<String, int>> _activityPreferences = {
     'frat_party': {'fun': 2, 'frequency': 2},
@@ -70,7 +66,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     'studies': '📚 Studies',
   };
 
-
   final List<Map<String, String>> _hangoutFrequencyOptions = [
     {'value': 'everyday', 'label': 'Everyday'},
     {'value': 'multiple_times_per_week', 'label': 'Multiple times per week'},
@@ -86,44 +81,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   ];
 
   final List<Map<String, String>> _socialInteractionOptions = [
-    {'value': 'presence_enough', 'label': 'I don\'t need constant conversation, my friends\' presence is enough'},
+    {
+      'value': 'presence_enough',
+      'label':
+          'I don\'t need constant conversation, my friends\' presence is enough',
+    },
     {'value': 'live_for_conversation', 'label': 'I live for conversation'},
     {'value': 'not_sure', 'label': 'Not sure'},
   ];
-
-  final List<Map<String, String>> _userGenderOptions = [
-    {'value': 'woman', 'label': 'Woman'},
-    {'value': 'man', 'label': 'Man'},
-    {'value': 'non_binary', 'label': 'Non-binary'},
-    {'value': 'prefer_not_to_say', 'label': 'Prefer not to say'},
-  ];
-
-  // Dynamic gender preference options based on user's gender
-  List<Map<String, String>> _getGenderPreferenceOptions() {
-    if (_userGender == null) {
-      return []; // No options if user hasn't selected their gender
-    }
-    
-    final baseOptions = [
-      {'value': 'anyone', 'label': 'Anyone'},
-    ];
-    
-    // Add gender-specific option based on user's selection
-    switch (_userGender) {
-      case 'woman':
-        baseOptions.insert(0, {'value': 'women_only', 'label': 'Women only'});
-        break;
-      case 'man':
-        baseOptions.insert(0, {'value': 'men_only', 'label': 'Men only'});
-        break;
-      case 'non_binary':
-        baseOptions.insert(0, {'value': 'non_binary_only', 'label': 'Non-binary only'});
-        break;
-      // 'prefer_not_to_say' users only see 'Anyone'
-    }
-    
-    return baseOptions;
-  }
 
   final List<String> _funLevels = [
     'Not fun',
@@ -146,7 +111,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     'eating_out': '🍽️ Eating out',
     'bar_crawl': '🍻 Bar crawl',
     'movie_theater': '🎬 Watching a movie at a theater',
-    'fun_games': '🎯 Fun game/competition (mini-golf, go-karting, paintball etc.)',
+    'fun_games':
+        '🎯 Fun game/competition (mini-golf, go-karting, paintball etc.)',
     'physical_activity': '💪 Physical activity',
     'concerts': '🎵 Concerts/live music',
     'dancing_clubbing': '💃 Dancing/clubbing',
@@ -177,23 +143,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     'cooking_baking': 'Staying In',
   };
 
-  void _setUserGender(String gender) {
-    setState(() {
-      _userGender = gender;
-      // Reset gender preference when user changes their gender
-      _genderPreference = null;
-    });
-  }
-
-  void _setGenderPreference(String gender) {
-    setState(() {
-      _genderPreference = gender;
-    });
-  }
-
   List<Widget> _buildActivityCards() {
     final groupedActivities = <String, List<String>>{};
-    
+
     // Group activities by category
     for (final activity in _activityPreferences.keys) {
       final category = _activityCategories[activity]!;
@@ -204,7 +156,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     }
 
     final cards = <Widget>[];
-    
+
     for (final category in groupedActivities.keys) {
       // Category header
       cards.add(
@@ -238,27 +190,25 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   Widget _buildActivityCard(String activityKey) {
     final funLevel = _activityPreferences[activityKey]!['fun']!;
     final frequencyLevel = _activityPreferences[activityKey]!['frequency']!;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.divider.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppColors.divider.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _activityLabels[activityKey]!,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 16),
-          
+
           // Fun level rating
           Text(
             'How fun does this sound?',
@@ -280,13 +230,18 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                   },
                   child: Container(
                     margin: EdgeInsets.only(right: index < 4 ? 4 : 0),
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.background,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.background,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isSelected 
-                            ? AppColors.primary 
+                        color: isSelected
+                            ? AppColors.primary
                             : AppColors.divider.withOpacity(0.3),
                       ),
                     ),
@@ -294,8 +249,12 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                       child: Text(
                         _funLevels[index],
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
-                          fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                          fontWeight: isSelected
+                              ? FontWeight.w500
+                              : FontWeight.normal,
                           fontSize: 10,
                           height: 1.2,
                         ),
@@ -307,9 +266,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               );
             }),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Frequency rating
           Text(
             'How often would you like to do this?',
@@ -331,13 +290,18 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                   },
                   child: Container(
                     margin: EdgeInsets.only(right: index < 4 ? 4 : 0),
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.background,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.background,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isSelected 
-                            ? AppColors.primary 
+                        color: isSelected
+                            ? AppColors.primary
                             : AppColors.divider.withOpacity(0.3),
                       ),
                     ),
@@ -345,8 +309,12 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                       child: Text(
                         _frequencyLevels[index],
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
-                          fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                          fontWeight: isSelected
+                              ? FontWeight.w500
+                              : FontWeight.normal,
                           fontSize: 10,
                           height: 1.2,
                         ),
@@ -395,17 +363,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
       return;
     }
 
-    // Only require gender preference if user has selected their gender
-    if (_userGender != null && _userGender != 'prefer_not_to_say' && _genderPreference == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select your group gender preference'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isLoading = true;
     });
@@ -419,9 +376,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         hangoutFrequency: _hangoutFrequency,
         conversationStyle: _conversationStyle,
         socialInteractionPreference: _socialInteractionPreference,
-        genderPreferences: _genderPreference != null ? [_genderPreference!] : [],
+        genderPreferences: [], // No longer collecting gender preferences
         activityPreferences: _activityPreferences,
-        userGender: _userGender,
+        userGender: null, // Gender is now collected in profile setup
       );
 
       if (mounted) {
@@ -485,10 +442,11 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                           Expanded(
                             child: Text(
                               'Your preferences are private and won\'t be visible to other users',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                             ),
                           ),
                         ],
@@ -510,96 +468,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // User Gender Identity Section
-                    Text(
-                      'Gender Identity (Optional)',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'This information helps us match you with compatible groups and is never shown to other users',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Column(
-                      children: _userGenderOptions.map((option) {
-                        final isSelected = _userGender == option['value'];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: GestureDetector(
-                            onTap: () => _setUserGender(option['value']!),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary.withValues(alpha: 0.1)
-                                    : AppColors.surface,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.divider.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 20,
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : Colors.transparent,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? AppColors.primary
-                                            : AppColors.divider,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: isSelected
-                                        ? const Icon(
-                                            Icons.check,
-                                            color: Colors.white,
-                                            size: 14,
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    option['label']!,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: isSelected
-                                              ? AppColors.primary
-                                              : AppColors.textPrimary,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w500
-                                              : FontWeight.normal,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
                     const SizedBox(height: 24),
 
                     // Importance Ratings Section
@@ -635,14 +503,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                           children: [
                             Text(
                               _importanceLabels[key]!,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(fontWeight: FontWeight.w500),
                             ),
                             const SizedBox(height: 12),
                             Row(
                               children: List.generate(5, (index) {
-                                final isSelected = _importanceRatings[key] == index;
+                                final isSelected =
+                                    _importanceRatings[key] == index;
                                 return Expanded(
                                   child: GestureDetector(
                                     onTap: () {
@@ -666,7 +534,9 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                                         border: Border.all(
                                           color: isSelected
                                               ? AppColors.primary
-                                              : AppColors.divider.withOpacity(0.3),
+                                              : AppColors.divider.withOpacity(
+                                                  0.3,
+                                                ),
                                         ),
                                       ),
                                       child: Center(
@@ -812,7 +682,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
 
                     Column(
                       children: _conversationStyleOptions.map((option) {
-                        final isSelected = _conversationStyle == option['value'];
+                        final isSelected =
+                            _conversationStyle == option['value'];
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: GestureDetector(
@@ -906,7 +777,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
 
                     Column(
                       children: _socialInteractionOptions.map((option) {
-                        final isSelected = _socialInteractionPreference == option['value'];
+                        final isSelected =
+                            _socialInteractionPreference == option['value'];
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: GestureDetector(
@@ -981,98 +853,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                         );
                       }).toList(),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Gender Preference Section - Only show if user has selected a gender (except prefer not to say)
-                    if (_userGender != null && _userGender != 'prefer_not_to_say') ...[
-                      Text(
-                        'Group Gender Preference',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'What type of group would you prefer?',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      Column(
-                        children: _getGenderPreferenceOptions().map((option) {
-                          final isSelected = _genderPreference == option['value'];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: GestureDetector(
-                              onTap: () => _setGenderPreference(option['value']!),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 16,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary.withValues(alpha: 0.1)
-                                      : AppColors.surface,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.divider.withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: isSelected
-                                            ? AppColors.primary
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? AppColors.primary
-                                              : AppColors.divider,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: isSelected
-                                          ? const Icon(
-                                              Icons.check,
-                                              color: Colors.white,
-                                              size: 14,
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      option['label']!,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: isSelected
-                                                ? AppColors.primary
-                                                : AppColors.textPrimary,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w500
-                                                : FontWeight.normal,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
 
                     const SizedBox(height: 32),
 

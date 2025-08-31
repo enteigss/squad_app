@@ -23,6 +23,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   bool _isLoading = false;
   List<String> _interests = [];
+  String? _selectedGender;
   
 
   final List<String> _popularInterests = [
@@ -46,6 +47,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     'History',
     'Writing',
     'Yoga',
+  ];
+
+  final List<Map<String, String>> _genderOptions = [
+    {'value': 'woman', 'label': 'Woman'},
+    {'value': 'man', 'label': 'Man'},
+    {'value': 'non_binary', 'label': 'Non-binary'},
+    {'value': 'prefer_not_to_say', 'label': 'Prefer not to say'},
   ];
 
 
@@ -88,6 +96,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       return;
     }
 
+    if (_selectedGender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select your gender identity'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -102,6 +120,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         age: int.tryParse(_ageController.text),
         location: _locationController.text.trim(),
         interests: _interests,
+        gender: _selectedGender!,
       );
 
       if (mounted) {
@@ -343,6 +362,124 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
+
+                // Gender Identity Section
+                Text(
+                  'Gender Identity',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Privacy notice for gender
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.divider.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.security,
+                        color: AppColors.textSecondary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This information is collected for user safety and will not be shown to other users',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Gender selection options
+                Column(
+                  children: _genderOptions.map((option) {
+                    final isSelected = _selectedGender == option['value'];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedGender = option['value'];
+                          });
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary.withOpacity(0.1)
+                                : AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.divider.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.transparent,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.divider,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? const Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                        size: 14,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                option['label']!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.textPrimary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
 
                 const SizedBox(height: 32),
 

@@ -170,7 +170,7 @@ class _SquadAppState extends State<SquadApp> {
               currentPath == '/') {
             return '/main';
           }
-          // Don't redirect if already on main app screens like /squads, /feed, /profile, etc.
+          // Don't redirect if already on main app screens like /feed, /profile, etc.
           return null;
         }
 
@@ -237,12 +237,8 @@ class _SquadAppState extends State<SquadApp> {
           builder: (context, state) => const MainScaffold(initialIndex: 1),
         ),
         GoRoute(
-          path: '/squads',
-          builder: (context, state) => const MainScaffold(initialIndex: 2),
-        ),
-        GoRoute(
           path: '/profile',
-          builder: (context, state) => const MainScaffold(initialIndex: 3),
+          builder: (context, state) => const MainScaffold(initialIndex: 2),
         ),
         GoRoute(
           path: '/group',

@@ -234,6 +234,7 @@ class AuthProvider with ChangeNotifier {
     int? age,
     String? location,
     List<String>? interests,
+    String? gender,
   }) async {
     try {
       _setLoading(true);
@@ -246,6 +247,7 @@ class AuthProvider with ChangeNotifier {
         age: age,
         location: location,
         interests: interests,
+        gender: gender,
       );
 
       if (_currentUser != null) {
@@ -256,6 +258,7 @@ class AuthProvider with ChangeNotifier {
           age: age ?? _currentUser!.age,
           location: location ?? _currentUser!.location,
           interests: interests ?? _currentUser!.interests,
+          gender: gender ?? _currentUser!.gender,
           hasCreatedProfile: true,
         );
         notifyListeners();
@@ -352,20 +355,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateSquadsOptIn(bool optIn) async {
-    try {
-      await _authService.updateSquadsOptIn(optIn);
-
-      // Update the current user model to reflect the change
-      if (_currentUser != null) {
-        _currentUser = _currentUser!.copyWith(squadsOptIn: optIn);
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = _getErrorMessage(e);
-      rethrow;
-    }
-  }
 
   Future<void> updatePreferences({
     Map<String, int>? importanceRatings,
