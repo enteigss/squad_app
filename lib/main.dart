@@ -9,12 +9,9 @@ import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/post_provider.dart';
-import 'providers/user_preferences_provider.dart';
 import 'providers/feedback_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
-import 'screens/auth/preferences_screen.dart';
-import 'screens/auth/availability_screen.dart';
 import 'screens/home/group_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/feed/create_post_screen.dart';
@@ -98,7 +95,6 @@ class _SquadAppState extends State<SquadApp> {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
-        ChangeNotifierProvider(create: (_) => UserPreferencesProvider()),
         ChangeNotifierProvider(create: (_) => FeedbackProvider()),
       ],
       child: Consumer<AuthProvider>(
@@ -130,9 +126,6 @@ class _SquadAppState extends State<SquadApp> {
         final isLoggedIn = authProvider.isAuthenticated;
         final currentUserInfo = authProvider.currentUser;
         final hasProfile = currentUserInfo?.hasCreatedProfile ?? false;
-        final hasCompletedPreferences =
-            currentUserInfo?.hasCompletedPreferences ?? false;
-        final profileCompleted = currentUserInfo?.profileCompleted ?? false;
         final isLoading = authProvider.isLoading;
 
         final currentPath = state.uri.toString();
@@ -143,8 +136,6 @@ class _SquadAppState extends State<SquadApp> {
         debugPrint('🚦 AuthProvider.isAuthenticated: $isLoggedIn');
         debugPrint('🚦 AuthProvider.currentUser: ${currentUserInfo?.toMap()}');
         debugPrint('🚦 hasProfile: $hasProfile');
-        debugPrint('🚦 hasCompletedPreferences: $hasCompletedPreferences');
-        debugPrint('🚦 profileCompleted: $profileCompleted');
 
         if (isLoading) {
           debugPrint(
@@ -161,12 +152,10 @@ class _SquadAppState extends State<SquadApp> {
           return null;
         }
 
-        // If logged in and all complete, redirect to main from auth screens only
-        if (isLoggedIn && profileCompleted) {
+        // If logged in and profile complete, redirect to main from auth screens only
+        if (isLoggedIn && hasProfile) {
           if (currentPath == '/login' ||
               currentPath == '/profile-setup' ||
-              currentPath == '/preferences' ||
-              currentPath == '/availability' ||
               currentPath == '/') {
             return '/main';
           }
@@ -174,27 +163,10 @@ class _SquadAppState extends State<SquadApp> {
           return null;
         }
 
-        // If logged in but incomplete profile, determine next step
-        if (isLoggedIn && !profileCompleted) {
-          // No basic profile yet
-          if (!hasProfile) {
-            if (currentPath != '/profile-setup') {
-              return '/profile-setup';
-            }
-            return null;
-          }
-
-          // Has basic profile but no preferences
-          if (!hasCompletedPreferences) {
-            if (currentPath != '/preferences') {
-              return '/preferences';
-            }
-            return null;
-          }
-
-          // Has preferences but not availability
-          if (currentPath != '/availability') {
-            return '/availability';
+        // If logged in but no profile, go to profile setup
+        if (isLoggedIn && !hasProfile) {
+          if (currentPath != '/profile-setup') {
+            return '/profile-setup';
           }
           return null;
         }
@@ -215,14 +187,6 @@ class _SquadAppState extends State<SquadApp> {
         GoRoute(
           path: '/profile-setup',
           builder: (context, state) => const ProfileSetupScreen(),
-        ),
-        GoRoute(
-          path: '/preferences',
-          builder: (context, state) => const PreferencesScreen(),
-        ),
-        GoRoute(
-          path: '/availability',
-          builder: (context, state) => const AvailabilityScreen(),
         ),
         GoRoute(
           path: '/main',

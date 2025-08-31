@@ -14,8 +14,6 @@ class UserModel {
   final bool isOnline;
   final String? groupId;
   final bool hasCreatedProfile;
-  final bool hasCompletedPreferences;
-  final bool profileCompleted;
   final String? fcmToken;
 
   UserModel({
@@ -34,8 +32,6 @@ class UserModel {
     this.isOnline = false,
     this.groupId,
     this.hasCreatedProfile = false,
-    this.hasCompletedPreferences = false,
-    this.profileCompleted = false,
     this.fcmToken,
   });
 
@@ -56,8 +52,6 @@ class UserModel {
       isOnline: map['isOnline'] ?? false,
       groupId: map['groupId'],
       hasCreatedProfile: map['hasCreatedProfile'] ?? false,
-      hasCompletedPreferences: map['hasCompletedPreferences'] ?? false,
-      profileCompleted: map['profileCompleted'] ?? false,
       fcmToken: map['fcmToken'],
     );
   }
@@ -89,8 +83,6 @@ class UserModel {
       'isOnline': isOnline,
       'groupId': groupId,
       'hasCreatedProfile': hasCreatedProfile,
-      'hasCompletedPreferences': hasCompletedPreferences,
-      'profileCompleted': profileCompleted,
       'fcmToken': fcmToken,
     };
   }
@@ -111,8 +103,6 @@ class UserModel {
     bool? isOnline,
     String? groupId,
     bool? hasCreatedProfile,
-    bool? hasCompletedPreferences,
-    bool? profileCompleted,
     String? fcmToken,
   }) {
     return UserModel(
@@ -131,8 +121,6 @@ class UserModel {
       isOnline: isOnline ?? this.isOnline,
       groupId: groupId ?? this.groupId,
       hasCreatedProfile: hasCreatedProfile ?? this.hasCreatedProfile,
-      hasCompletedPreferences: hasCompletedPreferences ?? this.hasCompletedPreferences,
-      profileCompleted: profileCompleted ?? this.profileCompleted,
       fcmToken: fcmToken ?? this.fcmToken,
     );
   }

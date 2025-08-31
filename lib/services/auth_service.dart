@@ -397,62 +397,6 @@ class AuthService {
     }
   }
 
-  Future<void> updateUserAvailability({
-    required Map<String, Map<String, bool>> availability,
-  }) async {
-    try {
-      if (currentUser != null) {
-        await _firestore.collection('users').doc(currentUser!.uid).update({
-          'availability': availability,
-          'profileCompleted': true,
-        });
-      }
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  Future<void> updateUserPreferences({
-    Map<String, int>? importanceRatings,
-    String? personalityType,
-    String? hangoutFrequency,
-    String? conversationStyle,
-    String? socialInteractionPreference,
-    List<String>? genderPreferences,
-    Map<String, Map<String, int>>? activityPreferences,
-    String? userGender,
-  }) async {
-    try {
-      if (currentUser != null) {
-        final Map<String, dynamic> updates = {};
-
-        if (importanceRatings != null)
-          updates['importanceRatings'] = importanceRatings;
-        if (personalityType != null)
-          updates['personalityType'] = personalityType;
-        if (hangoutFrequency != null)
-          updates['hangoutFrequency'] = hangoutFrequency;
-        if (conversationStyle != null)
-          updates['conversationStyle'] = conversationStyle;
-        if (socialInteractionPreference != null)
-          updates['socialInteractionPreference'] = socialInteractionPreference;
-        if (genderPreferences != null)
-          updates['genderPreferences'] = genderPreferences;
-        if (activityPreferences != null)
-          updates['activityPreferences'] = activityPreferences;
-        if (userGender != null) updates['gender'] = userGender;
-
-        updates['hasCompletedPreferences'] = true;
-
-        await _firestore
-            .collection('users')
-            .doc(currentUser!.uid)
-            .update(updates);
-      }
-    } catch (e) {
-      throw e;
-    }
-  }
 
   Future<bool> _isBUEmail(String email) async {
     final emailLower = email.toLowerCase();

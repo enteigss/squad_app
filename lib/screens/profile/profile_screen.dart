@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
 import 'edit_profile_screen.dart';
-import 'edit_matching_preferences_screen.dart';
 import 'analytics_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -119,24 +118,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 
                 const SizedBox(height: 12),
                 
-                // Edit Matching Preferences Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _editMatchingPreferences,
-                    icon: const Icon(Icons.tune, size: 18),
-                    label: const Text('Edit Matching Preferences'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      foregroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: AppColors.primary, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
 
                 // Analytics Button (Debug only)
                 if (kDebugMode) ...[
@@ -273,17 +254,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _editMatchingPreferences() {
-    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
-    if (user != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => EditMatchingPreferencesScreen(user: user),
-        ),
-      );
-    }
-  }
 
   void _viewAnalytics() {
     Navigator.push(

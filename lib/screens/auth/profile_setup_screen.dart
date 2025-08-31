@@ -124,8 +124,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
 
       if (mounted) {
-        // Navigate to preferences screen using GoRouter
-        context.go('/preferences');
+        // Navigate directly to main app - onboarding complete
+        context.go('/main');
       }
     } catch (e) {
       if (mounted) {
