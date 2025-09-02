@@ -7,7 +7,7 @@ import '../../providers/post_provider.dart';
 import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/deletion_feedback_dialog.dart';
+import '../../widgets/meetup_outcome_dialog.dart';
 import 'create_post_screen.dart';
 import 'group_members_screen.dart';
 
@@ -831,20 +831,38 @@ class _FeedScreenState extends State<FeedScreen> {
       return;
     }
 
+    // Check if author already provided feedback (from expiration prompt)
+    final needsFeedback = await postProvider.doesAuthorNeedFeedbackForDeletion(post.id, currentUser.id);
+    
+    if (!needsFeedback) {
+      // Author already provided feedback, delete directly
+      final success = await postProvider.deletePost(post.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Deleted "${post.title}"' : postProvider.error ?? 'Failed to delete hangout',
+            ),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
+
     // Show feedback dialog for immediate author feedback
-    await DeletionFeedbackDialog.show(
+    await MeetupOutcomeDialog.show(
       context,
       hangoutTitle: post.title,
       onCancel: () {
         // User cancelled deletion - do nothing
       },
-      onConfirmDelete: (didMeetup, additionalFeedback) async {
-        // User confirmed deletion with feedback - proceed with hybrid deletion
+      onConfirmDelete: (didMeetup) async {
+        // User confirmed deletion with feedback - proceed with deletion
         final success = await postProvider.deletePostWithFeedback(
           post.id,
           currentUser.id,
           authorDidMeetup: didMeetup,
-          authorAdditionalFeedback: additionalFeedback,
         );
 
         if (mounted) {

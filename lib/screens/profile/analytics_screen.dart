@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../utils/colors.dart';
-import '../../providers/feedback_provider.dart';
+import '../../services/feedback_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -11,6 +10,7 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
+  final FeedbackService _feedbackService = FeedbackService();
   Map<String, dynamic>? _feedbackStats;
   bool _isLoading = true;
 
@@ -26,8 +26,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     });
 
     try {
-      final feedbackProvider = Provider.of<FeedbackProvider>(context, listen: false);
-      final stats = await feedbackProvider.getFeedbackStats();
+      final stats = await _feedbackService.getFeedbackStats();
       
       setState(() {
         _feedbackStats = stats;

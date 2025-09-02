@@ -260,100 +260,52 @@ class PostService {
     }
   }
 
-  // Delete post with feedback collection for other participants (excluding author)
+  // Check if author needs to provide feedback before deletion
+  Future<bool> doesAuthorNeedFeedbackForDeletion(String postId, String authorId) async {
+    try {
+      // Check if author has already provided feedback
+      final hasProvidedFeedback = await _feedbackService.hasAuthorProvidedFeedback(postId, authorId);
+      return !hasProvidedFeedback;
+    } catch (e) {
+      debugPrint('Error checking if author needs feedback: $e');
+      return true; // Default to showing dialog if uncertain
+    }
+  }
+
+  // Delete post with feedback collection from author
   Future<void> deletePostWithFeedback(
     String postId,
     String authorId, {
     bool? authorDidMeetup,
-    String? authorAdditionalFeedback,
   }) async {
     try {
-      // Get the post first to check if we need to create feedback prompts
+      // Get the post first
       final post = await getPost(postId);
-      debugPrint(
-        'DeletePostWithFeedback: Retrieved post $postId, participants: ${post?.participantIds.length}',
-      );
-
-      // Debug: Check authorization details
-      debugPrint('DeletePostWithFeedback: Current user ID: $authorId');
-      debugPrint('DeletePostWithFeedback: Post authorId: ${post?.authorId}');
-      debugPrint('DeletePostWithFeedback: IDs match: ${authorId == post?.authorId}');
+      debugPrint('DeletePostWithFeedback: Retrieved post $postId');
 
       await _firestore.collection(_collection).doc(postId).update({
         'deleted': true,
       });
 
-      // Track deletion feedback in analytics if feedback was provided
+      // If author provided feedback, save it and track analytics
       if (post != null && authorDidMeetup != null) {
+        await _feedbackService.submitFeedback(
+          hangoutId: postId,
+          userId: authorId,
+          hangoutTitle: post.title,
+          didMeetup: authorDidMeetup,
+          additionalFeedback: null,
+        );
+
         await _analyticsService.trackHangoutDeletionFeedback(
           hangoutId: postId,
           authorId: authorId,
           didMeetupHappen: authorDidMeetup,
           participantCount: post.participantIds.length,
           hangoutCreatedAt: post.createdAt,
-          additionalFeedback: authorAdditionalFeedback,
+          additionalFeedback: null,
         );
-      }
-
-      // If the post had participants and wasn't already completed, handle feedback
-      debugPrint(
-        'DeletePostWithFeedback: Checking feedback conditions - feedbackCollected: ${post?.feedbackCollected}, status: ${post?.status}, participants: ${post?.participantIds.length}',
-      );
-      if (post != null &&
-          !post.feedbackCollected &&
-          post.status != PostStatus.completed &&
-          post.participantIds.length >= 1) {
-        // TODO: Change back to >= 2 for production
-
-        // Mark as feedback collected
-        debugPrint('DeletePostWithFeedback: Marking post as feedbackCollected=true');
-        await _firestore.collection(_collection).doc(postId).update({
-          'feedbackCollected': true,
-        });
-        debugPrint('DeletePostWithFeedback: Successfully marked feedbackCollected=true');
-
-        // If author provided immediate feedback, save it
-        if (authorDidMeetup != null) {
-          await _feedbackService.submitFeedback(
-            hangoutId: postId,
-            userId: authorId,
-            hangoutTitle: post.title,
-            didMeetup: authorDidMeetup,
-            additionalFeedback: authorAdditionalFeedback,
-          );
-          debugPrint(
-            'DeletePostWithFeedback: Saved immediate author feedback for $authorId',
-          );
-        }
-
-        // Create prompts for other participants (exclude author since they gave immediate feedback)
-        final otherParticipants = post.participantIds
-            .where((id) => id != authorId)
-            .toList();
-        debugPrint(
-          'DeletePostWithFeedback: Creating prompts for ${otherParticipants.length} other participants: $otherParticipants',
-        );
-
-        if (otherParticipants.isNotEmpty) {
-          final deletedPost = post.copyWith(
-            deleted: true,
-            feedbackCollected: true,
-            participantIds:
-                otherParticipants, // Only create prompts for other participants
-          );
-
-          // Create feedback prompts for other participants
-          debugPrint('DeletePostWithFeedback: About to create prompts for ${otherParticipants.length} participants');
-          await _feedbackService
-              .createFeedbackPromptsForCompletedHangout(deletedPost)
-              .catchError((e) {
-                debugPrint(
-                  'Failed to create feedback prompts for deleted post $postId: $e',
-                );
-                // Re-throw so we can see the full error
-                throw e;
-              });
-        }
+        debugPrint('DeletePostWithFeedback: Saved author feedback for $authorId');
       }
     } catch (e) {
       throw Exception('Failed to delete post with feedback: $e');
@@ -420,7 +372,7 @@ class PostService {
     if (userGender == null || userGender == 'prefer_not_to_say') {
       return post.genderPreferences.contains('Men') &&
              post.genderPreferences.contains('Women') &&
-             post.genderPreferences.contains('Other');
+             post.genderPreferences.contains('Non-binary');
     }
 
     // Map user gender to new preference format
@@ -433,11 +385,11 @@ class PostService {
         expectedPreference = 'Men';
         break;
       case 'non_binary':
-        expectedPreference = 'Other';
+        expectedPreference = 'Non-binary';
         break;
       default:
-        // For any other gender identities, map to 'Other'
-        expectedPreference = 'Other';
+        // For any other gender identities, map to 'Non-binary'
+        expectedPreference = 'Non-binary';
         break;
     }
 
@@ -492,12 +444,12 @@ class PostService {
               // Mark as feedback collected in the database
               batch.update(doc.reference, {'feedbackCollected': true});
 
-              // Create feedback prompts asynchronously (don't block the batch)
+              // Create feedback prompt for author only
               _feedbackService
-                  .createFeedbackPromptsForCompletedHangout(completedPost)
+                  .createFeedbackPromptForAuthor(completedPost)
                   .catchError((e) {
                     debugPrint(
-                      'Failed to create feedback prompts for ${post.id}: $e',
+                      'Failed to create feedback prompt for author of ${post.id}: $e',
                     );
                   });
             }

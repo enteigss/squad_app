@@ -9,7 +9,6 @@ import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/post_provider.dart';
-import 'providers/feedback_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/home/group_screen.dart';
@@ -59,7 +58,17 @@ void main() async {
     rethrow;
   }
 
-  runApp(const SquadApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => PostProvider()),
+      ],
+      child: const SquadApp(),
+    ),
+  );
 }
 
 class SquadApp extends StatefulWidget {
@@ -71,10 +80,18 @@ class SquadApp extends StatefulWidget {
 
 class _SquadAppState extends State<SquadApp> {
   final DeepLinkService _deepLinkService = DeepLinkService();
+  late final GoRouter _router;
+  bool _wasAuthenticated = false;
 
   @override
   void initState() {
     super.initState();
+    
+    // Initialize auth tracking variable and router
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _wasAuthenticated = authProvider.isAuthenticated;
+    _router = _createRouter(authProvider);
+    
     // Initialize deep linking after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _deepLinkService.initialize(context);
@@ -89,41 +106,31 @@ class _SquadAppState extends State<SquadApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => PostProvider()),
-        ChangeNotifierProvider(create: (_) => FeedbackProvider()),
-      ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          return MaterialApp.router(
-            title: 'LinkUp BU',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              primaryColor: AppColors.primary,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.primary,
-                brightness: Brightness.light,
-              ),
-              useMaterial3: true,
-            ),
-            routerConfig: _createRouter(authProvider),
-          );
-        },
+    return MaterialApp.router(
+      title: 'LinkUp BU',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        primaryColor: AppColors.primary,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
       ),
+      routerConfig: _router,
     );
   }
 
   GoRouter _createRouter(AuthProvider authProvider) {
+
     return GoRouter(
       navigatorKey: NavigationService.navigatorKey,
+      refreshListenable: authProvider,
       initialLocation: '/',
       observers: [AnalyticsService().observer],
       redirect: (context, state) {
-        final isLoggedIn = authProvider.isAuthenticated;
+        final isAuthenticated = authProvider.isAuthenticated;
+        final wasAuthenticated = _wasAuthenticated;
         final currentUserInfo = authProvider.currentUser;
         final hasProfile = currentUserInfo?.hasCreatedProfile ?? false;
         final isLoading = authProvider.isLoading;
@@ -133,7 +140,7 @@ class _SquadAppState extends State<SquadApp> {
         // Enhanced Debug Logging
         debugPrint('🚦 GoRouter Debug: === NAVIGATION DECISION ===');
         debugPrint('🚦 Current path: $currentPath');
-        debugPrint('🚦 AuthProvider.isAuthenticated: $isLoggedIn');
+        debugPrint('🚦 AuthProvider.isAuthenticated: $isAuthenticated');
         debugPrint('🚦 AuthProvider.currentUser: ${currentUserInfo?.toMap()}');
         debugPrint('🚦 hasProfile: $hasProfile');
 
@@ -144,31 +151,27 @@ class _SquadAppState extends State<SquadApp> {
           return null;
         }
 
-        // If not logged in, redirect to login
-        if (!isLoggedIn) {
-          if (currentPath != '/login') {
+        // Only run redirect rules if auth state has changed
+        if (wasAuthenticated != isAuthenticated) {
+          // Updated tracker to new state 
+          _wasAuthenticated = isAuthenticated;
+          debugPrint('🚦 Auth state changed! Running redirect logic...');
+
+          if (!isAuthenticated) {
             return '/login';
           }
-          return null;
-        }
 
-        // If logged in and profile complete, redirect to main from auth screens only
-        if (isLoggedIn && hasProfile) {
-          if (currentPath == '/login' ||
-              currentPath == '/profile-setup' ||
-              currentPath == '/') {
+          if (isAuthenticated && hasProfile) {
             return '/main';
           }
-          // Don't redirect if already on main app screens like /feed, /profile, etc.
-          return null;
-        }
 
-        // If logged in but no profile, go to profile setup
-        if (isLoggedIn && !hasProfile) {
-          if (currentPath != '/profile-setup') {
-            return '/profile-setup';
+          if (isAuthenticated && !hasProfile) {
+            if (currentPath != '/profile-setup') {
+              return '/profile-setup';
+            }
+            return null;
           }
-          return null;
+
         }
 
         debugPrint('✅ No redirect needed');

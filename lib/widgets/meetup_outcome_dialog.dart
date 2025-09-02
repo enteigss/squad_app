@@ -1,51 +1,61 @@
 import 'package:flutter/material.dart';
 import '../utils/colors.dart';
 
-class DeletionFeedbackDialog extends StatefulWidget {
+class MeetupOutcomeDialog extends StatefulWidget {
   final String hangoutTitle;
   final VoidCallback onCancel;
-  final Function(bool didMeetup, String? additionalFeedback) onConfirmDelete;
+  final Function(bool didMeetup) onConfirmDelete;
+  final String? contextText;
+  final String? actionButtonText;
+  final IconData? headerIcon;
+  final Color? headerColor;
 
-  const DeletionFeedbackDialog({
+  const MeetupOutcomeDialog({
     super.key,
     required this.hangoutTitle,
     required this.onCancel,
     required this.onConfirmDelete,
+    this.contextText,
+    this.actionButtonText,
+    this.headerIcon,
+    this.headerColor,
   });
 
   static Future<void> show(
     BuildContext context, {
     required String hangoutTitle,
     required VoidCallback onCancel,
-    required Function(bool didMeetup, String? additionalFeedback)
-    onConfirmDelete,
+    required Function(bool didMeetup) onConfirmDelete,
+    String? contextText,
+    String? actionButtonText,
+    IconData? headerIcon,
+    Color? headerColor,
   }) {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // User must respond
-      builder: (context) => DeletionFeedbackDialog(
+      builder: (context) => MeetupOutcomeDialog(
         hangoutTitle: hangoutTitle,
         onCancel: onCancel,
         onConfirmDelete: onConfirmDelete,
+        contextText: contextText,
+        actionButtonText: actionButtonText,
+        headerIcon: headerIcon,
+        headerColor: headerColor,
       ),
     );
   }
 
   @override
-  State<DeletionFeedbackDialog> createState() => _DeletionFeedbackDialogState();
+  State<MeetupOutcomeDialog> createState() => _MeetupOutcomeDialogState();
 }
 
-class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
-  final TextEditingController _additionalFeedbackController =
-      TextEditingController();
-
+class _MeetupOutcomeDialogState extends State<MeetupOutcomeDialog> {
   bool _isSubmitting = false;
   bool? _didMeetup;
-  bool _showAdditionalFeedback = false;
 
   @override
   void dispose() {
-    _additionalFeedbackController.dispose();
     super.dispose();
   }
 
@@ -57,12 +67,7 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
     });
 
     try {
-      widget.onConfirmDelete(
-        _didMeetup!,
-        _additionalFeedbackController.text.trim().isEmpty
-            ? null
-            : _additionalFeedbackController.text.trim(),
-      );
+      widget.onConfirmDelete(_didMeetup!);
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -97,11 +102,15 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
           // Header
           Row(
             children: [
-              Icon(Icons.delete_outline, color: AppColors.error, size: 28),
+              Icon(
+                widget.headerIcon ?? Icons.delete_outline, 
+                color: widget.headerColor ?? AppColors.error, 
+                size: 28,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Delete Hangout?',
+                  widget.contextText ?? 'Delete Hangout?',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -144,13 +153,8 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
 
           // Main question
           Text(
-            'Before deleting, did this hangout actually happen?',
+            'Did this hangout actually happen?',
             style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'This helps us understand how successful our hangouts are.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
 
@@ -177,66 +181,6 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
             ],
           ),
 
-          // Additional feedback section
-          if (_didMeetup != null) ...[
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Checkbox(
-                  value: _showAdditionalFeedback,
-                  onChanged: (value) {
-                    setState(() {
-                      _showAdditionalFeedback = value ?? false;
-                    });
-                  },
-                  activeColor: AppColors.primary,
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showAdditionalFeedback = !_showAdditionalFeedback;
-                      });
-                    },
-                    child: Text(
-                      'Add additional feedback (optional)',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            if (_showAdditionalFeedback) ...[
-              const SizedBox(height: 8),
-              TextField(
-                controller: _additionalFeedbackController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: _didMeetup!
-                      ? 'Tell us what made this hangout great...'
-                      : 'What could we improve for next time?',
-                  hintStyle: TextStyle(
-                    color: AppColors.textSecondary.withOpacity(0.7),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: AppColors.primary.withOpacity(0.3),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.all(12),
-                ),
-              ),
-            ],
-          ],
         ],
       ),
       actions: [
@@ -254,13 +198,13 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
           ),
         ),
 
-        // Delete button
+        // Action button
         ElevatedButton(
           onPressed: (_didMeetup != null && !_isSubmitting)
               ? _confirmDelete
               : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
+            backgroundColor: widget.headerColor ?? AppColors.error,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -275,7 +219,7 @@ class _DeletionFeedbackDialogState extends State<DeletionFeedbackDialog> {
                     strokeWidth: 2,
                   ),
                 )
-              : const Text('Delete Hangout'),
+              : Text(widget.actionButtonText ?? 'Delete Hangout'),
         ),
       ],
     );

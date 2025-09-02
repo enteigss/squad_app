@@ -88,6 +88,7 @@ class AuthProvider with ChangeNotifier {
             // Don't fail the auth state change if notification setup fails
           }
 
+          debugPrint('AuthProvider notifying listeners');
           notifyListeners();
         } catch (e) {
           debugPrint('❌ Error getting user data: $e');
@@ -240,6 +241,10 @@ class AuthProvider with ChangeNotifier {
       _setLoading(true);
       _clearError();
 
+      // Track if gender is changing for notification topic updates
+      final previousGender = _currentUser?.gender;
+      final isGenderChanging = gender != null && gender != previousGender;
+
       await _authService.updateUserProfile(
         displayName: displayName,
         photoUrl: photoUrl,
@@ -250,19 +255,41 @@ class AuthProvider with ChangeNotifier {
         gender: gender,
       );
 
+      // Update local user model
       if (_currentUser != null) {
         _currentUser = _currentUser!.copyWith(
-          displayName: displayName ?? _currentUser!.displayName,
-          photoUrl: photoUrl ?? _currentUser!.photoUrl,
-          bio: bio ?? _currentUser!.bio,
-          age: age ?? _currentUser!.age,
-          location: location ?? _currentUser!.location,
-          interests: interests ?? _currentUser!.interests,
-          gender: gender ?? _currentUser!.gender,
-          hasCreatedProfile: true,
+          displayName: displayName,
+          photoUrl: photoUrl,
+          bio: bio,
+          age: age,
+          location: location,
+          interests: interests,
+          gender: gender,
         );
-        notifyListeners();
       }
+
+      // If gender changed, update notification topic subscriptions
+      if (isGenderChanging) {
+        try {
+          debugPrint('🔔 Gender changed from $previousGender to $gender, updating notification topics...');
+          final notificationService = NotificationService();
+          
+          // Unsubscribe from all hangout topics first
+          await notificationService.unsubscribeFromTopics([
+            'new_hangouts_bu_men',
+            'new_hangouts_bu_women',
+            'new_hangouts_bu_anyone',
+          ]);
+          
+          // Subscribe to appropriate topics based on new gender
+          await notificationService.subscribeToHangoutTopicsBasedOnGender(gender);
+          debugPrint('✅ Successfully updated notification topics for new gender');
+        } catch (e) {
+          debugPrint('⚠️ Warning: Failed to update notification topics after gender change: $e');
+          // Don't fail the profile update if notification setup fails
+        }
+      }
+
     } catch (e) {
       _error = _getErrorMessage(e);
       rethrow;

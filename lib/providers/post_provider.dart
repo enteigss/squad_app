@@ -202,13 +202,23 @@ class PostProvider with ChangeNotifier {
     }
   }
 
-  // Delete a post with hybrid feedback approach
-  Future<bool> deletePostWithFeedback(String postId, String authorId, {bool? authorDidMeetup, String? authorAdditionalFeedback}) async {
+  // Check if author needs to provide feedback before deletion
+  Future<bool> doesAuthorNeedFeedbackForDeletion(String postId, String authorId) async {
+    try {
+      return await _postService.doesAuthorNeedFeedbackForDeletion(postId, authorId);
+    } catch (e) {
+      _setError('Failed to check feedback status: $e');
+      return true; // Default to showing dialog if uncertain
+    }
+  }
+
+  // Delete a post with feedback from author
+  Future<bool> deletePostWithFeedback(String postId, String authorId, {bool? authorDidMeetup}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      await _postService.deletePostWithFeedback(postId, authorId, authorDidMeetup: authorDidMeetup, authorAdditionalFeedback: authorAdditionalFeedback);
+      await _postService.deletePostWithFeedback(postId, authorId, authorDidMeetup: authorDidMeetup);
       return true;
     } catch (e) {
       _setError('Failed to delete post with feedback: $e');

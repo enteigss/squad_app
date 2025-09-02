@@ -32,6 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   // State
   Set<String> _selectedInterests = {};
+  String? _selectedGender;
   bool _isLoading = false;
   String? _error;
 
@@ -59,6 +60,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     'Networking',
   ];
 
+  // Gender options
+  final List<Map<String, String>> _genderOptions = [
+    {'value': 'woman', 'label': 'Woman'},
+    {'value': 'man', 'label': 'Man'},
+    {'value': 'non_binary', 'label': 'Non-binary'},
+    {'value': 'prefer_not_to_say', 'label': 'Prefer not to say'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +80,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _locationController = TextEditingController(text: widget.user.location ?? '');
     _ageController = TextEditingController(text: widget.user.age?.toString() ?? '');
     _selectedInterests = Set<String>.from(widget.user.interests);
+    _selectedGender = widget.user.gender;
   }
 
   @override
@@ -174,6 +184,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               const SizedBox(height: 16),
 
+              // Gender
+              _buildSectionTitle('Gender'),
+              const SizedBox(height: 6),
+              _buildGenderSelector(),
+
+              const SizedBox(height: 16),
+
               // Interests
               _buildSectionTitle('Interests (optional)'),
               const SizedBox(height: 6),
@@ -250,6 +267,112 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildGenderSelector() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Privacy notice
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Gender helps us match you with the right hangouts',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Gender options
+          Column(
+            children: _genderOptions.map((option) {
+              final isSelected = _selectedGender == option['value'];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedGender = option['value'];
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected 
+                            ? AppColors.primary 
+                            : AppColors.divider.withValues(alpha: 0.3),
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            option['label']!,
+                            style: TextStyle(
+                              color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -445,6 +568,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             : _locationController.text.trim(),
         age: age,
         interests: _selectedInterests.toList(),
+        gender: _selectedGender,
       );
 
       if (mounted) {
@@ -454,7 +578,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-        Navigator.of(context).pop(); // Go back to profile screen
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.of(context).pop(); // Go back to profile screen
+        });
       }
     } catch (e) {
       setState(() {

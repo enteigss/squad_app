@@ -13,59 +13,41 @@ class FeedbackService {
   final String _feedbackCollection = 'meetup_feedback';
   final String _pendingPromptsCollection = 'pending_feedback_prompts';
 
-  // Create pending feedback prompts for all participants when a hangout completes
-  Future<void> createFeedbackPromptsForCompletedHangout(
+  // Create pending feedback prompt for author when a hangout completes
+  Future<void> createFeedbackPromptForAuthor(
     Post completedPost,
   ) async {
     debugPrint(
-      'FeedbackService: createFeedbackPromptsForCompletedHangout called for ${completedPost.id}',
+      'FeedbackService: createFeedbackPromptForAuthor called for ${completedPost.id}',
     );
     try {
-      final batch = _firestore.batch();
       final now = DateTime.now();
+      final authorId = completedPost.authorId;
 
-      // Create a pending prompt for each participant (except if they have < 2 participants)
-      // TODO: Change back to < 2 for production
-      if (completedPost.participantIds.length < 1) {
-        debugPrint(
-          'Skipping feedback collection for hangout with < 1 participants',
-        );
-        return;
-      }
-
-      for (final userId in completedPost.participantIds) {
-        debugPrint('FeedbackService: Creating prompt for userId: $userId');
-        final promptId = '${completedPost.id}_$userId';
-        debugPrint('FeedbackService: Generated promptId: $promptId');
-        final promptRef = _firestore
-            .collection(_pendingPromptsCollection)
-            .doc(promptId);
-
-        final prompt = PendingFeedbackPrompt(
-          id: promptId,
-          hangoutId: completedPost.id,
-          userId: userId,
-          hangoutTitle: completedPost.title,
-          hangoutCompletedAt: now,
-          createdAt: now,
-        );
-
-        batch.set(promptRef, prompt.toMap());
-      }
-
-      final commitTime = DateTime.now();
-      debugPrint('FeedbackService: Committing batch at: ${commitTime.toIso8601String()}');
+      debugPrint('FeedbackService: Creating prompt for author: $authorId');
+      final promptId = '${completedPost.id}_$authorId';
+      debugPrint('FeedbackService: Generated promptId: $promptId');
       
-      await batch.commit();
+      final promptRef = _firestore
+          .collection(_pendingPromptsCollection)
+          .doc(promptId);
+
+      final prompt = PendingFeedbackPrompt(
+        id: promptId,
+        hangoutId: completedPost.id,
+        userId: authorId,
+        hangoutTitle: completedPost.title,
+        hangoutCompletedAt: now,
+        createdAt: now,
+      );
+
+      await promptRef.set(prompt.toMap());
       
-      final completedTime = DateTime.now();
-      final commitDuration = completedTime.difference(commitTime).inMilliseconds;
-      debugPrint('FeedbackService: Batch committed in ${commitDuration}ms');
       debugPrint(
-        'Created ${completedPost.participantIds.length} feedback prompts for hangout: ${completedPost.title}',
+        'Created feedback prompt for author of hangout: ${completedPost.title}',
       );
     } catch (e) {
-      debugPrint('Failed to create feedback prompts: $e');
+      debugPrint('Failed to create feedback prompt for author: $e');
       rethrow;
     }
   }
@@ -126,6 +108,23 @@ class FeedbackService {
     } catch (e) {
       debugPrint('FeedbackService: Failed to mark prompt as shown: $e');
       rethrow;
+    }
+  }
+
+  // Check if author has already provided feedback for a hangout
+  Future<bool> hasAuthorProvidedFeedback(String hangoutId, String authorId) async {
+    try {
+      final snapshot = await _firestore
+          .collection(_feedbackCollection)
+          .where('hangoutId', isEqualTo: hangoutId)
+          .where('userId', isEqualTo: authorId)
+          .limit(1)
+          .get();
+      
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      debugPrint('Failed to check if author provided feedback: $e');
+      return false;
     }
   }
 

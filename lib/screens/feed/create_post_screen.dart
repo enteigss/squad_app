@@ -21,12 +21,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _descriptionController = TextEditingController();
 
   DateTime? _selectedDateTime;
-  Set<String> _selectedGenders = {'Men', 'Women', 'Other'}; // All selected by default
+  Set<String> _selectedGenders = {'Men', 'Women', 'Non-binary'}; // All selected by default
   bool _showSuggestions = false;
   int _maxParticipants = 10;
 
   // Gender preference options - now fixed for all users
-  final List<String> _genderPreferenceOptions = ['Men', 'Women', 'Other'];
+  final List<String> _genderPreferenceOptions = ['Men', 'Women', 'Non-binary'];
 
   final Map<String, List<String>> _activitySuggestions = {
     'Boston Hotspots': [
@@ -835,8 +835,65 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
+  String? _validateGenderSelection() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+    
+    if (currentUser == null) return 'Authentication error';
+    
+    final userGender = currentUser.gender;
+    
+    // If user has no gender or prefers not to say, they must select all genders
+    if (userGender == null || userGender == 'prefer_not_to_say') {
+      if (_selectedGenders.length != 3 || 
+          !_selectedGenders.contains('Men') || 
+          !_selectedGenders.contains('Women') || 
+          !_selectedGenders.contains('Non-binary')) {
+        return 'Since you haven\'t specified a gender, you must include all gender options to create a hangout';
+      }
+      return null;
+    }
+    
+    // Map user gender to required preference
+    String requiredPreference;
+    switch (userGender) {
+      case 'woman':
+        requiredPreference = 'Women';
+        break;
+      case 'man':
+        requiredPreference = 'Men';
+        break;
+      case 'non_binary':
+        requiredPreference = 'Non-binary';
+        break;
+      default:
+        requiredPreference = 'Non-binary'; // Default for other gender identities
+        break;
+    }
+    
+    // Check if user's gender is included in selection
+    if (!_selectedGenders.contains(requiredPreference)) {
+      return 'You must include your own gender ($requiredPreference) to create this hangout';
+    }
+    
+    return null;
+  }
+
   Future<void> _createPost() async {
     if (_formKey.currentState!.validate()) {
+      // Validate gender selection first
+      final genderValidationError = _validateGenderSelection();
+      if (genderValidationError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(genderValidationError),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+
       if (_selectedDateTime == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
