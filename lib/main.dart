@@ -9,6 +9,7 @@ import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/post_provider.dart';
+import 'providers/tab_navigation_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/home/group_screen.dart';
@@ -65,6 +66,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
+        ChangeNotifierProvider(create: (_) => TabNavigationProvider()),
       ],
       child: const SquadApp(),
     ),
@@ -81,7 +83,7 @@ class SquadApp extends StatefulWidget {
 class _SquadAppState extends State<SquadApp> {
   final DeepLinkService _deepLinkService = DeepLinkService();
   late final GoRouter _router;
-  bool _wasAuthenticated = false;
+  bool? _wasAuthenticated;
 
   @override
   void initState() {
@@ -89,7 +91,6 @@ class _SquadAppState extends State<SquadApp> {
     
     // Initialize auth tracking variable and router
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _wasAuthenticated = authProvider.isAuthenticated;
     _router = _createRouter(authProvider);
     
     // Initialize deep linking after the first frame
@@ -141,6 +142,7 @@ class _SquadAppState extends State<SquadApp> {
         debugPrint('🚦 GoRouter Debug: === NAVIGATION DECISION ===');
         debugPrint('🚦 Current path: $currentPath');
         debugPrint('🚦 AuthProvider.isAuthenticated: $isAuthenticated');
+        debugPrint('🚦 AuthProvider.wasAuthenticated: $wasAuthenticated');
         debugPrint('🚦 AuthProvider.currentUser: ${currentUserInfo?.toMap()}');
         debugPrint('🚦 hasProfile: $hasProfile');
 
@@ -151,15 +153,16 @@ class _SquadAppState extends State<SquadApp> {
           return null;
         }
 
+        if (!isAuthenticated) {
+            _wasAuthenticated = isAuthenticated;
+            return '/login';
+        }
+
         // Only run redirect rules if auth state has changed
         if (wasAuthenticated != isAuthenticated) {
           // Updated tracker to new state 
           _wasAuthenticated = isAuthenticated;
           debugPrint('🚦 Auth state changed! Running redirect logic...');
-
-          if (!isAuthenticated) {
-            return '/login';
-          }
 
           if (isAuthenticated && hasProfile) {
             return '/main';

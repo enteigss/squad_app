@@ -64,6 +64,10 @@ class PostProvider with ChangeNotifier {
       // Subscribe to upcoming posts
       _upcomingSubscription = _postService.getUpcomingPosts().listen(
         (posts) {
+          debugPrint('📡 DB DEBUG: Received ${posts.length} upcoming posts from database');
+          if (posts.isNotEmpty) {
+            debugPrint('📡 DB DEBUG: Sample upcoming post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}');
+          }
           _upcomingPosts = posts;
           notifyListeners();
         },
@@ -72,6 +76,10 @@ class PostProvider with ChangeNotifier {
       // Subscribe to ongoing posts
       _ongoingSubscription = _postService.getOngoingPosts().listen(
         (posts) {
+          debugPrint('📡 DB DEBUG: Received ${posts.length} ongoing posts from database');
+          if (posts.isNotEmpty) {
+            debugPrint('📡 DB DEBUG: Sample ongoing post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}');
+          }
           _ongoingPosts = posts;
           notifyListeners();
         },
@@ -252,11 +260,17 @@ class PostProvider with ChangeNotifier {
 
   // Helper method to check if user can see a post based on gender
   bool _canUserSeePost(Post post, String? userGender) {
+    debugPrint('🔍 GENDER DEBUG: Checking if user can see post "${post.title}"');
+    debugPrint('🔍 GENDER DEBUG: User gender: $userGender');
+    debugPrint('🔍 GENDER DEBUG: Post gender preferences: ${post.genderPreferences}');
+    
     // If user hasn't specified gender, they can only see posts that include ALL three options
     if (userGender == null || userGender == 'prefer_not_to_say') {
-      return post.genderPreferences.contains('Men') &&
+      final canSee = post.genderPreferences.contains('Men') &&
              post.genderPreferences.contains('Women') &&
              post.genderPreferences.contains('Other');
+      debugPrint('🔍 GENDER DEBUG: User has no gender specified, can see post: $canSee');
+      return canSee;
     }
     
     // Map user gender to new preference format
@@ -277,8 +291,13 @@ class PostProvider with ChangeNotifier {
         break;
     }
     
+    debugPrint('🔍 GENDER DEBUG: Expected preference for user: $expectedPreference');
+    
     // Check if post's gender preferences include the user's gender
-    return post.genderPreferences.contains(expectedPreference);
+    final canSee = post.genderPreferences.contains(expectedPreference);
+    debugPrint('🔍 GENDER DEBUG: Can user see post: $canSee');
+    
+    return canSee;
   }
 
   // Get posts filtered by user's gender preferences
@@ -288,12 +307,34 @@ class PostProvider with ChangeNotifier {
 
   // Get upcoming posts for user
   List<Post> getUpcomingPostsForUser(String? userGender) {
-    return _upcomingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('🔍 PROVIDER DEBUG: getUpcomingPostsForUser called with gender: $userGender');
+    debugPrint('🔍 PROVIDER DEBUG: Raw upcoming posts: ${_upcomingPosts.length}');
+    
+    final filtered = _upcomingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('🔍 PROVIDER DEBUG: Filtered upcoming posts: ${filtered.length}');
+    
+    if (filtered.isEmpty && _upcomingPosts.isNotEmpty) {
+      debugPrint('⚠️ PROVIDER DEBUG: All upcoming posts filtered out by gender preferences!');
+      debugPrint('🔍 PROVIDER DEBUG: Sample post gender prefs: ${_upcomingPosts.first.genderPreferences}');
+    }
+    
+    return filtered;
   }
 
   // Get ongoing posts for user
   List<Post> getOngoingPostsForUser(String? userGender) {
-    return _ongoingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('🔍 PROVIDER DEBUG: getOngoingPostsForUser called with gender: $userGender');
+    debugPrint('🔍 PROVIDER DEBUG: Raw ongoing posts: ${_ongoingPosts.length}');
+    
+    final filtered = _ongoingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('🔍 PROVIDER DEBUG: Filtered ongoing posts: ${filtered.length}');
+    
+    if (filtered.isEmpty && _ongoingPosts.isNotEmpty) {
+      debugPrint('⚠️ PROVIDER DEBUG: All ongoing posts filtered out by gender preferences!');
+      debugPrint('🔍 PROVIDER DEBUG: Sample post gender prefs: ${_ongoingPosts.first.genderPreferences}');
+    }
+    
+    return filtered;
   }
 
   // Search posts

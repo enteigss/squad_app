@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../utils/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/tab_navigation_provider.dart';
 import '../../models/meetup_feedback.dart';
 import '../../services/feedback_service.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
 import '../home/home_screen.dart';
 import '../feed/feed_screen.dart';
+import '../feed/create_post_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -23,7 +25,6 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
-  late int _selectedIndex;
   late PageController _pageController;
   final FeedbackService _feedbackService = FeedbackService();
   
@@ -34,21 +35,39 @@ class _MainScaffoldState extends State<MainScaffold> {
   StreamSubscription<List<PendingFeedbackPrompt>>? _promptsSubscription;
 
   final List<Widget> _screens = [
-    const HomeScreen(),
     const FeedScreen(),
+    const CreatePostScreen(),
     const ProfileScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: _selectedIndex);
+    _pageController = PageController(initialPage: widget.initialIndex);
+    
+    // Set initial tab in provider after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+      tabProvider.setContext(context);
+      tabProvider.setSelectedIndex(widget.initialIndex);
+      tabProvider.addListener(_onTabChangeByProvider);
+    });
     
     // Initialize feedback prompts after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeFeedbackPrompts();
     });
+  }
+
+  void _onTabChangeByProvider() {
+    final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+    if (_pageController.page?.round() != tabProvider.selectedIndex) {
+      _pageController.animateToPage(
+        tabProvider.selectedIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _initializeFeedbackPrompts() {
@@ -155,9 +174,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+    tabProvider.setSelectedIndex(index);
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
@@ -171,16 +189,17 @@ class _MainScaffoldState extends State<MainScaffold> {
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+          tabProvider.setSelectedIndex(index);
         },
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+      bottomNavigationBar: Consumer<TabNavigationProvider>(
+        builder: (context, tabProvider, child) {
+          return BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            currentIndex: tabProvider.selectedIndex,
+            onTap: _onItemTapped,
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondary,
@@ -188,18 +207,20 @@ class _MainScaffoldState extends State<MainScaffold> {
         unselectedFontSize: 12,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.feed),
             label: 'Hangouts',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add),
+            label: 'Create',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
+          );
+        },
       ),
     );
   }

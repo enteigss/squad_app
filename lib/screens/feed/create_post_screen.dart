@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
+import '../../providers/tab_navigation_provider.dart';
 import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
@@ -57,7 +58,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+            tabProvider.navigateToHangouts();
+          },
         ),
       ),
       body: Form(
@@ -974,7 +978,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             print(
               'DEBUG: Hangout created successfully, navigating to hangouts page',
             );
-            context.pop(); // Return to hangouts page
+            // Switch to the hangouts tab (index 0) using provider and show "yourPosts" tab
+            final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+            tabProvider.navigateToHangouts(tab: 'yourPosts');
 
             // Then show success message with invite option on hangouts page
             _showSuccessWithInviteOption(

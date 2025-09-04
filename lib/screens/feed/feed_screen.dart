@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../models/post_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
+import '../../providers/tab_navigation_provider.dart';
 import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
-import 'create_post_screen.dart';
 import 'group_members_screen.dart';
 
 enum FeedTab { upcoming, ongoing, yourPosts }
@@ -93,7 +93,7 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: _addNewPost,
+            onPressed: _navigateToCreateTab,
             tooltip: 'Add new hangout',
           ),
         ],
@@ -239,23 +239,52 @@ class _FeedScreenState extends State<FeedScreen> {
     final currentUserId = authProvider.currentUser?.id;
     final userGender = authProvider.currentUser?.gender;
 
+    debugPrint('🔍 FEED DEBUG: Getting filtered posts for tab: $selectedTab');
+    debugPrint('🔍 FEED DEBUG: Current user ID: $currentUserId');
+    debugPrint('🔍 FEED DEBUG: User gender: $userGender');
+
+    List<Post> filteredPosts;
     switch (selectedTab) {
       case FeedTab.upcoming:
         // Show upcoming hangouts filtered by user's gender
-        return postProvider.getUpcomingPostsForUser(userGender);
+        debugPrint('🔍 FEED DEBUG: Raw upcoming posts count: ${postProvider.upcomingPosts.length}');
+        filteredPosts = postProvider.getUpcomingPostsForUser(userGender);
+        debugPrint('🔍 FEED DEBUG: Filtered upcoming posts count: ${filteredPosts.length}');
+        break;
       case FeedTab.ongoing:
         // Show ongoing hangouts filtered by user's gender
-        return postProvider.getOngoingPostsForUser(userGender);
+        debugPrint('🔍 FEED DEBUG: Raw ongoing posts count: ${postProvider.ongoingPosts.length}');
+        filteredPosts = postProvider.getOngoingPostsForUser(userGender);
+        debugPrint('🔍 FEED DEBUG: Filtered ongoing posts count: ${filteredPosts.length}');
+        break;
       case FeedTab.yourPosts:
-        if (currentUserId == null) return [];
+        if (currentUserId == null) {
+          debugPrint('🔍 FEED DEBUG: No current user, returning empty list');
+          return [];
+        }
         // Show all posts where user is a participant (including locked ones)
-        return postProvider.allPosts
+        debugPrint('🔍 FEED DEBUG: Raw all posts count: ${postProvider.allPosts.length}');
+        filteredPosts = postProvider.allPosts
             .where(
               (post) =>
                   !post.deleted && post.participantIds.contains(currentUserId),
             )
             .toList();
+        debugPrint('🔍 FEED DEBUG: User posts count (participant): ${filteredPosts.length}');
+        break;
     }
+
+    if (filteredPosts.isEmpty) {
+      debugPrint('⚠️ FEED DEBUG: No posts found for current tab and filters!');
+    } else {
+      debugPrint('✅ FEED DEBUG: Showing ${filteredPosts.length} posts');
+      for (int i = 0; i < filteredPosts.length && i < 3; i++) {
+        final post = filteredPosts[i];
+        debugPrint('🔍 FEED DEBUG: Post $i: "${post.title}" (${post.id}) - Status: ${post.dynamicStatus} - Participants: ${post.participantIds.length}');
+      }
+    }
+
+    return filteredPosts;
   }
 
   Widget _buildPostCard(Post post) {
@@ -570,14 +599,9 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  Future<void> _addNewPost() async {
-    final shouldContinue = await _showCreatePostInfo();
-    if (shouldContinue == true && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const CreatePostScreen()),
-      );
-    }
+  void _navigateToCreateTab() {
+    final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+    tabProvider.navigateToCreate();
   }
 
   Future<void> _showHangoutsInfo() async {
@@ -675,93 +699,6 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
-  Future<bool?> _showCreatePostInfo() async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.info_outline, color: AppColors.primary, size: 24),
-              const SizedBox(width: 8),
-              const Text('Create Hangout'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Before you create your hangout, please note:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.schedule,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'Your hangout will stay active until you delete it or it expires',
-                            style: TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.close, color: AppColors.primary, size: 18),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'Please remember to close your hangout if you\'re no longer looking for people to join',
-                            style: TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Continue'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   Future<void> _joinPost(
     Post post,
