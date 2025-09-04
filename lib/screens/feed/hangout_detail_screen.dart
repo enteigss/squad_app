@@ -221,11 +221,23 @@ class HangoutDetailScreen extends StatelessWidget {
                     ],
                   )
                 else
-                  CustomButton(
-                    text: cantJoinReason ?? 'Cannot Join',
-                    onPressed: null,
-                    width: double.infinity,
-                    backgroundColor: AppColors.textSecondary,
+                  Column(
+                    children: [
+                      CustomButton(
+                        text: cantJoinReason ?? 'Cannot Join',
+                        onPressed: null,
+                        width: double.infinity,
+                        backgroundColor: AppColors.textSecondary,
+                      ),
+                      const SizedBox(height: 12),
+                      CustomButton(
+                        text: 'Go Back to Hangouts',
+                        onPressed: () => NavigationService.goToPath('/feed?tab=hangouts'),
+                        width: double.infinity,
+                        backgroundColor: AppColors.surface,
+                        textColor: AppColors.textPrimary,
+                      ),
+                    ],
                   ),
               ],
             ),

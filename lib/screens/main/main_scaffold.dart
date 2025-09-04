@@ -48,7 +48,6 @@ class _MainScaffoldState extends State<MainScaffold> {
     // Set initial tab in provider after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
-      tabProvider.setContext(context);
       tabProvider.setSelectedIndex(widget.initialIndex);
       tabProvider.addListener(_onTabChangeByProvider);
     });

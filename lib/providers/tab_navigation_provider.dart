@@ -1,16 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import '../services/navigation_service.dart';
 
 class TabNavigationProvider extends ChangeNotifier {
   int _selectedIndex = 0;
-  BuildContext? _context;
   
   int get selectedIndex => _selectedIndex;
-  
-  void setContext(BuildContext context) {
-    _context = context;
-  }
   
   void setSelectedIndex(int index) {
     if (_selectedIndex != index) {
@@ -21,9 +15,9 @@ class TabNavigationProvider extends ChangeNotifier {
   
   void navigateToHangouts({String? tab}) {
     setSelectedIndex(0);
-    if (tab != null && _context != null) {
-      // Use GoRouter to navigate with tab parameter
-      GoRouter.of(_context!).go('/feed?tab=$tab');
+    if (tab != null) {
+      // Use NavigationService instead of storing context
+      NavigationService.goToPath('/feed?tab=$tab');
     }
   }
   
