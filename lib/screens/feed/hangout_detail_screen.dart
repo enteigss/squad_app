@@ -34,7 +34,7 @@ class HangoutDetailScreen extends StatelessWidget {
           // Track hangout view when we have data
           if (hangout != null && currentUser != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              final canJoin = postProvider.canUserJoinPost(hangout, currentUser.id);
+              final canJoin = postProvider.canUserJoinPost(hangout, currentUser.id, userGender: currentUser.gender);
               final isParticipant = hangout.participantIds.contains(currentUser.id);
               
               AnalyticsService().trackHangoutViewed(
@@ -84,7 +84,19 @@ class HangoutDetailScreen extends StatelessWidget {
           final isParticipant = currentUser != null && 
               hangout.participantIds.contains(currentUser.id);
           final canJoin = currentUser != null && 
-              postProvider.canUserJoinPost(hangout, currentUser.id);
+              postProvider.canUserJoinPost(hangout, currentUser.id, userGender: currentUser.gender);
+          
+          // Determine why user can't join for better error messaging
+          String? cantJoinReason;
+          if (currentUser != null && !isParticipant && !canJoin) {
+            if (hangout.participantIds.length >= hangout.maxParticipants) {
+              cantJoinReason = 'Hangout Full';
+            } else if (hangout.dynamicStatus == PostStatus.completed) {
+              cantJoinReason = 'Already Completed';
+            } else {
+              cantJoinReason = 'Gender Restrictions';
+            }
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -210,9 +222,7 @@ class HangoutDetailScreen extends StatelessWidget {
                   )
                 else
                   CustomButton(
-                    text: hangout.participantIds.length >= hangout.maxParticipants 
-                        ? 'Hangout Full'
-                        : 'Cannot Join',
+                    text: cantJoinReason ?? 'Cannot Join',
                     onPressed: null,
                     width: double.infinity,
                     backgroundColor: AppColors.textSecondary,

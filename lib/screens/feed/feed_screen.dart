@@ -9,6 +9,7 @@ import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
+import '../../widgets/app_invite_modal.dart';
 import 'group_members_screen.dart';
 
 enum FeedTab { upcoming, ongoing, yourPosts }
@@ -86,6 +87,11 @@ class _FeedScreenState extends State<FeedScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            onPressed: _showAppInviteModal,
+            tooltip: 'Invite friends to app',
+          ),
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: _showHangoutsInfo,
@@ -495,6 +501,7 @@ class _FeedScreenState extends State<FeedScreen> {
                         else if (postProvider.canUserJoinPost(
                           post,
                           currentUserId,
+                          userGender: authProvider.currentUser?.gender,
                         ))
                           CustomButton(
                             text: 'Join',
@@ -602,6 +609,27 @@ class _FeedScreenState extends State<FeedScreen> {
   void _navigateToCreateTab() {
     final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
     tabProvider.navigateToCreate();
+  }
+
+  void _showAppInviteModal() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+    
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be signed in to invite friends'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    AppInviteModal.show(
+      context,
+      inviterUserId: currentUser.id,
+      inviterName: currentUser.displayName ?? currentUser.username,
+    );
   }
 
   Future<void> _showHangoutsInfo() async {

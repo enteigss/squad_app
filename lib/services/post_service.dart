@@ -133,6 +133,37 @@ class PostService {
         });
   }
 
+  // Helper method to check gender compatibility
+  bool _isUserGenderCompatible(Post post, String? userGender) {
+    // If user hasn't specified gender, they can only join posts that include ALL three options
+    if (userGender == null || userGender == 'prefer_not_to_say') {
+      return post.genderPreferences.contains('Men') &&
+             post.genderPreferences.contains('Women') &&
+             post.genderPreferences.contains('Other');
+    }
+    
+    // Map user gender to preference format
+    String expectedPreference = '';
+    switch (userGender) {
+      case 'woman':
+        expectedPreference = 'Women';
+        break;
+      case 'man':
+        expectedPreference = 'Men';
+        break;
+      case 'non_binary':
+        expectedPreference = 'Other';
+        break;
+      default:
+        // For any other gender identities, map to 'Other'
+        expectedPreference = 'Other';
+        break;
+    }
+    
+    // Check if post's gender preferences include the user's gender
+    return post.genderPreferences.contains(expectedPreference);
+  }
+
   // Join a post
   Future<void> joinPost(String postId, String userId) async {
     try {
@@ -154,6 +185,20 @@ class PostService {
         // Check if post is full
         if (post.participantIds.length >= post.maxParticipants) {
           throw Exception('Post is full');
+        }
+
+        // Get user data to check gender compatibility
+        final userDoc = await transaction.get(_firestore.collection('users').doc(userId));
+        if (!userDoc.exists) {
+          throw Exception('User not found');
+        }
+
+        final userData = userDoc.data()!;
+        final userGender = userData['gender'] as String?;
+
+        // Check gender compatibility
+        if (!_isUserGenderCompatible(post, userGender)) {
+          throw Exception('Gender preferences do not match');
         }
 
         // Add user to participants

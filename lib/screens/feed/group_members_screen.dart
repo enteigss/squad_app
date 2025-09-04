@@ -97,8 +97,8 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // Report button - only show for participants who are not the host
-          if (widget.isParticipant && _canShowReportButton())
+          // Report button - show for all users who are not the host
+          if (_canShowReportButton())
             IconButton(
               icon: const Icon(Icons.flag_outlined),
               onPressed: _showReportDialog,

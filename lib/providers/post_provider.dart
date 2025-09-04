@@ -371,8 +371,39 @@ class PostProvider with ChangeNotifier {
     _refreshTimer = null;
   }
 
+  // Helper method to check gender compatibility
+  bool _isUserGenderCompatible(Post post, String? userGender) {
+    // If user hasn't specified gender, they can only join posts that include ALL three options
+    if (userGender == null || userGender == 'prefer_not_to_say') {
+      return post.genderPreferences.contains('Men') &&
+             post.genderPreferences.contains('Women') &&
+             post.genderPreferences.contains('Other');
+    }
+    
+    // Map user gender to preference format
+    String expectedPreference = '';
+    switch (userGender) {
+      case 'woman':
+        expectedPreference = 'Women';
+        break;
+      case 'man':
+        expectedPreference = 'Men';
+        break;
+      case 'non_binary':
+        expectedPreference = 'Other';
+        break;
+      default:
+        // For any other gender identities, map to 'Other'
+        expectedPreference = 'Other';
+        break;
+    }
+    
+    // Check if post's gender preferences include the user's gender
+    return post.genderPreferences.contains(expectedPreference);
+  }
+
   // Check if user can join a post
-  bool canUserJoinPost(Post post, String userId) {
+  bool canUserJoinPost(Post post, String userId, {String? userGender}) {
     // Check if already joined
     if (post.participantIds.contains(userId)) {
       return false;
@@ -385,6 +416,11 @@ class PostProvider with ChangeNotifier {
     
     // Check if post is completed
     if (post.dynamicStatus == PostStatus.completed) {
+      return false;
+    }
+    
+    // Check gender compatibility
+    if (!_isUserGenderCompatible(post, userGender)) {
       return false;
     }
     
