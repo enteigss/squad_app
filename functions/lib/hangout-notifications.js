@@ -76,25 +76,31 @@ exports.hangoutNotifications = (0, firestore_1.onDocumentCreated)("posts/{postId
  */
 function determineNotificationTopics(genderPreferences) {
     const topics = [];
-    // Handle different gender preference scenarios
-    for (const preference of genderPreferences) {
-        switch (preference) {
-            case "Anyone":
-                topics.push("new_hangouts_bu_anyone");
-                break;
-            case "Men only":
-                topics.push("new_hangouts_bu_men");
-                break;
-            case "Women only":
-                topics.push("new_hangouts_bu_women");
-                break;
-            case "Non-binary only":
-                // Include non-binary users in the "anyone" topic for inclusivity
-                topics.push("new_hangouts_bu_anyone");
-                break;
-            default:
-                firebase_functions_1.logger.warn(`Unknown gender preference: ${preference}`);
-                break;
+    // Check if all three gender options are included (all-genders post)
+    const hasAllGenders = genderPreferences.includes("Men") &&
+        genderPreferences.includes("Women") &&
+        genderPreferences.includes("Non-binary");
+    if (hasAllGenders) {
+        // This is an all-genders post
+        topics.push("new_hangouts_all_genders");
+    }
+    else {
+        // Handle specific gender preferences
+        for (const preference of genderPreferences) {
+            switch (preference) {
+                case "Men":
+                    topics.push("new_hangouts_bu_men");
+                    break;
+                case "Women":
+                    topics.push("new_hangouts_bu_women");
+                    break;
+                case "Non-binary":
+                    topics.push("new_hangouts_bu_nonbinary");
+                    break;
+                default:
+                    firebase_functions_1.logger.warn(`Unknown gender preference: ${preference}`);
+                    break;
+            }
         }
     }
     // Remove duplicates in case multiple preferences map to the same topic
