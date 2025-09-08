@@ -56,10 +56,10 @@ exports.hangoutNotifications = (0, firestore_1.onDocumentCreated)("posts/{postId
             firebase_functions_1.logger.warn(`No topics determined for post ${postId} with preferences:`, postData.genderPreferences);
             return;
         }
-        // Create notification payload
-        const notification = createNotificationPayload(postData);
+        // The platform-specific payloads are now created separately
+        const notificationPayload = createNotificationBody(postData);
         // Send notifications to each topic
-        const promises = topics.map((topic) => sendNotificationToTopic(topic, notification, postData, postId));
+        const promises = topics.map((topic) => sendNotificationToTopic(topic, notificationPayload, postData, postId));
         await Promise.allSettled(promises);
         firebase_functions_1.logger.info(`Completed processing notifications for post ${postId}`, {
             topics: topics,
@@ -75,17 +75,15 @@ exports.hangoutNotifications = (0, firestore_1.onDocumentCreated)("posts/{postId
  * Determines which FCM topics should receive notifications based on gender preferences
  */
 function determineNotificationTopics(genderPreferences) {
+    // Your original logic here is correct and can be reused.
     const topics = [];
-    // Check if all three gender options are included (all-genders post)
     const hasAllGenders = genderPreferences.includes("Men") &&
         genderPreferences.includes("Women") &&
         genderPreferences.includes("Non-binary");
     if (hasAllGenders) {
-        // This is an all-genders post
         topics.push("new_hangouts_all_genders");
     }
     else {
-        // Handle specific gender preferences
         for (const preference of genderPreferences) {
             switch (preference) {
                 case "Men":
@@ -103,18 +101,17 @@ function determineNotificationTopics(genderPreferences) {
             }
         }
     }
-    // Remove duplicates in case multiple preferences map to the same topic
     return [...new Set(topics)];
 }
 /**
- * Creates the notification payload with hangout details
+ * Creates the notification body and data payloads (common for all platforms)
  */
-function createNotificationPayload(postData) {
-    // Truncate description for notification preview
+function createNotificationBody(postData) {
     const maxDescriptionLength = 100;
     const descriptionPreview = postData.description.length > maxDescriptionLength
         ? `${postData.description.substring(0, maxDescriptionLength)}...`
         : postData.description;
+    // This function returns a simple object with `notification` and `data` keys.
     return {
         notification: {
             title: `New Hangout: ${postData.title}`,
@@ -128,38 +125,40 @@ function createNotificationPayload(postData) {
             author_id: postData.authorId,
             click_action: "FLUTTER_NOTIFICATION_CLICK",
         },
-        android: {
-            notification: {
-                icon: "ic_notification",
-                color: "#FF6B35",
-                sound: "default",
-                channelId: "hangout_notifications",
-            },
-        },
-        apns: {
-            payload: {
-                aps: {
-                    sound: "default",
-                    badge: 1,
-                    category: "hangout_notification",
-                },
-            },
-        },
     };
 }
 /**
- * Sends notification to a specific FCM topic
+ * Sends notification to a specific FCM topic using the modern API
  */
-async function sendNotificationToTopic(topic, notification, postData, postId) {
+async function sendNotificationToTopic(topic, commonPayload, postData, postId) {
     try {
         firebase_functions_1.logger.info(`Sending notification to topic: ${topic}`, {
             postId: postId,
             title: postData.title,
         });
+        // Construct the full message payload for the unified `send` method
         const message = {
-            ...notification,
+            ...commonPayload,
             topic: topic,
+            android: {
+                notification: {
+                    icon: "ic_notification",
+                    color: "#FF6B35",
+                    sound: "default",
+                    channelId: "hangout_notifications",
+                },
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: "default",
+                        badge: 1,
+                        category: "hangout_notification",
+                    },
+                },
+            },
         };
+        // Use the unified `send` method
         const response = await admin.messaging().send(message);
         firebase_functions_1.logger.info(`Successfully sent notification to topic ${topic}`, {
             postId: postId,
@@ -172,8 +171,9 @@ async function sendNotificationToTopic(topic, notification, postData, postId) {
             postId: postId,
             topic: topic,
             error: error,
+            errorMessage: error.message,
+            errorCode: error.code,
         });
-        // Don't rethrow - we want to continue trying other topics
     }
 }
 //# sourceMappingURL=hangout-notifications.js.map

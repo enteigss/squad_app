@@ -51,12 +51,12 @@ export const hangoutNotifications = onDocumentCreated(
         return;
       }
 
-      // Create notification payload
-      const notification = createNotificationPayload(postData);
+      // The platform-specific payloads are now created separately
+      const notificationPayload = createNotificationBody(postData);
 
       // Send notifications to each topic
       const promises = topics.map((topic) => 
-        sendNotificationToTopic(topic, notification, postData, postId)
+        sendNotificationToTopic(topic, notificationPayload, postData, postId)
       );
 
       await Promise.allSettled(promises);
@@ -76,18 +76,16 @@ export const hangoutNotifications = onDocumentCreated(
  * Determines which FCM topics should receive notifications based on gender preferences
  */
 function determineNotificationTopics(genderPreferences: string[]): string[] {
+  // Your original logic here is correct and can be reused.
   const topics: string[] = [];
 
-  // Check if all three gender options are included (all-genders post)
   const hasAllGenders = genderPreferences.includes("Men") &&
                        genderPreferences.includes("Women") &&
                        genderPreferences.includes("Non-binary");
 
   if (hasAllGenders) {
-    // This is an all-genders post
     topics.push("new_hangouts_all_genders");
   } else {
-    // Handle specific gender preferences
     for (const preference of genderPreferences) {
       switch (preference) {
         case "Men":
@@ -106,20 +104,19 @@ function determineNotificationTopics(genderPreferences: string[]): string[] {
     }
   }
 
-  // Remove duplicates in case multiple preferences map to the same topic
   return [...new Set(topics)];
 }
 
 /**
- * Creates the notification payload with hangout details
+ * Creates the notification body and data payloads (common for all platforms)
  */
-function createNotificationPayload(postData: Post) {
-  // Truncate description for notification preview
+function createNotificationBody(postData: Post) {
   const maxDescriptionLength = 100;
   const descriptionPreview = postData.description.length > maxDescriptionLength
     ? `${postData.description.substring(0, maxDescriptionLength)}...`
     : postData.description;
 
+  // This function returns a simple object with `notification` and `data` keys.
   return {
     notification: {
       title: `New Hangout: ${postData.title}`,
@@ -133,32 +130,15 @@ function createNotificationPayload(postData: Post) {
       author_id: postData.authorId,
       click_action: "FLUTTER_NOTIFICATION_CLICK",
     },
-    android: {
-      notification: {
-        icon: "ic_notification",
-        color: "#FF6B35", // Squad app orange color
-        sound: "default",
-        channelId: "hangout_notifications",
-      },
-    },
-    apns: {
-      payload: {
-        aps: {
-          sound: "default",
-          badge: 1,
-          category: "hangout_notification",
-        },
-      },
-    },
   };
 }
 
 /**
- * Sends notification to a specific FCM topic
+ * Sends notification to a specific FCM topic using the modern API
  */
 async function sendNotificationToTopic(
   topic: string,
-  notification: any,
+  commonPayload: any,
   postData: Post,
   postId: string
 ): Promise<void> {
@@ -168,11 +148,30 @@ async function sendNotificationToTopic(
       title: postData.title,
     });
 
+    // Construct the full message payload for the unified `send` method
     const message = {
-      ...notification,
-      topic: topic,
+      ...commonPayload,
+      topic: topic, // This is the key field for topic messaging
+      android: {
+        notification: {
+          icon: "ic_notification",
+          color: "#FF6B35", // Squad app orange color
+          sound: "default",
+          channelId: "hangout_notifications",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+            category: "hangout_notification",
+          },
+        },
+      },
     };
 
+    // Use the unified `send` method
     const response = await admin.messaging().send(message);
     
     logger.info(`Successfully sent notification to topic ${topic}`, {
@@ -185,7 +184,8 @@ async function sendNotificationToTopic(
       postId: postId,
       topic: topic,
       error: error,
+      errorMessage: (error as Error).message,
+      errorCode: (error as any).code,
     });
-    // Don't rethrow - we want to continue trying other topics
   }
 }
