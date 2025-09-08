@@ -298,8 +298,19 @@ class _FeedScreenState extends State<FeedScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       color: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final currentUserId = authProvider.currentUser?.id;
+          if (currentUserId == null) return;
+          
+          final isAuthor = post.authorId == currentUserId;
+          final isParticipant = post.participantIds.contains(currentUserId);
+          _viewGroup(post, isParticipant: isAuthor || isParticipant);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -440,23 +451,6 @@ class _FeedScreenState extends State<FeedScreen> {
 
                     return Row(
                       children: [
-                        // Always show View Group button
-                        CustomButton(
-                          text: 'View',
-                          onPressed: () => _viewGroup(
-                            post,
-                            isParticipant: isAuthor || isParticipant,
-                          ),
-                          width: 65,
-                          height: 32,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          backgroundColor: AppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-
                         // Show action buttons for author (Lock/Unlock and Delete)
                         if (isAuthor) ...[
                           CustomButton(
@@ -523,6 +517,7 @@ class _FeedScreenState extends State<FeedScreen> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );

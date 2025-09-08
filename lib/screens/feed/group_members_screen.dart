@@ -4,8 +4,8 @@ import '../../models/post_model.dart';
 import '../../models/user_model.dart';
 import '../../models/report_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/post_provider.dart';
 import '../../services/firestore_service.dart';
-import '../../services/navigation_service.dart';
 import '../../services/report_service.dart';
 import '../../utils/colors.dart';
 import 'post_chat_screen.dart';
@@ -30,14 +30,25 @@ class GroupMembersScreen extends StatefulWidget {
 class _GroupMembersScreenState extends State<GroupMembersScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final ReportService _reportService = ReportService();
+  final TextEditingController _descriptionController = TextEditingController();
   List<UserModel> _members = [];
   bool _isLoading = true;
+  bool _isEditingDescription = false;
+  String _currentDescription = '';
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _currentDescription = widget.post.description;
+    _descriptionController.text = widget.post.description;
     _loadGroupMembers();
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadGroupMembers() async {
@@ -104,13 +115,6 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
               onPressed: _showReportDialog,
               tooltip: 'Report Hangout',
             ),
-          // Chat button - only show for participants
-          if (widget.isParticipant)
-            IconButton(
-              icon: const Icon(Icons.chat),
-              onPressed: _openChat,
-              tooltip: 'Group Chat',
-            ),
         ],
       ),
       body: Column(
@@ -130,16 +134,8 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (widget.post.description.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.post.description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+                const SizedBox(height: 4),
+                _buildDescriptionSection(),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -186,13 +182,16 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
           Expanded(child: _buildMembersList()),
         ],
       ),
-      bottomNavigationBar: (widget.isParticipant && !isGroupFull)
-          ? _buildInviteButton()
+      bottomNavigationBar: widget.isParticipant
+          ? _buildBottomActions(isGroupFull)
           : null,
     );
   }
 
-  Widget _buildInviteButton() {
+  Widget _buildBottomActions(bool isGroupFull) {
+    final bool showInvite = !isGroupFull;
+    final bool showChat = true; // Always show chat for participants
+
     return Container(
       padding: const EdgeInsets.fromLTRB(
         16,
@@ -201,20 +200,75 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         24,
       ), // Added extra bottom padding for safe area
       color: AppColors.background, // Match scaffold background
-      child: ElevatedButton.icon(
-        onPressed: _openInviteModal,
-        icon: const Icon(Icons.person_add, size: 18),
-        label: const Text('Invite Friends'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
+      child: showInvite && showChat
+          ? Row(
+              children: [
+                // Group Chat button
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _openChat,
+                    icon: const Icon(Icons.chat, size: 18),
+                    label: const Text('Group Chat'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Invite Friends button
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _openInviteModal,
+                    icon: const Icon(Icons.person_add, size: 18),
+                    label: const Text('Invite Friends'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : showChat
+              ? ElevatedButton.icon(
+                  onPressed: _openChat,
+                  icon: const Icon(Icons.chat, size: 18),
+                  label: const Text('Group Chat'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                )
+              : ElevatedButton.icon(
+                  onPressed: _openInviteModal,
+                  icon: const Icon(Icons.person_add, size: 18),
+                  label: const Text('Invite Friends'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
     );
   }
 
@@ -707,6 +761,195 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
             content: Text('Failed to submit report: $e'),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildDescriptionSection() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = authProvider.currentUser?.id;
+    final isAuthor = currentUserId == widget.post.authorId;
+
+    if (_isEditingDescription && isAuthor) {
+      return _buildDescriptionEditor();
+    }
+
+    return _buildDescriptionDisplay(isAuthor);
+  }
+
+  Widget _buildDescriptionDisplay(bool isAuthor) {
+    final hasDescription = _currentDescription.isNotEmpty;
+    
+    return Row(
+      children: [
+        Expanded(
+          child: hasDescription
+              ? Text(
+                  _currentDescription,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                )
+              : isAuthor
+                  ? Text(
+                      'Add description',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary.withValues(alpha: 0.7),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+        ),
+        if (isAuthor) ...[
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _startEditingDescription,
+            child: Icon(
+              Icons.edit,
+              size: 16,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDescriptionEditor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _descriptionController,
+          maxLines: null,
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Enter description...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          autofocus: true,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            GestureDetector(
+              onTap: _cancelEditing,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.close, size: 14, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: _saveDescription,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check, size: 14, color: Colors.white),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Save',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _startEditingDescription() {
+    setState(() {
+      _isEditingDescription = true;
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _descriptionController.text = _currentDescription;
+      _isEditingDescription = false;
+    });
+  }
+
+  Future<void> _saveDescription() async {
+    final newDescription = _descriptionController.text.trim();
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    
+    try {
+      final updatedPost = widget.post.copyWith(description: newDescription);
+      final success = await postProvider.updatePost(updatedPost);
+      
+      if (success && mounted) {
+        setState(() {
+          _currentDescription = newDescription;
+          _isEditingDescription = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newDescription.isEmpty ? 'Description removed' : 'Description updated'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(postProvider.error ?? 'Failed to update description'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
           ),
         );
       }

@@ -154,27 +154,40 @@ class _SquadAppState extends State<SquadApp> {
         }
 
         if (!isAuthenticated) {
-            _wasAuthenticated = isAuthenticated;
+            _wasAuthenticated = false; // Explicitly set to false when not authenticated
             return '/login';
         }
 
-        // Only run redirect rules if auth state has changed
+        // Handle authentication state changes and ensure proper routing
         if (wasAuthenticated != isAuthenticated) {
           // Updated tracker to new state 
           _wasAuthenticated = isAuthenticated;
-          debugPrint('🚦 Auth state changed! Running redirect logic...');
+          debugPrint('🚦 Auth state changed! wasAuthenticated: $wasAuthenticated -> isAuthenticated: $isAuthenticated');
 
           if (isAuthenticated && hasProfile) {
+            debugPrint('🚦 Redirecting to /main (authenticated user with profile)');
             return '/main';
           }
 
           if (isAuthenticated && !hasProfile) {
             if (currentPath != '/profile-setup') {
+              debugPrint('🚦 Redirecting to /profile-setup (authenticated user without profile)');
               return '/profile-setup';
             }
             return null;
           }
+        }
 
+        // Ensure authenticated users with profiles stay on main routes, not login
+        if (isAuthenticated && hasProfile && currentPath == '/login') {
+          debugPrint('🚦 Authenticated user with profile on login page - redirecting to /main');
+          return '/main';
+        }
+
+        // Ensure authenticated users without profiles go to profile setup, not login  
+        if (isAuthenticated && !hasProfile && currentPath == '/login') {
+          debugPrint('🚦 Authenticated user without profile on login page - redirecting to /profile-setup');
+          return '/profile-setup';
         }
 
         debugPrint('✅ No redirect needed');

@@ -15,6 +15,7 @@ class UserModel {
   final String? groupId;
   final bool hasCreatedProfile;
   final String? fcmToken;
+  final List<String> subscribedTopics;
 
   UserModel({
     required this.id,
@@ -33,6 +34,7 @@ class UserModel {
     this.groupId,
     this.hasCreatedProfile = false,
     this.fcmToken,
+    this.subscribedTopics = const [],
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -53,6 +55,7 @@ class UserModel {
       groupId: map['groupId'],
       hasCreatedProfile: map['hasCreatedProfile'] ?? false,
       fcmToken: map['fcmToken'],
+      subscribedTopics: List<String>.from(map['subscribedTopics'] ?? []),
     );
   }
 
@@ -84,6 +87,7 @@ class UserModel {
       'groupId': groupId,
       'hasCreatedProfile': hasCreatedProfile,
       'fcmToken': fcmToken,
+      'subscribedTopics': subscribedTopics,
     };
   }
 
@@ -104,6 +108,7 @@ class UserModel {
     String? groupId,
     bool? hasCreatedProfile,
     String? fcmToken,
+    List<String>? subscribedTopics,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -122,6 +127,7 @@ class UserModel {
       groupId: groupId ?? this.groupId,
       hasCreatedProfile: hasCreatedProfile ?? this.hasCreatedProfile,
       fcmToken: fcmToken ?? this.fcmToken,
+      subscribedTopics: subscribedTopics ?? this.subscribedTopics,
     );
   }
 }

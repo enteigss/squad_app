@@ -118,6 +118,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 
                 const SizedBox(height: 12),
                 
+                // Contact & Feedback Section
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _showContactInfo,
+                    icon: const Icon(Icons.feedback, size: 18),
+                    label: const Text('Contact & Feedback'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.textPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: AppColors.divider.withValues(alpha: 0.3), width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
 
                 // Analytics Button (Debug only)
                 if (kDebugMode) ...[
@@ -261,6 +279,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(
         builder: (context) => const AnalyticsScreen(),
       ),
+    );
+  }
+
+  void _showContactInfo() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text(
+            'Contact & Feedback',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Have feedback or need to report something? We\'d love to hear from you!',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Contact us at:',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SelectableText(
+                'jordan@linkupbu.com',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Close',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

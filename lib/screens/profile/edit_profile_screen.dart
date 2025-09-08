@@ -308,7 +308,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Gender helps us match you with the right hangouts',
+                    'Gender helps us match you with the right hangouts. This information is not visible to other users.',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,

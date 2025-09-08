@@ -3,45 +3,52 @@ import '../utils/colors.dart';
 
 class MeetupOutcomeDialog extends StatefulWidget {
   final String hangoutTitle;
-  final VoidCallback onCancel;
+  final VoidCallback? onCancel;
   final Function(bool didMeetup) onConfirmDelete;
   final String? contextText;
   final String? actionButtonText;
   final IconData? headerIcon;
   final Color? headerColor;
+  final bool isRequired;
 
   const MeetupOutcomeDialog({
     super.key,
     required this.hangoutTitle,
-    required this.onCancel,
+    this.onCancel,
     required this.onConfirmDelete,
     this.contextText,
     this.actionButtonText,
     this.headerIcon,
     this.headerColor,
+    this.isRequired = false,
   });
 
   static Future<void> show(
     BuildContext context, {
     required String hangoutTitle,
-    required VoidCallback onCancel,
+    VoidCallback? onCancel,
     required Function(bool didMeetup) onConfirmDelete,
     String? contextText,
     String? actionButtonText,
     IconData? headerIcon,
     Color? headerColor,
+    bool isRequired = false,
   }) {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // User must respond
-      builder: (context) => MeetupOutcomeDialog(
-        hangoutTitle: hangoutTitle,
-        onCancel: onCancel,
-        onConfirmDelete: onConfirmDelete,
-        contextText: contextText,
-        actionButtonText: actionButtonText,
-        headerIcon: headerIcon,
-        headerColor: headerColor,
+      barrierDismissible: !isRequired, // Required dialogs can't be dismissed by tapping outside
+      builder: (context) => PopScope(
+        canPop: !isRequired, // Required dialogs can't be dismissed with back button
+        child: MeetupOutcomeDialog(
+          hangoutTitle: hangoutTitle,
+          onCancel: onCancel,
+          onConfirmDelete: onConfirmDelete,
+          contextText: contextText,
+          actionButtonText: actionButtonText,
+          headerIcon: headerIcon,
+          headerColor: headerColor,
+          isRequired: isRequired,
+        ),
       ),
     );
   }
@@ -126,16 +133,16 @@ class _MeetupOutcomeDialogState extends State<MeetupOutcomeDialog> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.1),
+              color: (widget.headerColor ?? AppColors.error).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.error.withOpacity(0.3),
+                color: (widget.headerColor ?? AppColors.error).withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.event, color: AppColors.error, size: 20),
+                Icon(Icons.event, color: widget.headerColor ?? AppColors.error, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -150,6 +157,38 @@ class _MeetupOutcomeDialogState extends State<MeetupOutcomeDialog> {
             ),
           ),
           const SizedBox(height: 16),
+
+          // Required indicator (if applicable)
+          if (widget.isRequired) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'This feedback is required to help us improve the app.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // Main question
           Text(
@@ -184,19 +223,20 @@ class _MeetupOutcomeDialogState extends State<MeetupOutcomeDialog> {
         ],
       ),
       actions: [
-        // Cancel button
-        TextButton(
-          onPressed: _isSubmitting
-              ? null
-              : () {
-                  Navigator.of(context).pop();
-                  widget.onCancel();
-                },
-          child: Text(
-            'Cancel',
-            style: TextStyle(color: AppColors.textSecondary),
+        // Cancel button (only show if not required and onCancel is provided)
+        if (!widget.isRequired && widget.onCancel != null)
+          TextButton(
+            onPressed: _isSubmitting
+                ? null
+                : () {
+                    Navigator.of(context).pop();
+                    widget.onCancel!();
+                  },
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
-        ),
 
         // Action button
         ElevatedButton(
@@ -242,12 +282,12 @@ class _MeetupOutcomeDialogState extends State<MeetupOutcomeDialog> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
                 ? color
-                : AppColors.textSecondary.withOpacity(0.3),
+                : AppColors.textSecondary.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
         ),

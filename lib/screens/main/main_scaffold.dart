@@ -109,19 +109,17 @@ class _MainScaffoldState extends State<MainScaffold> {
     _isShowingFeedbackDialog = true;
     _shownPromptIds.add(prompt.id);
     
-    debugPrint('MainScaffold: Showing feedback dialog for prompt ${prompt.id}');
+    debugPrint('MainScaffold: Showing required feedback dialog for prompt ${prompt.id}');
     
     MeetupOutcomeDialog.show(
       context,
       hangoutTitle: prompt.hangoutTitle,
-      contextText: 'How did it go?',
-      actionButtonText: 'Submit',
+      contextText: 'Please let us know how your hangout went',
+      actionButtonText: 'Submit Feedback',
       headerIcon: Icons.feedback_outlined,
       headerColor: AppColors.primary,
-      onCancel: () {
-        _isShowingFeedbackDialog = false;
-        debugPrint('MainScaffold: Dialog skipped');
-      },
+      isRequired: true,
+      // No onCancel callback - this makes the prompt non-dismissible
       onConfirmDelete: (didMeetup) async {
         try {
           await _feedbackService.submitFeedback(

@@ -148,6 +148,13 @@ class NotificationService {
       if (kDebugMode) {
         print('Successfully unsubscribed from topic: $topic');
       }
+      
+      // Update user's subscribed topics in Firestore
+      final currentTopics = await _getSubscribedTopicsFromFirestore();
+      if (currentTopics.contains(topic)) {
+        currentTopics.remove(topic);
+        await _updateSubscribedTopicsInFirestore(currentTopics);
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error unsubscribing from topic $topic: $e');
@@ -162,9 +169,24 @@ class NotificationService {
       print('Unsubscribing from topics: ${topics.join(", ")}');
     }
     
+    // Unsubscribe from FCM topics
     for (final topic in topics) {
-      await unsubscribeFromTopic(topic);
+      try {
+        await _firebaseMessaging.unsubscribeFromTopic(topic);
+        if (kDebugMode) {
+          print('Successfully unsubscribed from topic: $topic');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error unsubscribing from topic $topic: $e');
+        }
+      }
     }
+    
+    // Update Firestore to remove these topics
+    final currentTopics = await _getSubscribedTopicsFromFirestore();
+    final updatedTopics = currentTopics.where((topic) => !topics.contains(topic)).toList();
+    await _updateSubscribedTopicsInFirestore(updatedTopics);
     
     if (kDebugMode) {
       print('Completed unsubscribing from ${topics.length} topics');
@@ -177,6 +199,13 @@ class NotificationService {
       await _firebaseMessaging.subscribeToTopic(topic);
       if (kDebugMode) {
         print('Successfully subscribed to topic: $topic');
+      }
+      
+      // Update user's subscribed topics in Firestore
+      final currentTopics = await _getSubscribedTopicsFromFirestore();
+      if (!currentTopics.contains(topic)) {
+        currentTopics.add(topic);
+        await _updateSubscribedTopicsInFirestore(currentTopics);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -192,24 +221,40 @@ class NotificationService {
       print('Subscribing to hangout topics for gender: ${gender ?? "null"}');
     }
     
-    // Everyone gets the universal topic
-    List<String> topics = ['new_hangouts_bu_anyone'];
+    List<String> topics = [];
     
-    // Add gender-specific topic if gender is known
-    if (gender?.toLowerCase() == 'male') {
-      topics.add('new_hangouts_bu_men');
-    } else if (gender?.toLowerCase() == 'female') {
-      topics.add('new_hangouts_bu_women');
+    // Subscribe to appropriate topics based on user's gender
+    if (gender?.toLowerCase() == 'man') {
+      topics.addAll(['new_hangouts_bu_men', 'new_hangouts_all_genders']);
+    } else if (gender?.toLowerCase() == 'woman') {
+      topics.addAll(['new_hangouts_bu_women', 'new_hangouts_all_genders']);
+    } else if (gender?.toLowerCase() == 'non_binary') {
+      topics.addAll(['new_hangouts_bu_nonbinary', 'new_hangouts_all_genders']);
+    } else {
+      // Users without specified gender or prefer not to say only get all-gender posts
+      topics.add('new_hangouts_all_genders');
     }
     
     if (kDebugMode) {
       print('Subscribing to topics: ${topics.join(", ")}');
     }
     
-    // Subscribe to all appropriate topics
+    // Subscribe to all appropriate topics using FCM
     for (final topic in topics) {
-      await subscribeToTopic(topic);
+      try {
+        await _firebaseMessaging.subscribeToTopic(topic);
+        if (kDebugMode) {
+          print('Successfully subscribed to topic: $topic');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error subscribing to topic $topic: $e');
+        }
+      }
     }
+    
+    // Update all subscribed topics in Firestore at once
+    await _updateSubscribedTopicsInFirestore(topics);
     
     if (kDebugMode) {
       print('Completed subscribing to ${topics.length} hangout topics');
@@ -226,10 +271,12 @@ class NotificationService {
     }
     
     String? topicToSubscribe;
-    if (gender.toLowerCase() == 'male') {
+    if (gender.toLowerCase() == 'man') {
       topicToSubscribe = 'new_hangouts_bu_men';
-    } else if (gender.toLowerCase() == 'female') {
+    } else if (gender.toLowerCase() == 'woman') {
       topicToSubscribe = 'new_hangouts_bu_women';
+    } else if (gender.toLowerCase() == 'non_binary') {
+      topicToSubscribe = 'new_hangouts_bu_nonbinary';
     }
     
     if (topicToSubscribe != null) {
@@ -242,6 +289,47 @@ class NotificationService {
         print('Unknown gender value: $gender, no gender-specific topic subscription');
       }
     }
+  }
+
+  // Method to update subscribed topics in user's Firestore document
+  Future<void> _updateSubscribedTopicsInFirestore(List<String> topics) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'subscribedTopics': topics,
+          'lastSubscriptionUpdate': FieldValue.serverTimestamp(),
+        });
+        
+        if (kDebugMode) {
+          print('Updated subscribed topics in Firestore for user: ${user.uid}');
+          print('Topics: ${topics.join(", ")}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating subscribed topics in Firestore: $e');
+      }
+    }
+  }
+
+  // Method to get current subscribed topics from Firestore
+  Future<List<String>> _getSubscribedTopicsFromFirestore() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (doc.exists && doc.data() != null) {
+          final data = doc.data()!;
+          return List<String>.from(data['subscribedTopics'] ?? []);
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting subscribed topics from Firestore: $e');
+      }
+    }
+    return [];
   }
 
   // You can add other methods here for handling incoming messages, etc.

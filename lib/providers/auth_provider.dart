@@ -220,6 +220,7 @@ class AuthProvider with ChangeNotifier {
       AnalyticsService().resetFirstTimeFlags();
 
       _currentUser = null;
+      notifyListeners(); // Ensure UI is updated immediately after sign out
     } catch (e) {
       _error = _getErrorMessage(e);
       rethrow;
@@ -278,7 +279,8 @@ class AuthProvider with ChangeNotifier {
           await notificationService.unsubscribeFromTopics([
             'new_hangouts_bu_men',
             'new_hangouts_bu_women',
-            'new_hangouts_bu_anyone',
+            'new_hangouts_bu_nonbinary',
+            'new_hangouts_all_genders',
           ]);
           
           // Subscribe to appropriate topics based on new gender
@@ -301,6 +303,22 @@ class AuthProvider with ChangeNotifier {
   Future<void> updateCurrentUser(UserModel updatedUser) async {
     _currentUser = updatedUser;
     notifyListeners();
+  }
+
+  // Method to refresh user data from Firestore (useful after subscription changes)
+  Future<void> refreshCurrentUser() async {
+    if (_currentUser != null) {
+      try {
+        final userData = await _authService.getUserData(_currentUser!.id);
+        if (userData != null) {
+          _currentUser = userData;
+          notifyListeners();
+          debugPrint('✅ Current user data refreshed from Firestore');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to refresh current user data: $e');
+      }
+    }
   }
 
   Future<bool> checkUsernameAvailability(String username) async {
