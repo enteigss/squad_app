@@ -36,6 +36,20 @@ export const hangoutNotifications = onDocumentCreated(
         return;
       }
 
+      // DEBUG NOTIFICATION
+      logger.info("Sending debug notification");
+
+      const debugTopic = "new_hangouts_all_genders";
+
+      const simplePayload = {
+        notification: {
+          title: "Test Notification",
+          body: `This is a simple test triggered by post ${postId}`,
+        },
+      };
+
+      await sendNotificationToTopic(debugTopic, simplePayload, postData, postId);
+
       logger.info(`Processing new hangout notification for post ${postId}`, {
         title: postData.title,
         authorName: postData.authorName,
@@ -149,7 +163,7 @@ async function sendNotificationToTopic(
     });
 
     // Construct the full message payload for the unified `send` method
-    const message = {
+    /* const message = {
       ...commonPayload,
       topic: topic, // This is the key field for topic messaging
       android: {
@@ -170,9 +184,22 @@ async function sendNotificationToTopic(
         },
       },
     };
+    */
+
+   const message = {
+    ...commonPayload,
+    topic: topic,
+   };
 
     // Use the unified `send` method
-    const response = await admin.messaging().send(message);
+    const response = await admin.messaging().send(message)
+      .then((response) => {
+        // Response is a message ID string.
+        console.log('Successfully sent message:', response);
+      })
+      .catch((error) => {
+        console.log('Error sending message:', error);
+      });
     
     logger.info(`Successfully sent notification to topic ${topic}`, {
       postId: postId,

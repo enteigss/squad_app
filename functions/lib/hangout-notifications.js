@@ -45,6 +45,16 @@ exports.hangoutNotifications = (0, firestore_1.onDocumentCreated)("posts/{postId
             firebase_functions_1.logger.info(`Skipping notifications for deleted/locked post ${postId}`);
             return;
         }
+        // DEBUG NOTIFICATION
+        firebase_functions_1.logger.info("Sending debug notification");
+        const debugTopic = "new_hangouts_all_genders";
+        const simplePayload = {
+            notification: {
+                title: "Test Notification",
+                body: `This is a simple test triggered by post ${postId}`,
+            },
+        };
+        await sendNotificationToTopic(debugTopic, simplePayload, postData, postId);
         firebase_functions_1.logger.info(`Processing new hangout notification for post ${postId}`, {
             title: postData.title,
             authorName: postData.authorName,
@@ -137,29 +147,41 @@ async function sendNotificationToTopic(topic, commonPayload, postData, postId) {
             title: postData.title,
         });
         // Construct the full message payload for the unified `send` method
+        /* const message = {
+          ...commonPayload,
+          topic: topic, // This is the key field for topic messaging
+          android: {
+            notification: {
+              icon: "ic_notification",
+              color: "#FF6B35", // Squad app orange color
+              sound: "default",
+              channelId: "hangout_notifications",
+            },
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: "default",
+                badge: 1,
+                category: "hangout_notification",
+              },
+            },
+          },
+        };
+        */
         const message = {
             ...commonPayload,
             topic: topic,
-            android: {
-                notification: {
-                    icon: "ic_notification",
-                    color: "#FF6B35",
-                    sound: "default",
-                    channelId: "hangout_notifications",
-                },
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: "default",
-                        badge: 1,
-                        category: "hangout_notification",
-                    },
-                },
-            },
         };
         // Use the unified `send` method
-        const response = await admin.messaging().send(message);
+        const response = await admin.messaging().send(message)
+            .then((response) => {
+            // Response is a message ID string.
+            console.log('Successfully sent message:', response);
+        })
+            .catch((error) => {
+            console.log('Error sending message:', error);
+        });
         firebase_functions_1.logger.info(`Successfully sent notification to topic ${topic}`, {
             postId: postId,
             messageId: response,

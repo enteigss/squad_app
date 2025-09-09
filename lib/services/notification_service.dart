@@ -25,7 +25,8 @@ class NotificationService {
       }
       // Permission granted, now get the token
       await getToken();
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
       if (kDebugMode) {
         print('User granted provisional permission');
       }
@@ -44,7 +45,7 @@ class NotificationService {
         if (kDebugMode) {
           print('FCM Token: $token');
         }
-        
+
         // Save token to Firebase
         await _saveTokenToFirebase(token);
       }
@@ -64,7 +65,7 @@ class NotificationService {
           'fcmToken': token,
           'lastTokenUpdate': FieldValue.serverTimestamp(),
         });
-        
+
         if (kDebugMode) {
           print('FCM token saved to Firebase for user: ${user.uid}');
         }
@@ -82,7 +83,7 @@ class NotificationService {
       if (kDebugMode) {
         print('FCM Token refreshed: $token');
       }
-      
+
       // Save the new token to Firebase
       await _saveTokenToFirebase(token);
     });
@@ -103,7 +104,7 @@ class NotificationService {
           'fcmToken': FieldValue.delete(),
           'lastTokenUpdate': FieldValue.serverTimestamp(),
         });
-        
+
         if (kDebugMode) {
           print('FCM token removed from Firebase for user: ${user.uid}');
         }
@@ -132,7 +133,7 @@ class NotificationService {
     try {
       final settings = await _firebaseMessaging.getNotificationSettings();
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
-             settings.authorizationStatus == AuthorizationStatus.provisional;
+          settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
       if (kDebugMode) {
         print('Error checking notification permissions: $e');
@@ -148,7 +149,7 @@ class NotificationService {
       if (kDebugMode) {
         print('Successfully unsubscribed from topic: $topic');
       }
-      
+
       // Update user's subscribed topics in Firestore
       final currentTopics = await _getSubscribedTopicsFromFirestore();
       if (currentTopics.contains(topic)) {
@@ -168,7 +169,7 @@ class NotificationService {
     if (kDebugMode) {
       print('Unsubscribing from topics: ${topics.join(", ")}');
     }
-    
+
     // Unsubscribe from FCM topics
     for (final topic in topics) {
       try {
@@ -182,12 +183,14 @@ class NotificationService {
         }
       }
     }
-    
+
     // Update Firestore to remove these topics
     final currentTopics = await _getSubscribedTopicsFromFirestore();
-    final updatedTopics = currentTopics.where((topic) => !topics.contains(topic)).toList();
+    final updatedTopics = currentTopics
+        .where((topic) => !topics.contains(topic))
+        .toList();
     await _updateSubscribedTopicsInFirestore(updatedTopics);
-    
+
     if (kDebugMode) {
       print('Completed unsubscribing from ${topics.length} topics');
     }
@@ -200,7 +203,7 @@ class NotificationService {
       if (kDebugMode) {
         print('Successfully subscribed to topic: $topic');
       }
-      
+
       // Update user's subscribed topics in Firestore
       final currentTopics = await _getSubscribedTopicsFromFirestore();
       if (!currentTopics.contains(topic)) {
@@ -220,9 +223,9 @@ class NotificationService {
     if (kDebugMode) {
       print('Subscribing to hangout topics for gender: ${gender ?? "null"}');
     }
-    
+
     List<String> topics = [];
-    
+
     // Subscribe to appropriate topics based on user's gender
     if (gender?.toLowerCase() == 'man') {
       topics.addAll(['new_hangouts_bu_men', 'new_hangouts_all_genders']);
@@ -234,11 +237,11 @@ class NotificationService {
       // Users without specified gender or prefer not to say only get all-gender posts
       topics.add('new_hangouts_all_genders');
     }
-    
+
     if (kDebugMode) {
       print('Subscribing to topics: ${topics.join(", ")}');
     }
-    
+
     // Subscribe to all appropriate topics using FCM
     for (final topic in topics) {
       try {
@@ -252,10 +255,10 @@ class NotificationService {
         }
       }
     }
-    
+
     // Update all subscribed topics in Firestore at once
     await _updateSubscribedTopicsInFirestore(topics);
-    
+
     if (kDebugMode) {
       print('Completed subscribing to ${topics.length} hangout topics');
     }
@@ -265,11 +268,13 @@ class NotificationService {
   Future<void> subscribeToGenderSpecificTopic(String? gender) async {
     if (gender == null) {
       if (kDebugMode) {
-        print('No gender provided, skipping gender-specific topic subscription');
+        print(
+          'No gender provided, skipping gender-specific topic subscription',
+        );
       }
       return;
     }
-    
+
     String? topicToSubscribe;
     if (gender.toLowerCase() == 'man') {
       topicToSubscribe = 'new_hangouts_bu_men';
@@ -278,15 +283,19 @@ class NotificationService {
     } else if (gender.toLowerCase() == 'non_binary') {
       topicToSubscribe = 'new_hangouts_bu_nonbinary';
     }
-    
+
     if (topicToSubscribe != null) {
       if (kDebugMode) {
-        print('Subscribing to gender-specific topic: $topicToSubscribe for gender: $gender');
+        print(
+          'Subscribing to gender-specific topic: $topicToSubscribe for gender: $gender',
+        );
       }
       await subscribeToTopic(topicToSubscribe);
     } else {
       if (kDebugMode) {
-        print('Unknown gender value: $gender, no gender-specific topic subscription');
+        print(
+          'Unknown gender value: $gender, no gender-specific topic subscription',
+        );
       }
     }
   }
@@ -300,7 +309,7 @@ class NotificationService {
           'subscribedTopics': topics,
           'lastSubscriptionUpdate': FieldValue.serverTimestamp(),
         });
-        
+
         if (kDebugMode) {
           print('Updated subscribed topics in Firestore for user: ${user.uid}');
           print('Topics: ${topics.join(", ")}');
