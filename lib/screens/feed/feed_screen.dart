@@ -317,12 +317,6 @@ class _FeedScreenState extends State<FeedScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: Icon(Icons.person, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

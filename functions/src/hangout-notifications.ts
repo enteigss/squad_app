@@ -37,6 +37,7 @@ export const hangoutNotifications = onDocumentCreated(
       }
 
       // DEBUG NOTIFICATION
+      /*
       logger.info("Sending debug notification");
 
       const debugTopic = "new_hangouts_all_genders";
@@ -49,7 +50,8 @@ export const hangoutNotifications = onDocumentCreated(
       };
 
       await sendNotificationToTopic(debugTopic, simplePayload, postData, postId);
-
+      */
+     
       logger.info(`Processing new hangout notification for post ${postId}`, {
         title: postData.title,
         authorName: postData.authorName,

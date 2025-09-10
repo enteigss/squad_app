@@ -89,7 +89,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildInfoCard('Email', user.email),
                 if (user.bio != null) _buildInfoCard('Bio', user.bio!),
                 if (user.location != null) _buildInfoCard('Location', user.location!),
-                if (user.age != null) _buildInfoCard('Age', user.age.toString()),
+                if (user.classYear != null) _buildInfoCard('Class Year', user.classYear!),
                 
                 const SizedBox(height: 16),
                 

@@ -262,26 +262,16 @@ class ProfileDetailScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Email
-          _buildInfoRow(
-            context,
-            icon: Icons.email_outlined,
-            label: 'Email',
-            value: user.email,
-          ),
-
-          const SizedBox(height: 12),
-
-          // Age
-          if (user.age != null)
+          // Class Year
+          if (user.classYear != null)
             _buildInfoRow(
               context,
-              icon: Icons.cake_outlined,
-              label: 'Age',
-              value: '${user.age} years old',
+              icon: Icons.school_outlined,
+              label: 'Class Year',
+              value: user.classYear!,
             ),
 
-          if (user.age != null) const SizedBox(height: 12),
+          if (user.classYear != null) const SizedBox(height: 12),
 
           // Location
           if (user.location != null && user.location!.isNotEmpty)
@@ -294,16 +284,6 @@ class ProfileDetailScreen extends StatelessWidget {
 
           if (user.location != null && user.location!.isNotEmpty)
             const SizedBox(height: 12),
-
-          // Member Since
-          _buildInfoRow(
-            context,
-            icon: Icons.calendar_today_outlined,
-            label: 'Member Since',
-            value: _formatDate(user.createdAt),
-          ),
-
-          const SizedBox(height: 12),
 
           // Last Seen
           if (user.lastSeen != null)

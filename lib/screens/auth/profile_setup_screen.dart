@@ -16,7 +16,7 @@ class ProfileSetupScreen extends StatefulWidget {
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
-  final _ageController = TextEditingController();
+  String? _selectedClassYear;
   final _locationController = TextEditingController();
   final _aboutController = TextEditingController();
   final _interestController = TextEditingController();
@@ -25,6 +25,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   List<String> _interests = [];
   String? _selectedGender;
   
+
+  final List<String> _classYearOptions = [
+    'Freshman',
+    'Sophomore',
+    'Junior',
+    'Senior',
+    'Graduate',
+  ];
 
   final List<String> _popularInterests = [
     'Sports',
@@ -60,7 +68,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   @override
   void dispose() {
     _fullNameController.dispose();
-    _ageController.dispose();
+    // No need to dispose _selectedClassYear as it's not a controller
     _locationController.dispose();
     _aboutController.dispose();
     _interestController.dispose();
@@ -80,6 +88,80 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     setState(() {
       _interests.remove(interest);
     });
+  }
+
+  Widget _buildClassYearSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Class Year',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedClassYear,
+            decoration: InputDecoration(
+              hintText: 'Select your class year',
+              hintStyle: TextStyle(color: AppColors.textSecondary),
+              prefixIcon: const Icon(Icons.school_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            items: _classYearOptions.map((String classYear) {
+              return DropdownMenuItem<String>(
+                value: classYear,
+                child: Text(
+                  classYear,
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+              );
+            }).toList(),
+            onChanged: (String? value) {
+              setState(() {
+                _selectedClassYear = value;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please select your class year';
+              }
+              return null;
+            },
+            dropdownColor: AppColors.surface,
+            icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+          ),
+        ),
+      ],
+    );
   }
 
 
@@ -117,7 +199,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         displayName: _fullNameController.text.trim(),
         photoUrl: null,
         bio: _aboutController.text.trim().isNotEmpty ? _aboutController.text.trim() : null,
-        age: int.tryParse(_ageController.text),
+        classYear: _selectedClassYear,
         location: _locationController.text.trim(),
         interests: _interests,
         gender: _selectedGender!,
@@ -213,25 +295,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 const SizedBox(height: 16),
 
-                // Age Field
-                CustomTextField(
-                  label: 'Age',
-                  hint: 'Enter your age',
-                  controller: _ageController,
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.next,
-                  prefixIcon: const Icon(Icons.cake_outlined),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your age';
-                    }
-                    final age = int.tryParse(value);
-                    if (age == null || age < 13 || age > 120) {
-                      return 'Please enter a valid age (13-120)';
-                    }
-                    return null;
-                  },
-                ),
+                // Class Year Field
+                _buildClassYearSection(),
 
                 const SizedBox(height: 16),
 

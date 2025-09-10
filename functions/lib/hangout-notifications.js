@@ -46,15 +46,20 @@ exports.hangoutNotifications = (0, firestore_1.onDocumentCreated)("posts/{postId
             return;
         }
         // DEBUG NOTIFICATION
-        firebase_functions_1.logger.info("Sending debug notification");
+        /*
+        logger.info("Sending debug notification");
+  
         const debugTopic = "new_hangouts_all_genders";
+  
         const simplePayload = {
-            notification: {
-                title: "Test Notification",
-                body: `This is a simple test triggered by post ${postId}`,
-            },
+          notification: {
+            title: "Test Notification",
+            body: `This is a simple test triggered by post ${postId}`,
+          },
         };
+  
         await sendNotificationToTopic(debugTopic, simplePayload, postData, postId);
+        */
         firebase_functions_1.logger.info(`Processing new hangout notification for post ${postId}`, {
             title: postData.title,
             authorName: postData.authorName,

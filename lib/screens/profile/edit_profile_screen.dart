@@ -27,7 +27,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _displayNameController;
   late final TextEditingController _bioController;
   late final TextEditingController _locationController;
-  late final TextEditingController _ageController;
+  String? _selectedClassYear;
   final TextEditingController _interestController = TextEditingController();
 
   // State
@@ -35,6 +35,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _selectedGender;
   bool _isLoading = false;
   String? _error;
+
+  // Class year options
+  final List<String> _classYearOptions = [
+    'Freshman',
+    'Sophomore', 
+    'Junior',
+    'Senior',
+    'Graduate',
+  ];
 
   // Available interests
   final List<String> _availableInterests = [
@@ -78,7 +87,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _displayNameController = TextEditingController(text: widget.user.displayName ?? '');
     _bioController = TextEditingController(text: widget.user.bio ?? '');
     _locationController = TextEditingController(text: widget.user.location ?? '');
-    _ageController = TextEditingController(text: widget.user.age?.toString() ?? '');
+    _selectedClassYear = widget.user.classYear;
     _selectedInterests = Set<String>.from(widget.user.interests);
     _selectedGender = widget.user.gender;
   }
@@ -88,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _displayNameController.dispose();
     _bioController.dispose();
     _locationController.dispose();
-    _ageController.dispose();
+    // No need to dispose _selectedClassYear as it's not a controller
     _interestController.dispose();
     super.dispose();
   }
@@ -161,26 +170,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               const SizedBox(height: 16),
 
-              // Age
-              _buildSectionTitle('Age (optional)'),
+              // Class Year
+              _buildSectionTitle('Class Year (optional)'),
               const SizedBox(height: 6),
-              CustomTextField(
-                controller: _ageController,
-                hint: 'Enter your age',
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    final age = int.tryParse(value);
-                    if (age == null) {
-                      return 'Please enter a valid age';
-                    }
-                    if (age < 13 || age > 120) {
-                      return 'Age must be between 13 and 120';
-                    }
-                  }
-                  return null;
-                },
-              ),
+              _buildClassYearDropdown(),
 
               const SizedBox(height: 16),
 
@@ -267,6 +260,60 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildClassYearDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedClassYear,
+        decoration: InputDecoration(
+          hintText: 'Select your class year',
+          hintStyle: TextStyle(color: AppColors.textSecondary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.primary),
+          ),
+          filled: true,
+          fillColor: AppColors.surface,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        items: _classYearOptions.map((String classYear) {
+          return DropdownMenuItem<String>(
+            value: classYear,
+            child: Text(
+              classYear,
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+          );
+        }).toList(),
+        onChanged: (String? value) {
+          setState(() {
+            _selectedClassYear = value;
+          });
+        },
+        dropdownColor: AppColors.surface,
+        icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
       ),
     );
   }
@@ -549,11 +596,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         throw Exception('User not found');
       }
 
-      // Parse age
-      int? age;
-      if (_ageController.text.isNotEmpty) {
-        age = int.tryParse(_ageController.text);
-      }
+      // Class year is already set in _selectedClassYear
 
       // Update profile using AuthProvider
       await authProvider.updateProfile(
@@ -566,7 +609,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         location: _locationController.text.trim().isEmpty 
             ? null 
             : _locationController.text.trim(),
-        age: age,
+        classYear: _selectedClassYear,
         interests: _selectedInterests.toList(),
         gender: _selectedGender,
       );

@@ -334,7 +334,7 @@ class AuthService {
     String? displayName,
     String? photoUrl,
     String? bio,
-    int? age,
+    String? classYear,
     String? location,
     List<String>? interests,
     String? gender,
@@ -346,7 +346,7 @@ class AuthService {
         if (displayName != null) updates['displayName'] = displayName;
         if (photoUrl != null) updates['photoUrl'] = photoUrl;
         if (bio != null) updates['bio'] = bio;
-        if (age != null) updates['age'] = age;
+        if (classYear != null) updates['classYear'] = classYear;
         if (location != null) updates['location'] = location;
         if (interests != null) updates['interests'] = interests;
         if (gender != null) updates['gender'] = gender;

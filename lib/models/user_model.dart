@@ -5,7 +5,7 @@ class UserModel {
   final String? displayName;
   final String? photoUrl;
   final String? bio;
-  final int? age;
+  final String? classYear;
   final String? location;
   final List<String> interests;
   final String? gender;
@@ -24,7 +24,7 @@ class UserModel {
     this.displayName,
     this.photoUrl,
     this.bio,
-    this.age,
+    this.classYear,
     this.location,
     this.interests = const [],
     this.gender,
@@ -45,7 +45,7 @@ class UserModel {
       displayName: map['displayName'],
       photoUrl: map['photoUrl'],
       bio: map['bio'],
-      age: map['age'],
+      classYear: map['classYear'],
       location: map['location'],
       interests: List<String>.from(map['interests'] ?? []),
       gender: map['gender'],
@@ -77,7 +77,7 @@ class UserModel {
       'displayName': displayName,
       'photoUrl': photoUrl,
       'bio': bio,
-      'age': age,
+      'classYear': classYear,
       'location': location,
       'interests': interests,
       'gender': gender,
@@ -98,7 +98,7 @@ class UserModel {
     String? displayName,
     String? photoUrl,
     String? bio,
-    int? age,
+    String? classYear,
     String? location,
     List<String>? interests,
     String? gender,
@@ -117,7 +117,7 @@ class UserModel {
       displayName: displayName ?? this.displayName,
       photoUrl: photoUrl ?? this.photoUrl,
       bio: bio ?? this.bio,
-      age: age ?? this.age,
+      classYear: classYear ?? this.classYear,
       location: location ?? this.location,
       interests: interests ?? this.interests,
       gender: gender ?? this.gender,
