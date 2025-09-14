@@ -33,14 +33,14 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Check for tab query parameter from route
     final routeState = GoRouterState.of(context);
     final tabParam = routeState.uri.queryParameters['tab'];
-    
+
     if (tabParam != null) {
       debugPrint('🎯 Feed screen received tab parameter: $tabParam');
-      
+
       // Set initial tab based on parameter
       switch (tabParam) {
         case 'upcoming':
@@ -57,7 +57,7 @@ class _FeedScreenState extends State<FeedScreen> {
           debugPrint('⚠️ Unknown tab parameter: $tabParam, using default');
           selectedTab = FeedTab.upcoming;
       }
-      
+
       debugPrint('✅ Set feed tab to: $selectedTab');
     }
   }
@@ -253,15 +253,23 @@ class _FeedScreenState extends State<FeedScreen> {
     switch (selectedTab) {
       case FeedTab.upcoming:
         // Show upcoming hangouts filtered by user's gender
-        debugPrint('🔍 FEED DEBUG: Raw upcoming posts count: ${postProvider.upcomingPosts.length}');
+        debugPrint(
+          '🔍 FEED DEBUG: Raw upcoming posts count: ${postProvider.upcomingPosts.length}',
+        );
         filteredPosts = postProvider.getUpcomingPostsForUser(userGender);
-        debugPrint('🔍 FEED DEBUG: Filtered upcoming posts count: ${filteredPosts.length}');
+        debugPrint(
+          '🔍 FEED DEBUG: Filtered upcoming posts count: ${filteredPosts.length}',
+        );
         break;
       case FeedTab.ongoing:
         // Show ongoing hangouts filtered by user's gender
-        debugPrint('🔍 FEED DEBUG: Raw ongoing posts count: ${postProvider.ongoingPosts.length}');
+        debugPrint(
+          '🔍 FEED DEBUG: Raw ongoing posts count: ${postProvider.ongoingPosts.length}',
+        );
         filteredPosts = postProvider.getOngoingPostsForUser(userGender);
-        debugPrint('🔍 FEED DEBUG: Filtered ongoing posts count: ${filteredPosts.length}');
+        debugPrint(
+          '🔍 FEED DEBUG: Filtered ongoing posts count: ${filteredPosts.length}',
+        );
         break;
       case FeedTab.yourPosts:
         if (currentUserId == null) {
@@ -269,14 +277,18 @@ class _FeedScreenState extends State<FeedScreen> {
           return [];
         }
         // Show all posts where user is a participant (including locked ones)
-        debugPrint('🔍 FEED DEBUG: Raw all posts count: ${postProvider.allPosts.length}');
+        debugPrint(
+          '🔍 FEED DEBUG: Raw all posts count: ${postProvider.allPosts.length}',
+        );
         filteredPosts = postProvider.allPosts
             .where(
               (post) =>
                   !post.deleted && post.participantIds.contains(currentUserId),
             )
             .toList();
-        debugPrint('🔍 FEED DEBUG: User posts count (participant): ${filteredPosts.length}');
+        debugPrint(
+          '🔍 FEED DEBUG: User posts count (participant): ${filteredPosts.length}',
+        );
         break;
     }
 
@@ -286,7 +298,9 @@ class _FeedScreenState extends State<FeedScreen> {
       debugPrint('✅ FEED DEBUG: Showing ${filteredPosts.length} posts');
       for (int i = 0; i < filteredPosts.length && i < 3; i++) {
         final post = filteredPosts[i];
-        debugPrint('🔍 FEED DEBUG: Post $i: "${post.title}" (${post.id}) - Status: ${post.dynamicStatus} - Participants: ${post.participantIds.length}');
+        debugPrint(
+          '🔍 FEED DEBUG: Post $i: "${post.title}" (${post.id}) - Status: ${post.dynamicStatus} - Participants: ${post.participantIds.length}',
+        );
       }
     }
 
@@ -301,131 +315,117 @@ class _FeedScreenState extends State<FeedScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          );
           final currentUserId = authProvider.currentUser?.id;
           if (currentUserId == null) return;
-          
+
           final isAuthor = post.authorId == currentUserId;
           final isParticipant = post.participantIds.contains(currentUserId);
           _viewGroup(post, isParticipant: isAuthor || isParticipant);
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.authorName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        _getTimeText(post),
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (post.isLocked) ...[
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.textSecondary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.textSecondary.withValues(
-                              alpha: 0.3,
-                            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.authorName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.lock,
-                              size: 12,
-                              color: AppColors.textSecondary,
+                        Text(
+                          _getTimeText(post),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      if (post.isLocked) ...[
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.1,
                             ),
-                            const SizedBox(width: 2),
-                            Text(
-                              'Locked',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.3,
                               ),
                             ),
-                          ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.lock,
+                                size: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Locked',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
+                      _buildStatusChip(post.dynamicStatus),
                     ],
-                    _buildStatusChip(post.dynamicStatus),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              post.title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              post.description,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-            ),
-            if (post.location != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    post.location!,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
                   ),
                 ],
               ),
-            ],
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              const SizedBox(height: 12),
+              Text(
+                post.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                post.description,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+              if (post.location != null) ...[
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Icon(
-                      Icons.people,
+                      Icons.location_on,
                       size: 16,
                       color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${post.participantIds.length} members',
+                      post.location!,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -433,85 +433,107 @@ class _FeedScreenState extends State<FeedScreen> {
                     ),
                   ],
                 ),
-                Consumer2<AuthProvider, PostProvider>(
-                  builder: (context, authProvider, postProvider, child) {
-                    final currentUserId = authProvider.currentUser?.id;
-                    if (currentUserId == null) return const SizedBox.shrink();
-
-                    final isAuthor = post.authorId == currentUserId;
-                    final isParticipant = post.participantIds.contains(
-                      currentUserId,
-                    );
-
-                    return Row(
-                      children: [
-                        // Show action buttons for author (Lock/Unlock and Delete)
-                        if (isAuthor) ...[
-                          CustomButton(
-                            text: post.isLocked ? 'Unlock' : 'Lock',
-                            onPressed: () =>
-                                _toggleLockPost(post, postProvider),
-                            width: 65,
-                            height: 32,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            backgroundColor: post.isLocked
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
-                          CustomButton(
-                            text: 'Delete',
-                            onPressed: () => _deletePost(post, postProvider),
-                            width: 65,
-                            height: 32,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            backgroundColor: AppColors.error,
-                          ),
-                        ] else if (isParticipant)
-                          CustomButton(
-                            text: 'Leave',
-                            onPressed: () =>
-                                _leavePost(post, currentUserId, postProvider),
-                            width: 65,
-                            height: 32,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            backgroundColor: AppColors.error,
-                          )
-                        else if (postProvider.canUserJoinPost(
-                          post,
-                          currentUserId,
-                          userGender: authProvider.currentUser?.gender,
-                        ))
-                          CustomButton(
-                            text: 'Join',
-                            onPressed: () =>
-                                _joinPost(post, currentUserId, postProvider),
-                            width: 65,
-                            height: 32,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                          )
-                        else
-                          const SizedBox.shrink(),
-                      ],
-                    );
-                  },
-                ),
               ],
-            ),
-          ],
-        ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${post.participantIds.length} members',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Consumer2<AuthProvider, PostProvider>(
+                    builder: (context, authProvider, postProvider, child) {
+                      final currentUserId = authProvider.currentUser?.id;
+                      if (currentUserId == null) return const SizedBox.shrink();
+
+                      final isAuthor = post.authorId == currentUserId;
+                      final isParticipant = post.participantIds.contains(
+                        currentUserId,
+                      );
+
+                      return Row(
+                        children: [
+                          // Show action buttons for author (Lock/Unlock and Delete)
+                          if (isAuthor) ...[
+                            CustomButton(
+                              text: post.isLocked ? 'Unlock' : 'Lock',
+                              onPressed: () =>
+                                  _toggleLockPost(post, postProvider),
+                              width: 65,
+                              height: 32,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              backgroundColor: post.isLocked
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            CustomButton(
+                              text: 'Delete',
+                              onPressed: () => _deletePost(post, postProvider),
+                              width: 65,
+                              height: 32,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              backgroundColor: AppColors.error,
+                            ),
+                          ] else if (isParticipant)
+                            CustomButton(
+                              text: 'Leave',
+                              onPressed: () =>
+                                  _leavePost(post, currentUserId, postProvider),
+                              width: 65,
+                              height: 32,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              backgroundColor: AppColors.error,
+                            )
+                          else if (postProvider.canUserJoinPost(
+                            post,
+                            currentUserId,
+                            userGender: authProvider.currentUser?.gender,
+                          ))
+                            CustomButton(
+                              text: 'Join',
+                              onPressed: () =>
+                                  _joinPost(post, currentUserId, postProvider),
+                              width: 65,
+                              height: 32,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                            )
+                          else
+                            const SizedBox.shrink(),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -596,14 +618,17 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   void _navigateToCreateTab() {
-    final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+    final tabProvider = Provider.of<TabNavigationProvider>(
+      context,
+      listen: false,
+    );
     tabProvider.navigateToCreate();
   }
 
   void _showAppInviteModal() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = authProvider.currentUser;
-    
+
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -716,7 +741,6 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
-
   Future<void> _joinPost(
     Post post,
     String userId,
@@ -730,7 +754,9 @@ class _FeedScreenState extends State<FeedScreen> {
       hangoutTitle: post.title,
       userId: userId,
       authorId: post.authorId,
-      participantsAfterJoin: success ? post.participantIds.length + 1 : post.participantIds.length,
+      participantsAfterJoin: success
+          ? post.participantIds.length + 1
+          : post.participantIds.length,
       maxParticipants: post.maxParticipants,
       isSuccessful: success,
       joinSource: 'feed_screen',
@@ -774,7 +800,7 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _deletePost(Post post, PostProvider postProvider) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = authProvider.currentUser;
-    
+
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -786,8 +812,11 @@ class _FeedScreenState extends State<FeedScreen> {
     }
 
     // Check if author already provided feedback (from expiration prompt)
-    final needsFeedback = await postProvider.doesAuthorNeedFeedbackForDeletion(post.id, currentUser.id);
-    
+    final needsFeedback = await postProvider.doesAuthorNeedFeedbackForDeletion(
+      post.id,
+      currentUser.id,
+    );
+
     if (!needsFeedback) {
       // Author already provided feedback, delete directly
       final success = await postProvider.deletePost(post.id);
@@ -795,7 +824,9 @@ class _FeedScreenState extends State<FeedScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              success ? 'Deleted "${post.title}"' : postProvider.error ?? 'Failed to delete hangout',
+              success
+                  ? 'Deleted "${post.title}"'
+                  : postProvider.error ?? 'Failed to delete hangout',
             ),
             backgroundColor: success ? AppColors.success : AppColors.error,
           ),

@@ -154,13 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Test Crash Button (for debugging Crashlytics)
-              TextButton(
-                onPressed: () => throw Exception('Test crash for Crashlytics verification'),
-                child: const Text("Throw Test Exception"),
-              ),
-
-
               // Help Text
               Container(
                 padding: const EdgeInsets.all(16),
