@@ -20,6 +20,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isOwner(userId);
       allow read: if isAuthenticated(); // Allow reading other users for features
+      // Allow updating blockedByUserIds when someone blocks/unblocks this user
+      allow update: if isAuthenticated() &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['blockedByUserIds']);
     }
 
     // Posts collection
@@ -108,6 +111,32 @@ service cloud.firestore {
                        isOwner(resource.data.userId); // For marking as shown
       allow delete: if isAuthenticated() && 
                        isOwner(resource.data.userId); // For cleanup after submission
+    }
+
+    // Blocks collection - for user blocking functionality
+    match /blocks/{blockId} {
+      // Users can only create blocks where they are the blocker
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.blockerId;
+      // Users can read their own blocks (as blocker)
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.blockerId;
+      // Users can delete their own blocks (unblocking)
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.blockerId;
+      // No updates allowed - only create/delete for blocking
+      allow update: if false;
+    }
+
+    // Reports collection - for content reporting
+    match /reports/{reportId} {
+      // Any authenticated user can create reports
+      allow create: if isAuthenticated();
+      // Only the reporter can read their own reports
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.reporterInfo.uid;
+      // No updates or deletes allowed for reports
+      allow update, delete: if false;
     }
 
     // Test emails

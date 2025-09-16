@@ -4,13 +4,43 @@ import '../../providers/auth_provider.dart';
 import '../../models/user_model.dart';
 import '../../models/report_model.dart';
 import '../../services/report_service.dart';
+import '../../services/block_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/report_dialog.dart';
+import '../../widgets/block_confirmation_dialog.dart';
+import '../../providers/post_provider.dart';
+import '../../providers/chat_provider.dart';
 
-class ProfileDetailScreen extends StatelessWidget {
+class ProfileDetailScreen extends StatefulWidget {
   final UserModel? user;
 
   const ProfileDetailScreen({super.key, this.user});
+
+  @override
+  State<ProfileDetailScreen> createState() => _ProfileDetailScreenState();
+}
+
+class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
+  final BlockService _blockService = BlockService();
+  bool _isBlocked = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBlockStatus();
+  }
+
+  Future<void> _checkBlockStatus() async {
+    if (widget.user == null) return;
+
+    final isBlocked = await _blockService.isBlocked(widget.user!.id);
+    if (mounted) {
+      setState(() {
+        _isBlocked = isBlocked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +55,22 @@ class ProfileDetailScreen extends StatelessWidget {
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               if (_canShowReportButton(context, authProvider)) {
-                return IconButton(
-                  icon: const Icon(Icons.flag_outlined),
-                  onPressed: () => _showReportDialog(context, authProvider),
-                  tooltip: 'Report User',
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Block Button
+                    IconButton(
+                      icon: Icon(_isBlocked ? Icons.person_add : Icons.block),
+                      onPressed: _isLoading ? null : () => _toggleBlockUser(authProvider),
+                      tooltip: _isBlocked ? 'Unblock User' : 'Block User',
+                    ),
+                    // Report Button
+                    IconButton(
+                      icon: const Icon(Icons.flag_outlined),
+                      onPressed: () => _showReportDialog(context, authProvider),
+                      tooltip: 'Report User',
+                    ),
+                  ],
                 );
               }
               return const SizedBox.shrink();
@@ -38,7 +80,7 @@ class ProfileDetailScreen extends StatelessWidget {
       ),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
-          final UserModel? currentUser = user ?? authProvider.currentUser;
+          final UserModel? currentUser = widget.user ?? authProvider.currentUser;
 
           if (currentUser == null) {
             return const Center(
@@ -483,11 +525,11 @@ class ProfileDetailScreen extends StatelessWidget {
     // Don't show report button if not authenticated
     if (currentUser == null) return false;
     
-    // Don't show report button if viewing own profile (user is null = own profile)
-    if (user == null) return false;
-    
-    // Don't show report button if viewing own profile (user matches current user)
-    if (user!.id == currentUser.id) return false;
+    // Don't show report button if viewing own profile (widget.user is null = own profile)
+    if (widget.user == null) return false;
+
+    // Don't show report button if viewing own profile (widget.user matches current user)
+    if (widget.user!.id == currentUser.id) return false;
     
     // Show report button when viewing another user's profile
     return true;
@@ -497,7 +539,7 @@ class ProfileDetailScreen extends StatelessWidget {
   Future<void> _showReportDialog(BuildContext context, AuthProvider authProvider) async {
     final currentUser = authProvider.currentUser;
     
-    if (currentUser == null || user == null) {
+    if (currentUser == null || widget.user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unable to report user at this time'),
@@ -511,14 +553,14 @@ class ProfileDetailScreen extends StatelessWidget {
       await ReportDialog.show(
         context,
         contentType: 'user',
-        contentId: user!.id,
-        contentTitle: user!.displayName ?? user!.username,
-        authorId: user!.id, // Same as contentId for user reports
+        contentId: widget.user!.id,
+        contentTitle: widget.user!.displayName ?? widget.user!.username,
+        authorId: widget.user!.id, // Same as contentId for user reports
         contentSnippet: ReportService.createUserContentSnippet(
-          displayName: user!.displayName ?? user!.username,
-          bio: user!.bio,
-          location: user!.location,
-          interests: user!.interests,
+          displayName: widget.user!.displayName ?? widget.user!.username,
+          bio: widget.user!.bio,
+          location: widget.user!.location,
+          interests: widget.user!.interests,
         ),
         onSubmit: (ReportReason reason) => _submitReport(context, reason, currentUser),
       );
@@ -536,21 +578,21 @@ class ProfileDetailScreen extends StatelessWidget {
 
   // Submit report
   Future<void> _submitReport(BuildContext context, ReportReason reason, UserModel currentUser) async {
-    if (user == null) return;
+    if (widget.user == null) return;
 
     final reportService = ReportService();
 
     try {
       await reportService.submitReport(
         contentType: 'user',
-        contentId: user!.id,
-        contentTitle: user!.displayName ?? user!.username,
-        authorId: user!.id, // Same as contentId for user reports
+        contentId: widget.user!.id,
+        contentTitle: widget.user!.displayName ?? widget.user!.username,
+        authorId: widget.user!.id, // Same as contentId for user reports
         contentSnippet: ReportService.createUserContentSnippet(
-          displayName: user!.displayName ?? user!.username,
-          bio: user!.bio,
-          location: user!.location,
-          interests: user!.interests,
+          displayName: widget.user!.displayName ?? widget.user!.username,
+          bio: widget.user!.bio,
+          location: widget.user!.location,
+          interests: widget.user!.interests,
         ),
         reason: reason,
         reporterUid: currentUser.id,
@@ -575,6 +617,117 @@ class ProfileDetailScreen extends StatelessWidget {
             duration: const Duration(seconds: 4),
           ),
         );
+      }
+    }
+  }
+
+  // Toggle block/unblock user
+  Future<void> _toggleBlockUser(AuthProvider authProvider) async {
+    if (widget.user == null) return;
+
+    // If unblocking, proceed directly
+    if (_isBlocked) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _blockService.unblockUser(widget.user!.id);
+
+        // Update providers with modified user data
+        if (mounted) {
+          final currentUser = authProvider.currentUser;
+          if (currentUser != null) {
+            final updatedBlockedIds = List<String>.from(currentUser.blockedUserIds)
+              ..remove(widget.user!.id);
+            final updatedUser = currentUser.copyWith(blockedUserIds: updatedBlockedIds);
+
+            Provider.of<PostProvider>(context, listen: false).setCurrentUser(updatedUser);
+            Provider.of<ChatProvider>(context, listen: false).setCurrentUser(updatedUser);
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _isBlocked = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Unblocked ${widget.user!.displayName ?? widget.user!.username}'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error unblocking user: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+      return;
+    }
+
+    // If blocking, show confirmation dialog first
+    final userName = widget.user!.displayName ?? widget.user!.username;
+    final confirmed = await BlockConfirmationDialog.show(context, userName);
+
+    if (confirmed == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _blockService.blockUser(widget.user!.id);
+
+        // Update providers with modified user data
+        if (mounted) {
+          final currentUser = authProvider.currentUser;
+          if (currentUser != null) {
+            final updatedBlockedIds = List<String>.from(currentUser.blockedUserIds)
+              ..add(widget.user!.id);
+            final updatedUser = currentUser.copyWith(blockedUserIds: updatedBlockedIds);
+
+            Provider.of<PostProvider>(context, listen: false).setCurrentUser(updatedUser);
+            Provider.of<ChatProvider>(context, listen: false).setCurrentUser(updatedUser);
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _isBlocked = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Blocked ${widget.user!.displayName ?? widget.user!.username}'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error blocking user: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }

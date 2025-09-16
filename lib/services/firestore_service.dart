@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../models/group_model.dart';
 import '../models/message_model.dart';
+import 'block_service.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final BlockService _blockService = BlockService();
 
   Future<List<UserModel>> getGroupMembers(String currentUserId) async {
     try {
@@ -43,7 +45,14 @@ class FirestoreService {
         }
       }
 
-      return members;
+      // Filter out blocked users
+      final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+      final currentUserData = currentUserDoc.data();
+      final blockedUserIds = List<String>.from(currentUserData?['blockedUserIds'] ?? []);
+      final blockedByUserIds = List<String>.from(currentUserData?['blockedByUserIds'] ?? []);
+
+      final filteredMembers = _blockService.filterBlockedUsers(members, blockedUserIds, blockedByUserIds);
+      return filteredMembers;
     } catch (e) {
       throw Exception('Failed to get group members: $e');
     }

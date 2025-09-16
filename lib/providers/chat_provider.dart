@@ -2,22 +2,27 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/group_model.dart';
 import '../models/message_model.dart';
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
+import '../services/block_service.dart';
 
 class ChatProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   final StorageService _storageService = StorageService();
+  final BlockService _blockService = BlockService();
   
   List<GroupModel> _groups = [];
   List<MessageModel> _messages = [];
+  List<MessageModel> _filteredMessages = [];
   GroupModel? _currentGroup;
   bool _isLoading = false;
   bool _isSendingMessage = false;
   String? _error;
+  UserModel? _currentUser;
 
   List<GroupModel> get groups => _groups;
-  List<MessageModel> get messages => _messages;
+  List<MessageModel> get messages => _filteredMessages;
   GroupModel? get currentGroup => _currentGroup;
   bool get isLoading => _isLoading;
   bool get isSendingMessage => _isSendingMessage;
@@ -40,6 +45,7 @@ class ChatProvider with ChangeNotifier {
     _firestoreService.getGroupMessages(groupId).listen(
       (messages) {
         _messages = messages;
+        _filterMessages();
         notifyListeners();
       },
       onError: (error) {
@@ -47,6 +53,39 @@ class ChatProvider with ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  void _filterMessages() {
+    if (_currentUser == null) {
+      _filteredMessages = _messages;
+      return;
+    }
+
+    // For now, completely filter out blocked user messages
+    // In the future, could add a flag to show placeholder messages
+    _filteredMessages = _messages.where((message) {
+      return !_blockService.shouldFilterContent(
+        message.senderId,
+        _currentUser!.blockedUserIds,
+        _currentUser!.blockedByUserIds,
+      );
+    }).toList();
+  }
+
+  /// Check if a message is from a blocked user
+  bool isMessageFromBlockedUser(String senderId) {
+    if (_currentUser == null) return false;
+    return _blockService.shouldFilterContent(
+      senderId,
+      _currentUser!.blockedUserIds,
+      _currentUser!.blockedByUserIds,
+    );
+  }
+
+  void setCurrentUser(UserModel user) {
+    _currentUser = user;
+    _filterMessages();
+    notifyListeners();
   }
 
   Future<void> setCurrentGroup(String groupId) async {

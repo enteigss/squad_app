@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
+import '../../utils/url_launcher_helper.dart';
+import '../../services/block_service.dart';
+import '../../models/user_model.dart';
 import 'edit_profile_screen.dart';
 import 'analytics_screen.dart';
 
@@ -117,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 
                 const SizedBox(height: 12),
-                
+
                 // Contact & Feedback Section
                 SizedBox(
                   width: double.infinity,
@@ -125,6 +128,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: _showContactInfo,
                     icon: const Icon(Icons.feedback, size: 18),
                     label: const Text('Contact & Feedback'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.textPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: AppColors.divider.withValues(alpha: 0.3), width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Legal & Privacy Section
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _showLegalOptions,
+                    icon: const Icon(Icons.privacy_tip, size: 18),
+                    label: const Text('Legal & Privacy'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.textPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: AppColors.divider.withValues(alpha: 0.3), width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Blocked Users Section
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _showBlockedUsers,
+                    icon: const Icon(Icons.block, size: 18),
+                    label: const Text('Blocked Users'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.surface,
                       foregroundColor: AppColors.textPrimary,
@@ -335,6 +380,97 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showLegalOptions() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text(
+            'Legal & Privacy',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.privacy_tip, color: AppColors.primary),
+                title: Text(
+                  'Privacy Policy',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                trailing: Icon(Icons.open_in_browser, color: AppColors.textSecondary),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final success = await UrlLauncherHelper.launchPrivacyPolicy();
+                  if (!success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not open privacy policy'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: AppColors.primary),
+                title: Text(
+                  'Data Deletion',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                trailing: Icon(Icons.open_in_browser, color: AppColors.textSecondary),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final success = await UrlLauncherHelper.launchDataDeletion();
+                  if (!success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not open data deletion page'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.shield, color: AppColors.primary),
+                title: Text(
+                  'Child Safety',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                trailing: Icon(Icons.open_in_browser, color: AppColors.textSecondary),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final success = await UrlLauncherHelper.launchChildSafety();
+                  if (!success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not open child safety page'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Close',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showSignOutDialog() {
     showDialog(
       context: context,
@@ -390,6 +526,149 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to sign out: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showBlockedUsers() async {
+    final blockService = BlockService();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text(
+            'Blocked Users',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
+          content: FutureBuilder<List<UserModel>>(
+            future: blockService.getBlockedUsers(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Text(
+                      'Error loading blocked users',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                );
+              }
+
+              final blockedUsers = snapshot.data ?? [];
+
+              if (blockedUsers.isEmpty) {
+                return SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.block,
+                          size: 32,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No blocked users',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return SizedBox(
+                width: double.maxFinite,
+                height: 300,
+                child: ListView.builder(
+                  itemCount: blockedUsers.length,
+                  itemBuilder: (context, index) {
+                    final user = blockedUsers[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        backgroundImage: user.photoUrl != null
+                          ? NetworkImage(user.photoUrl!)
+                          : null,
+                        child: user.photoUrl == null
+                          ? Icon(Icons.person, color: AppColors.primary)
+                          : null,
+                      ),
+                      title: Text(
+                        user.displayName ?? user.username,
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        '@${user.username}',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                      trailing: TextButton(
+                        onPressed: () => _unblockUser(user),
+                        child: Text(
+                          'Unblock',
+                          style: TextStyle(color: AppColors.primary),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Close',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _unblockUser(UserModel user) async {
+    final blockService = BlockService();
+
+    try {
+      await blockService.unblockUser(user.id);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close the dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unblocked ${user.displayName ?? user.username}'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+
+        // Refresh the blocked users dialog
+        _showBlockedUsers();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to unblock user: $e'),
             backgroundColor: AppColors.error,
           ),
         );

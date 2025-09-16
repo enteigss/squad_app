@@ -16,6 +16,8 @@ class UserModel {
   final bool hasCreatedProfile;
   final String? fcmToken;
   final List<String> subscribedTopics;
+  final List<String> blockedUserIds;
+  final List<String> blockedByUserIds;
 
   UserModel({
     required this.id,
@@ -35,6 +37,8 @@ class UserModel {
     this.hasCreatedProfile = false,
     this.fcmToken,
     this.subscribedTopics = const [],
+    this.blockedUserIds = const [],
+    this.blockedByUserIds = const [],
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -56,6 +60,8 @@ class UserModel {
       hasCreatedProfile: map['hasCreatedProfile'] ?? false,
       fcmToken: map['fcmToken'],
       subscribedTopics: List<String>.from(map['subscribedTopics'] ?? []),
+      blockedUserIds: List<String>.from(map['blockedUserIds'] ?? []),
+      blockedByUserIds: List<String>.from(map['blockedByUserIds'] ?? []),
     );
   }
 
@@ -88,6 +94,8 @@ class UserModel {
       'hasCreatedProfile': hasCreatedProfile,
       'fcmToken': fcmToken,
       'subscribedTopics': subscribedTopics,
+      'blockedUserIds': blockedUserIds,
+      'blockedByUserIds': blockedByUserIds,
     };
   }
 
@@ -109,6 +117,8 @@ class UserModel {
     bool? hasCreatedProfile,
     String? fcmToken,
     List<String>? subscribedTopics,
+    List<String>? blockedUserIds,
+    List<String>? blockedByUserIds,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -128,6 +138,8 @@ class UserModel {
       hasCreatedProfile: hasCreatedProfile ?? this.hasCreatedProfile,
       fcmToken: fcmToken ?? this.fcmToken,
       subscribedTopics: subscribedTopics ?? this.subscribedTopics,
+      blockedUserIds: blockedUserIds ?? this.blockedUserIds,
+      blockedByUserIds: blockedByUserIds ?? this.blockedByUserIds,
     );
   }
 }

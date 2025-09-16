@@ -1,16 +1,25 @@
 import 'package:flutter/foundation.dart';
 import '../models/post_model.dart';
+import '../models/user_model.dart';
 import '../services/post_service.dart';
+import '../services/block_service.dart';
 import 'dart:async';
 
 class PostProvider with ChangeNotifier {
   final PostService _postService = PostService();
+  final BlockService _blockService = BlockService();
   
   List<Post> _posts = [];
   List<Post> _allPosts = []; // Includes locked posts
   List<Post> _upcomingPosts = [];
   List<Post> _ongoingPosts = [];
   List<Post> _userPosts = [];
+
+  List<Post> _filteredPosts = [];
+  List<Post> _filteredAllPosts = [];
+  List<Post> _filteredUpcomingPosts = [];
+  List<Post> _filteredOngoingPosts = [];
+  UserModel? _currentUser;
   
   bool _isLoading = false;
   String? _error;
@@ -24,11 +33,11 @@ class PostProvider with ChangeNotifier {
   Timer? _refreshTimer;
 
   // Getters
-  List<Post> get posts => _posts;
-  List<Post> get allPosts => _allPosts; // Includes locked posts
-  List<Post> get upcomingPosts => _upcomingPosts;
-  List<Post> get ongoingPosts => _ongoingPosts;
-  List<Post> get userPosts => _userPosts;
+  List<Post> get posts => _filteredPosts;
+  List<Post> get allPosts => _filteredAllPosts; // Includes locked posts
+  List<Post> get upcomingPosts => _filteredUpcomingPosts;
+  List<Post> get ongoingPosts => _filteredOngoingPosts;
+  List<Post> get userPosts => _userPosts; // User posts are not filtered
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get lastCreatedPostId => _lastCreatedPostId;
@@ -43,6 +52,7 @@ class PostProvider with ChangeNotifier {
       _postsSubscription = _postService.getPosts().listen(
         (posts) {
           _posts = posts;
+          _filterPosts();
           notifyListeners();
         },
         onError: (error) {
@@ -54,6 +64,7 @@ class PostProvider with ChangeNotifier {
       _allPostsSubscription = _postService.getAllPosts().listen(
         (posts) {
           _allPosts = posts;
+          _filterPosts();
           notifyListeners();
         },
         onError: (error) {
@@ -69,6 +80,7 @@ class PostProvider with ChangeNotifier {
             debugPrint('📡 DB DEBUG: Sample upcoming post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}');
           }
           _upcomingPosts = posts;
+          _filterPosts();
           notifyListeners();
         },
       );
@@ -81,6 +93,7 @@ class PostProvider with ChangeNotifier {
             debugPrint('📡 DB DEBUG: Sample ongoing post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}');
           }
           _ongoingPosts = posts;
+          _filterPosts();
           notifyListeners();
         },
       );
@@ -454,6 +467,56 @@ class PostProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
     }
+  }
+
+  // Set current user for blocking functionality
+  void setCurrentUser(UserModel user) {
+    _currentUser = user;
+    _filterPosts();
+    notifyListeners();
+  }
+
+  // Filter posts based on blocked users
+  void _filterPosts() {
+    if (_currentUser == null) {
+      _filteredPosts = _posts;
+      _filteredAllPosts = _allPosts;
+      _filteredUpcomingPosts = _upcomingPosts;
+      _filteredOngoingPosts = _ongoingPosts;
+      return;
+    }
+
+    _filteredPosts = _posts.where((post) {
+      return !_blockService.shouldFilterContent(
+        post.authorId,
+        _currentUser!.blockedUserIds,
+        _currentUser!.blockedByUserIds,
+      );
+    }).toList();
+
+    _filteredAllPosts = _allPosts.where((post) {
+      return !_blockService.shouldFilterContent(
+        post.authorId,
+        _currentUser!.blockedUserIds,
+        _currentUser!.blockedByUserIds,
+      );
+    }).toList();
+
+    _filteredUpcomingPosts = _upcomingPosts.where((post) {
+      return !_blockService.shouldFilterContent(
+        post.authorId,
+        _currentUser!.blockedUserIds,
+        _currentUser!.blockedByUserIds,
+      );
+    }).toList();
+
+    _filteredOngoingPosts = _ongoingPosts.where((post) {
+      return !_blockService.shouldFilterContent(
+        post.authorId,
+        _currentUser!.blockedUserIds,
+        _currentUser!.blockedByUserIds,
+      );
+    }).toList();
   }
 
   @override

@@ -65,5 +65,17 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Camera and Photo Library Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera to take photos for your profile and to share in group chats.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app accesses your photo library to select images for your profile and to share in group chats.</string>
+	<!-- URL Launcher Configuration -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>mailto</string>
+	</array>
 </dict>
 </plist>
