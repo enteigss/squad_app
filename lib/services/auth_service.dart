@@ -327,16 +327,36 @@ class AuthService {
       }
 
       debugPrint('🍎 Requesting Apple Sign In credentials...');
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        webAuthenticationOptions: WebAuthenticationOptions(
-          clientId: 'com.squadapp.linkupbu.web',
-          redirectUri: Uri.parse('https://linkup-bu-default-rtdb.firebaseio.com/__/auth/handler'),
-        ),
-      );
+      debugPrint('🔧 Client ID: com.androidservice.linkupbu');
+      debugPrint('🔧 Redirect URI: https://squad-7bc7e.firebaseapp.com/__/auth/handler');
+      debugPrint('🔧 Platform: ${defaultTargetPlatform.name}');
+      
+      final appleCredential;
+      try {
+        appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          // Temporarily comment out web options to test iOS-only
+          // webAuthenticationOptions: WebAuthenticationOptions(
+          //   clientId: 'com.androidservice.linkupbu',
+          //   redirectUri: Uri.parse('https://squad-7bc7e.firebaseapp.com/__/auth/handler'),
+          // ),
+        );
+        debugPrint('✅ Apple credentials request successful');
+      } catch (appleError) {
+        debugPrint('❌ Apple credentials request failed');
+        debugPrint('🔍 Apple Error Type: ${appleError.runtimeType}');
+        debugPrint('🔍 Apple Error Details: $appleError');
+        
+        if (appleError is SignInWithAppleAuthorizationException) {
+          debugPrint('🔍 Authorization Error Code: ${appleError.code}');
+          debugPrint('🔍 Authorization Error Message: ${appleError.message}');
+        }
+        
+        rethrow;
+      }
 
       debugPrint('✅ Apple credentials received');
       debugPrint('🍎 Apple User ID: ${appleCredential.userIdentifier}');
@@ -456,6 +476,12 @@ class AuthService {
       debugPrint('❌ AuthService.signInWithApple error: $e');
       debugPrint('🔍 Error type: ${e.runtimeType}');
 
+      if (e is SignInWithAppleAuthorizationException) {
+        debugPrint('🔍 Apple Authorization Error Code: ${e.code}');
+        debugPrint('🔍 Apple Authorization Error Message: ${e.message}');
+        debugPrint('🔍 Apple Error Details: ${e.toString()}');
+      }
+
       // Log to Crashlytics for production debugging
       await FirebaseCrashlytics.instance.recordError(
         e,
@@ -465,6 +491,7 @@ class AuthService {
           'Platform: ${defaultTargetPlatform.name}',
           'Build mode: ${kReleaseMode ? "release" : "debug"}',
           'Error type: ${e.runtimeType}',
+          if (e is SignInWithAppleAuthorizationException) 'Apple Error Code: ${e.code}',
         ],
         fatal: false,
       );
