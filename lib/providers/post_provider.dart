@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/post_service.dart';
@@ -8,7 +9,7 @@ import 'dart:async';
 class PostProvider with ChangeNotifier {
   final PostService _postService = PostService();
   final BlockService _blockService = BlockService();
-  
+
   List<Post> _posts = [];
   List<Post> _allPosts = []; // Includes locked posts
   List<Post> _upcomingPosts = [];
@@ -20,6 +21,9 @@ class PostProvider with ChangeNotifier {
   List<Post> _filteredUpcomingPosts = [];
   List<Post> _filteredOngoingPosts = [];
   UserModel? _currentUser;
+
+  // Direct Firestore user listener
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
   
   bool _isLoading = false;
   String? _error;
@@ -33,14 +37,90 @@ class PostProvider with ChangeNotifier {
   Timer? _refreshTimer;
 
   // Getters
-  List<Post> get posts => _filteredPosts;
-  List<Post> get allPosts => _filteredAllPosts; // Includes locked posts
-  List<Post> get upcomingPosts => _filteredUpcomingPosts;
-  List<Post> get ongoingPosts => _filteredOngoingPosts;
+  List<Post> get posts {
+    debugPrint('📱 UI ACCESS DEBUG: UI requesting posts - returning ${_filteredPosts.length} filtered posts');
+    if (_filteredPosts.isNotEmpty) {
+      debugPrint('📱 UI ACCESS DEBUG: Posts being shown: ${_filteredPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+    }
+    return _filteredPosts;
+  }
+
+  List<Post> get allPosts {
+    debugPrint('📱 UI ACCESS DEBUG: UI requesting allPosts - returning ${_filteredAllPosts.length} filtered all posts');
+    if (_filteredAllPosts.isNotEmpty) {
+      debugPrint('📱 UI ACCESS DEBUG: All posts being shown: ${_filteredAllPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+    }
+    return _filteredAllPosts;
+  }
+
+  List<Post> get upcomingPosts {
+    debugPrint('📱 UI ACCESS DEBUG: UI requesting upcomingPosts - returning ${_filteredUpcomingPosts.length} filtered upcoming posts');
+    if (_filteredUpcomingPosts.isNotEmpty) {
+      debugPrint('📱 UI ACCESS DEBUG: Upcoming posts being shown: ${_filteredUpcomingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+    }
+    return _filteredUpcomingPosts;
+  }
+
+  List<Post> get ongoingPosts {
+    debugPrint('📱 UI ACCESS DEBUG: UI requesting ongoingPosts - returning ${_filteredOngoingPosts.length} filtered ongoing posts');
+    if (_filteredOngoingPosts.isNotEmpty) {
+      debugPrint('📱 UI ACCESS DEBUG: Ongoing posts being shown: ${_filteredOngoingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+    }
+    return _filteredOngoingPosts;
+  }
+
   List<Post> get userPosts => _userPosts; // User posts are not filtered
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get lastCreatedPostId => _lastCreatedPostId;
+
+  // Initialize with user ID and listen to Firestore directly
+  void initializeForUser(String userId) {
+    debugPrint('🔗 PostProvider: Initializing for user $userId with Firestore listener');
+
+    // Cancel previous subscription if any
+    _userSubscription?.cancel();
+
+    // Listen directly to user document in Firestore
+    _userSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final newUser = UserModel.fromMap(snapshot.data()!);
+
+        debugPrint('🔄 PostProvider: User document updated from Firestore');
+        debugPrint('🔄 PostProvider: User: ${newUser.username} (${newUser.id})');
+        debugPrint('🔄 PostProvider: Blocked IDs: ${newUser.blockedUserIds}');
+        debugPrint('🔄 PostProvider: Blocked by IDs: ${newUser.blockedByUserIds}');
+        debugPrint('🔄 PostProvider: Gender: ${newUser.gender}');
+
+        // Check if relevant data changed
+        final blockingChanged = _currentUser == null ||
+            !listEquals(newUser.blockedUserIds, _currentUser!.blockedUserIds) ||
+            !listEquals(newUser.blockedByUserIds, _currentUser!.blockedByUserIds);
+        final genderChanged = _currentUser == null ||
+            newUser.gender != _currentUser!.gender;
+
+        if (blockingChanged || genderChanged) {
+          debugPrint('✅ PostProvider: Relevant changes detected (blocking: $blockingChanged, gender: $genderChanged)');
+          _currentUser = newUser;
+          _filterPosts();
+          notifyListeners();
+        } else {
+          debugPrint('⏭️ PostProvider: No relevant changes, keeping current filters');
+          _currentUser = newUser; // Still update reference for other data
+        }
+      }
+    }, onError: (error) {
+      debugPrint('❌ PostProvider: Error listening to user document: $error');
+      _setError('Failed to sync user data: $error');
+    });
+
+    // Also initialize post streams if not already done
+    initialize();
+  }
 
   // Initialize and start listening to posts
   Future<void> initialize() async {
@@ -51,6 +131,10 @@ class PostProvider with ChangeNotifier {
       // Subscribe to all posts (excluding locked)
       _postsSubscription = _postService.getPosts().listen(
         (posts) {
+          debugPrint('🔄 POST LOAD DEBUG: Received ${posts.length} posts from database');
+          if (posts.isNotEmpty) {
+            debugPrint('🔄 POST LOAD DEBUG: Sample post authors: ${posts.take(3).map((p) => '${p.authorName} (${p.authorId})').join(', ')}');
+          }
           _posts = posts;
           _filterPosts();
           notifyListeners();
@@ -63,6 +147,10 @@ class PostProvider with ChangeNotifier {
       // Subscribe to all posts including locked ones
       _allPostsSubscription = _postService.getAllPosts().listen(
         (posts) {
+          debugPrint('🔄 ALL POSTS DEBUG: Received ${posts.length} all posts (including locked) from database');
+          if (posts.isNotEmpty) {
+            debugPrint('🔄 ALL POSTS DEBUG: Sample post authors: ${posts.take(3).map((p) => '${p.authorName} (${p.authorId})').join(', ')}');
+          }
           _allPosts = posts;
           _filterPosts();
           notifyListeners();
@@ -78,6 +166,7 @@ class PostProvider with ChangeNotifier {
           debugPrint('📡 DB DEBUG: Received ${posts.length} upcoming posts from database');
           if (posts.isNotEmpty) {
             debugPrint('📡 DB DEBUG: Sample upcoming post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}');
+            debugPrint('📡 DB DEBUG: Upcoming post authors: ${posts.take(3).map((p) => '${p.authorName} (${p.authorId})').join(', ')}');
           }
           _upcomingPosts = posts;
           _filterPosts();
@@ -91,6 +180,7 @@ class PostProvider with ChangeNotifier {
           debugPrint('📡 DB DEBUG: Received ${posts.length} ongoing posts from database');
           if (posts.isNotEmpty) {
             debugPrint('📡 DB DEBUG: Sample ongoing post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}');
+            debugPrint('📡 DB DEBUG: Ongoing post authors: ${posts.take(3).map((p) => '${p.authorName} (${p.authorId})').join(', ')}');
           }
           _ongoingPosts = posts;
           _filterPosts();
@@ -313,40 +403,44 @@ class PostProvider with ChangeNotifier {
     return canSee;
   }
 
-  // Get posts filtered by user's gender preferences
+  // Get posts filtered by both blocks and user's gender preferences
   List<Post> getPostsForUser(String? userGender) {
-    return _posts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('✅ FIXED DEBUG: getPostsForUser now using block-filtered posts');
+    debugPrint('✅ FIXED DEBUG: Using filtered posts: ${_filteredPosts.length} (block filtering applied)');
+    final result = _filteredPosts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('✅ FIXED DEBUG: Posts after gender filter: ${result.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+    return result;
   }
 
-  // Get upcoming posts for user
+  // Get upcoming posts filtered by both blocks and user's gender preferences
   List<Post> getUpcomingPostsForUser(String? userGender) {
-    debugPrint('🔍 PROVIDER DEBUG: getUpcomingPostsForUser called with gender: $userGender');
-    debugPrint('🔍 PROVIDER DEBUG: Raw upcoming posts: ${_upcomingPosts.length}');
-    
-    final filtered = _upcomingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
-    debugPrint('🔍 PROVIDER DEBUG: Filtered upcoming posts: ${filtered.length}');
-    
-    if (filtered.isEmpty && _upcomingPosts.isNotEmpty) {
+    debugPrint('✅ FIXED DEBUG: getUpcomingPostsForUser now using block-filtered posts');
+    debugPrint('✅ FIXED DEBUG: Using filtered upcoming posts: ${_filteredUpcomingPosts.length} (block filtering applied)');
+
+    final filtered = _filteredUpcomingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('✅ FIXED DEBUG: Posts after gender filter: ${filtered.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+
+    if (filtered.isEmpty && _filteredUpcomingPosts.isNotEmpty) {
       debugPrint('⚠️ PROVIDER DEBUG: All upcoming posts filtered out by gender preferences!');
-      debugPrint('🔍 PROVIDER DEBUG: Sample post gender prefs: ${_upcomingPosts.first.genderPreferences}');
+      debugPrint('🔍 PROVIDER DEBUG: Sample post gender prefs: ${_filteredUpcomingPosts.first.genderPreferences}');
     }
-    
+
     return filtered;
   }
 
-  // Get ongoing posts for user
+  // Get ongoing posts filtered by both blocks and user's gender preferences
   List<Post> getOngoingPostsForUser(String? userGender) {
-    debugPrint('🔍 PROVIDER DEBUG: getOngoingPostsForUser called with gender: $userGender');
-    debugPrint('🔍 PROVIDER DEBUG: Raw ongoing posts: ${_ongoingPosts.length}');
-    
-    final filtered = _ongoingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
-    debugPrint('🔍 PROVIDER DEBUG: Filtered ongoing posts: ${filtered.length}');
-    
-    if (filtered.isEmpty && _ongoingPosts.isNotEmpty) {
+    debugPrint('✅ FIXED DEBUG: getOngoingPostsForUser now using block-filtered posts');
+    debugPrint('✅ FIXED DEBUG: Using filtered ongoing posts: ${_filteredOngoingPosts.length} (block filtering applied)');
+
+    final filtered = _filteredOngoingPosts.where((post) => _canUserSeePost(post, userGender)).toList();
+    debugPrint('✅ FIXED DEBUG: Posts after gender filter: ${filtered.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+
+    if (filtered.isEmpty && _filteredOngoingPosts.isNotEmpty) {
       debugPrint('⚠️ PROVIDER DEBUG: All ongoing posts filtered out by gender preferences!');
-      debugPrint('🔍 PROVIDER DEBUG: Sample post gender prefs: ${_ongoingPosts.first.genderPreferences}');
+      debugPrint('🔍 PROVIDER DEBUG: Sample post gender prefs: ${_filteredOngoingPosts.first.genderPreferences}');
     }
-    
+
     return filtered;
   }
 
@@ -470,7 +564,11 @@ class PostProvider with ChangeNotifier {
   }
 
   // Set current user for blocking functionality
+  // DEPRECATED: No longer needed with Firestore listener
+  @Deprecated('Use initializeForUser() with userId instead')
   void setCurrentUser(UserModel user) {
+    debugPrint('⚠️ DEPRECATED: setCurrentUser called - using initializeForUser() is recommended');
+    debugPrint('👤 Setting current user: ${user.username} (${user.id})');
     _currentUser = user;
     _filterPosts();
     notifyListeners();
@@ -478,7 +576,11 @@ class PostProvider with ChangeNotifier {
 
   // Filter posts based on blocked users
   void _filterPosts() {
+    debugPrint('🚫 BLOCK FILTER DEBUG: Starting post filtering...');
+    debugPrint('🚫 BLOCK FILTER DEBUG: Current user null check: ${_currentUser == null}');
+
     if (_currentUser == null) {
+      debugPrint('🚫 BLOCK FILTER DEBUG: No current user set, showing all posts unfiltered');
       _filteredPosts = _posts;
       _filteredAllPosts = _allPosts;
       _filteredUpcomingPosts = _upcomingPosts;
@@ -486,37 +588,95 @@ class PostProvider with ChangeNotifier {
       return;
     }
 
+    debugPrint('🚫 BLOCK FILTER DEBUG: Current user: ${_currentUser!.username} (${_currentUser!.id})');
+    debugPrint('🚫 BLOCK FILTER DEBUG: User blocked IDs: ${_currentUser!.blockedUserIds}');
+    debugPrint('🚫 BLOCK FILTER DEBUG: User blocked by IDs: ${_currentUser!.blockedByUserIds}');
+    debugPrint('🚫 BLOCK FILTER DEBUG: Blocked list length: ${_currentUser!.blockedUserIds.length}');
+
+    // Filter regular posts
+    final originalPostsCount = _posts.length;
     _filteredPosts = _posts.where((post) {
-      return !_blockService.shouldFilterContent(
+      final shouldFilter = _blockService.shouldFilterContent(
         post.authorId,
         _currentUser!.blockedUserIds,
         _currentUser!.blockedByUserIds,
       );
+      if (shouldFilter) {
+        debugPrint('🚫 BLOCK FILTER DEBUG: Filtering out post "${post.title}" by ${post.authorName} (${post.authorId})');
+      }
+      return !shouldFilter;
     }).toList();
+    debugPrint('🚫 BLOCK FILTER DEBUG: Regular posts: ${originalPostsCount} → ${_filteredPosts.length} (filtered out ${originalPostsCount - _filteredPosts.length})');
 
+    // Filter all posts
+    final originalAllPostsCount = _allPosts.length;
     _filteredAllPosts = _allPosts.where((post) {
-      return !_blockService.shouldFilterContent(
+      final shouldFilter = _blockService.shouldFilterContent(
         post.authorId,
         _currentUser!.blockedUserIds,
         _currentUser!.blockedByUserIds,
       );
+      if (shouldFilter) {
+        debugPrint('🚫 BLOCK FILTER DEBUG: Filtering out all post "${post.title}" by ${post.authorName} (${post.authorId})');
+      }
+      return !shouldFilter;
     }).toList();
+    debugPrint('🚫 BLOCK FILTER DEBUG: All posts: ${originalAllPostsCount} → ${_filteredAllPosts.length} (filtered out ${originalAllPostsCount - _filteredAllPosts.length})');
 
+    // Filter upcoming posts
+    final originalUpcomingCount = _upcomingPosts.length;
     _filteredUpcomingPosts = _upcomingPosts.where((post) {
-      return !_blockService.shouldFilterContent(
+      final shouldFilter = _blockService.shouldFilterContent(
         post.authorId,
         _currentUser!.blockedUserIds,
         _currentUser!.blockedByUserIds,
       );
+      if (shouldFilter) {
+        debugPrint('🚫 BLOCK FILTER DEBUG: Filtering out upcoming post "${post.title}" by ${post.authorName} (${post.authorId})');
+      }
+      return !shouldFilter;
     }).toList();
+    debugPrint('🚫 BLOCK FILTER DEBUG: Upcoming posts: ${originalUpcomingCount} → ${_filteredUpcomingPosts.length} (filtered out ${originalUpcomingCount - _filteredUpcomingPosts.length})');
+
+    // Filter ongoing posts
+    final originalOngoingCount = _ongoingPosts.length;
+    debugPrint('🔍 DETAILED DEBUG: Starting ongoing posts filtering...');
+    debugPrint('🔍 DETAILED DEBUG: Original ongoing posts: ${_ongoingPosts.map((p) => '${p.title} by ${p.authorName} (${p.authorId})').join(', ')}');
 
     _filteredOngoingPosts = _ongoingPosts.where((post) {
-      return !_blockService.shouldFilterContent(
+      final shouldFilter = _blockService.shouldFilterContent(
         post.authorId,
         _currentUser!.blockedUserIds,
         _currentUser!.blockedByUserIds,
       );
+      debugPrint('🔍 DETAILED DEBUG: Post "${post.title}" by ${post.authorName} (${post.authorId}) - shouldFilter: $shouldFilter');
+      debugPrint('🔍 DETAILED DEBUG: - blockedUserIds contains ${post.authorId}: ${_currentUser!.blockedUserIds.contains(post.authorId)}');
+      debugPrint('🔍 DETAILED DEBUG: - blockedByUserIds contains ${post.authorId}: ${_currentUser!.blockedByUserIds.contains(post.authorId)}');
+
+      if (shouldFilter) {
+        debugPrint('🚫 BLOCK FILTER DEBUG: Filtering out ongoing post "${post.title}" by ${post.authorName} (${post.authorId})');
+      } else {
+        debugPrint('✅ BLOCK FILTER DEBUG: Keeping ongoing post "${post.title}" by ${post.authorName} (${post.authorId})');
+      }
+      return !shouldFilter;
     }).toList();
+    debugPrint('🚫 BLOCK FILTER DEBUG: Ongoing posts: ${originalOngoingCount} → ${_filteredOngoingPosts.length} (filtered out ${originalOngoingCount - _filteredOngoingPosts.length})');
+
+    // Log final filtered results for visibility in feed
+    if (_filteredPosts.isNotEmpty || _filteredUpcomingPosts.isNotEmpty || _filteredOngoingPosts.isNotEmpty) {
+      debugPrint('🚫 BLOCK FILTER DEBUG: === FINAL VISIBLE POSTS IN FEED ===');
+      if (_filteredPosts.isNotEmpty) {
+        debugPrint('🚫 BLOCK FILTER DEBUG: Regular posts visible: ${_filteredPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+      }
+      if (_filteredUpcomingPosts.isNotEmpty) {
+        debugPrint('🚫 BLOCK FILTER DEBUG: Upcoming posts visible: ${_filteredUpcomingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+      }
+      if (_filteredOngoingPosts.isNotEmpty) {
+        debugPrint('🚫 BLOCK FILTER DEBUG: Ongoing posts visible: ${_filteredOngoingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}');
+      }
+    } else {
+      debugPrint('🚫 BLOCK FILTER DEBUG: No posts visible in feed after filtering');
+    }
   }
 
   @override
@@ -526,6 +686,7 @@ class PostProvider with ChangeNotifier {
     _upcomingSubscription?.cancel();
     _ongoingSubscription?.cancel();
     _userPostsSubscription?.cancel();
+    _userSubscription?.cancel();
     _stopRefreshTimer();
     super.dispose();
   }

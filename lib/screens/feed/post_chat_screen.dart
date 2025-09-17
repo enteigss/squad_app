@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import '../../models/post_model.dart';
 import '../../models/post_chat_message.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/post_chat_service.dart';
+import '../../services/block_service.dart';
 import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
@@ -22,17 +26,39 @@ class PostChatScreen extends StatefulWidget {
 
 class _PostChatScreenState extends State<PostChatScreen> {
   final PostChatService _chatService = PostChatService();
+  final BlockService _blockService = BlockService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
+
   bool _isLoading = true;
   bool _canAccessChat = false;
   bool _isReadOnly = false;
   String? _error;
+  UserModel? _currentUser;
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
 
   @override
   void initState() {
     super.initState();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _currentUser = authProvider.currentUser;
+
+    // Listen to user document for real-time block updates
+    if (_currentUser != null) {
+      _userSubscription = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUser!.id)
+          .snapshots()
+          .listen((snapshot) {
+        if (snapshot.exists && mounted) {
+          setState(() {
+            _currentUser = UserModel.fromMap(snapshot.data()!);
+          });
+          debugPrint('🔄 PostChat: User data updated, blocked lists refreshed');
+        }
+      });
+    }
+
     _checkChatAccess();
   }
 
@@ -40,7 +66,29 @@ class _PostChatScreenState extends State<PostChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _userSubscription?.cancel();
     super.dispose();
+  }
+
+  List<PostChatMessage> _filterBlockedMessages(List<PostChatMessage> messages) {
+    if (_currentUser == null) {
+      return messages;
+    }
+
+    // Filter out messages from blocked users
+    return messages.where((message) {
+      final shouldFilter = _blockService.shouldFilterContent(
+        message.senderId,
+        _currentUser!.blockedUserIds,
+        _currentUser!.blockedByUserIds,
+      );
+
+      if (shouldFilter) {
+        debugPrint('🚫 PostChat: Filtering message from blocked user ${message.senderName} (${message.senderId})');
+      }
+
+      return !shouldFilter;
+    }).toList();
   }
 
   Future<void> _checkChatAccess() async {
@@ -228,7 +276,10 @@ class _PostChatScreenState extends State<PostChatScreen> {
           );
         }
 
-        final messages = snapshot.data ?? [];
+        final allMessages = snapshot.data ?? [];
+
+        // Filter out messages from blocked users
+        final messages = _filterBlockedMessages(allMessages);
 
         if (messages.isEmpty) {
           return Center(

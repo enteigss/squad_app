@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import '../models/group_model.dart';
 import '../models/message_model.dart';
 import '../models/user_model.dart';
@@ -20,6 +22,9 @@ class ChatProvider with ChangeNotifier {
   bool _isSendingMessage = false;
   String? _error;
   UserModel? _currentUser;
+
+  // Direct Firestore user listener
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
 
   List<GroupModel> get groups => _groups;
   List<MessageModel> get messages => _filteredMessages;
@@ -82,7 +87,43 @@ class ChatProvider with ChangeNotifier {
     );
   }
 
+  // Initialize with user ID and listen to Firestore directly
+  void initializeForUser(String userId) {
+    debugPrint('🔗 ChatProvider: Initializing for user $userId with Firestore listener');
+
+    // Cancel previous subscription if any
+    _userSubscription?.cancel();
+
+    // Listen directly to user document in Firestore
+    _userSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final newUser = UserModel.fromMap(snapshot.data()!);
+
+        // Check if blocking data changed
+        final blockingChanged = _currentUser == null ||
+            !listEquals(newUser.blockedUserIds, _currentUser!.blockedUserIds) ||
+            !listEquals(newUser.blockedByUserIds, _currentUser!.blockedByUserIds);
+
+        if (blockingChanged) {
+          debugPrint('✅ ChatProvider: Blocking data changed, re-filtering messages');
+          _currentUser = newUser;
+          _filterMessages();
+          notifyListeners();
+        } else {
+          _currentUser = newUser; // Still update reference
+        }
+      }
+    });
+  }
+
+  // DEPRECATED: No longer needed with Firestore listener
+  @Deprecated('Use initializeForUser() with userId instead')
   void setCurrentUser(UserModel user) {
+    debugPrint('⚠️ DEPRECATED: ChatProvider.setCurrentUser called');
     _currentUser = user;
     _filterMessages();
     notifyListeners();
@@ -307,5 +348,11 @@ class ChatProvider with ChangeNotifier {
 
   void clearError() {
     _clearError();
+  }
+
+  @override
+  void dispose() {
+    _userSubscription?.cancel();
+    super.dispose();
   }
 }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../utils/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/post_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/tab_navigation_provider.dart';
 import '../../models/meetup_feedback.dart';
 import '../../services/feedback_service.dart';
@@ -44,16 +46,17 @@ class _MainScaffoldState extends State<MainScaffold> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: widget.initialIndex);
-    
+
     // Set initial tab in provider after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
       tabProvider.setSelectedIndex(widget.initialIndex);
       tabProvider.addListener(_onTabChangeByProvider);
     });
-    
-    // Initialize feedback prompts after the widget is built
+
+    // Initialize providers and feedback after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeProviders();
       _initializeFeedbackPrompts();
     });
   }
@@ -69,15 +72,36 @@ class _MainScaffoldState extends State<MainScaffold> {
     }
   }
 
+  void _initializeProviders() {
+    if (mounted) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      if (authProvider.isAuthenticated && authProvider.currentUser != null) {
+        final currentUserId = authProvider.currentUser!.id;
+        debugPrint('MainScaffold: Initializing providers for userId: $currentUserId');
+
+        // Initialize PostProvider with user ID for automatic Firestore sync
+        final postProvider = Provider.of<PostProvider>(context, listen: false);
+        postProvider.initializeForUser(currentUserId);
+        debugPrint('MainScaffold: Initialized PostProvider with Firestore listener');
+
+        // Initialize ChatProvider with user ID for automatic Firestore sync
+        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+        chatProvider.initializeForUser(currentUserId);
+        debugPrint('MainScaffold: Initialized ChatProvider with Firestore listener');
+      }
+    }
+  }
+
   void _initializeFeedbackPrompts() {
     if (!_hasInitializedFeedback && mounted) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       if (authProvider.isAuthenticated && authProvider.currentUser != null) {
         final currentUserId = authProvider.currentUser!.id;
         debugPrint('MainScaffold: Initializing feedback for userId: $currentUserId');
         _hasInitializedFeedback = true;
-        
+
         // Set up direct listener for feedback prompts
         _setupFeedbackListener(currentUserId);
       }
