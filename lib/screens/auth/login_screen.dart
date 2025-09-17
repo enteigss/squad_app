@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/google_sign_in_button.dart';
+import '../../widgets/apple_sign_in_button.dart';
 import '../../utils/colors.dart';
 import '../../utils/url_launcher_helper.dart';
 
@@ -13,12 +14,51 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
+
+  Future<void> _signInWithApple() async {
+    debugPrint('🍎 LoginScreen: _signInWithApple called');
+    setState(() {
+      _isAppleLoading = true;
+    });
+
+    try {
+      debugPrint('🍎 LoginScreen: About to call authProvider.signInWithApple()');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.signInWithApple();
+      debugPrint('🍎 LoginScreen: authProvider.signInWithApple() completed successfully');
+    } catch (e) {
+      debugPrint('🚨 LoginScreen: Apple Sign In Exception caught: $e');
+      debugPrint('🚨 LoginScreen: Exception type: ${e.runtimeType}');
+      debugPrint('🚨 LoginScreen: mounted = $mounted');
+      if (mounted) {
+        debugPrint('🚨 LoginScreen: Showing snackbar with error: ${e.toString()}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        debugPrint('🚨 LoginScreen: Snackbar shown successfully');
+      } else {
+        debugPrint('🚨 LoginScreen: Widget not mounted - skipping snackbar');
+      }
+    } finally {
+      debugPrint('🔄 LoginScreen: Apple Sign In finally block - mounted = $mounted');
+      if (mounted) {
+        setState(() {
+          _isAppleLoading = false;
+        });
+        debugPrint('🔄 LoginScreen: Apple loading set to false');
+      }
+    }
+  }
 
   Future<void> _signInWithGoogle() async {
     debugPrint('🖱️ LoginScreen: _signInWithGoogle called');
     setState(() {
-      _isLoading = true;
+      _isGoogleLoading = true;
     });
 
     try {
@@ -46,9 +86,9 @@ class _LoginScreenState extends State<LoginScreen> {
       debugPrint('🔄 LoginScreen: Finally block - mounted = $mounted');
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isGoogleLoading = false;
         });
-        debugPrint('🔄 LoginScreen: Loading set to false');
+        debugPrint('🔄 LoginScreen: Google loading set to false');
       }
     }
   }
@@ -144,10 +184,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 40),
 
+              // Apple Sign In Button
+              AppleSignInButton(
+                onPressed: _isGoogleLoading ? null : _signInWithApple,
+                isLoading: _isAppleLoading,
+                width: double.infinity,
+                height: 56,
+                text: 'Sign in with Apple',
+              ),
+
+              const SizedBox(height: 16),
+
               // Google Sign In Button
               GoogleSignInButton(
-                onPressed: _signInWithGoogle,
-                isLoading: _isLoading,
+                onPressed: _isAppleLoading ? null : _signInWithGoogle,
+                isLoading: _isGoogleLoading,
                 width: double.infinity,
                 height: 56,
                 text: 'Sign in with BU Google Account',

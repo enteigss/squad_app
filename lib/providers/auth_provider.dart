@@ -198,6 +198,85 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> signInWithApple() async {
+    try {
+      debugPrint('🍎 AuthProvider.signInWithApple: Starting Apple sign-in');
+      _setLoading(true);
+      _clearError();
+
+      final isNewUser = _currentUser == null;
+      debugPrint('👶 Is new user: $isNewUser');
+
+      debugPrint('📞 AuthProvider: About to call AuthService.signInWithApple()');
+      final signInResult = await _authService.signInWithApple();
+      debugPrint('📞 AuthProvider: AuthService.signInWithApple() completed successfully');
+      debugPrint('📝 Apple sign-in result from AuthService: ${signInResult?.toMap()}');
+      _currentUser = signInResult;
+
+      if (_currentUser == null) {
+        debugPrint('❌ AuthProvider.signInWithApple: _currentUser is null after sign-in');
+        throw Exception('Failed to sign in with Apple');
+      }
+
+      debugPrint('✅ AuthProvider.signInWithApple: Sign-in successful for user ${_currentUser!.id}');
+
+      // Request notification permissions and get FCM token
+      try {
+        debugPrint('🔔 Requesting notification permissions for Apple user...');
+        final notificationService = NotificationService();
+        await notificationService.requestPermission();
+        debugPrint('✅ Notification permissions requested successfully for Apple user');
+
+        // Unsubscribe from hangout topics then subscribe based on gender
+        debugPrint('🔕 Unsubscribing from all hangout notification topics...');
+        await notificationService.unsubscribeFromTopics([
+          'new_hangouts_bu_men',
+          'new_hangouts_bu_women',
+          'new_hangouts_bu_anyone',
+        ]);
+        debugPrint('✅ Successfully unsubscribed from all hangout topics for Apple user');
+
+        // Subscribe to appropriate topics based on user gender
+        debugPrint('🔔 Subscribing to hangout topics based on gender: ${_currentUser?.gender}');
+        await notificationService.subscribeToHangoutTopicsBasedOnGender(_currentUser?.gender);
+        debugPrint('✅ Successfully subscribed to appropriate hangout topics for Apple user');
+      } catch (e) {
+        debugPrint('⚠️ Warning: Failed to setup notifications for Apple user: $e');
+        // Don't fail the sign-in process if notification setup fails
+      }
+
+      // Track signup for new users, login for returning users
+      if (isNewUser) {
+        await AnalyticsService().trackUserSignup(
+          method: 'apple',
+          userId: _currentUser!.id,
+        );
+
+        // Set user properties for analytics
+        await AnalyticsService().setUserId(_currentUser!.id);
+        await AnalyticsService().setUserProperties(
+          signupDate: DateTime.now().toIso8601String().split('T')[0],
+          gender: _currentUser!.gender,
+        );
+      } else {
+        await AnalyticsService().trackLogin(
+          method: 'apple',
+          userId: _currentUser!.id,
+        );
+      }
+    } catch (e) {
+      debugPrint('🚨 AuthProvider.signInWithApple: Exception caught: $e');
+      debugPrint('🚨 AuthProvider: Exception type: ${e.runtimeType}');
+      _error = _getErrorMessage(e);
+      debugPrint('🚨 AuthProvider: Processed error message: $_error');
+      debugPrint('🚨 AuthProvider: About to rethrow exception to LoginScreen');
+      rethrow;
+    } finally {
+      debugPrint('🔄 AuthProvider: Finally block - setting loading to false');
+      _setLoading(false);
+    }
+  }
+
   Future<void> signOut() async {
     try {
       _setLoading(true);

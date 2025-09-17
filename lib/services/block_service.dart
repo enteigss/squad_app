@@ -57,6 +57,9 @@ class BlockService {
 
       await batch.commit();
       debugPrint('Successfully blocked user: $targetUserId');
+
+      // Remove blocked user from hangouts hosted by current user
+      await _removeFromHostedHangouts(currentUserId, targetUserId);
     } catch (e) {
       debugPrint('Error blocking user: $e');
       rethrow;
@@ -197,7 +200,63 @@ class BlockService {
   }
 
   /// Helper method to check if content should be filtered (from blocked user)
+  /// Only filters if current user has blocked the author (asymmetric filtering)
   bool shouldFilterContent(String authorId, List<String> blockedUserIds, List<String> blockedByUserIds) {
-    return blockedUserIds.contains(authorId) || blockedByUserIds.contains(authorId);
+    return blockedUserIds.contains(authorId);
+  }
+
+  /// Helper method to check if content should be censored (for messages)
+  bool shouldCensorContent(String authorId, List<String> blockedUserIds, List<String> blockedByUserIds) {
+    return blockedUserIds.contains(authorId);
+  }
+
+  /// Helper method to check if hangout should be hidden from current user because they are blocked by host
+  bool shouldHideHangoutFromBlocked(String hangoutHostId, List<String> blockedUserIds, List<String> blockedByUserIds) {
+    return blockedByUserIds.contains(hangoutHostId);
+  }
+
+  /// Check if user can access a hangout (not blocked by host)
+  Future<bool> canAccessHangout(String hangoutHostId, String userId) async {
+    try {
+      final blockId = '${hangoutHostId}_$userId';
+      final doc = await _firestore.collection('blocks').doc(blockId).get();
+      return !doc.exists; // Can access if not blocked by host
+    } catch (e) {
+      debugPrint('Error checking hangout access: $e');
+      return true; // Default to allowing access if check fails
+    }
+  }
+
+  /// Remove blocked user from all hangouts hosted by the blocker
+  Future<void> _removeFromHostedHangouts(String hostId, String blockedUserId) async {
+    try {
+      // Get all posts/hangouts hosted by the current user
+      final postsQuery = await _firestore
+          .collection('posts')
+          .where('authorId', isEqualTo: hostId)
+          .where('participantIds', arrayContains: blockedUserId)
+          .get();
+
+      if (postsQuery.docs.isEmpty) {
+        debugPrint('No hangouts found where blocked user is participant');
+        return;
+      }
+
+      // Use batch to remove blocked user from all hangouts
+      final batch = _firestore.batch();
+
+      for (final doc in postsQuery.docs) {
+        batch.update(doc.reference, {
+          'participantIds': FieldValue.arrayRemove([blockedUserId])
+        });
+        debugPrint('Removing $blockedUserId from hangout: ${doc.id}');
+      }
+
+      await batch.commit();
+      debugPrint('Successfully removed blocked user from ${postsQuery.docs.length} hangouts');
+    } catch (e) {
+      debugPrint('Error removing blocked user from hangouts: $e');
+      // Don't rethrow to prevent blocking operation from failing
+    }
   }
 }

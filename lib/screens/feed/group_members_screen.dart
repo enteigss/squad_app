@@ -12,6 +12,8 @@ import 'post_chat_screen.dart';
 import '../profile/profile_detail_screen.dart';
 import '../../widgets/invite_options_modal.dart';
 import '../../widgets/report_dialog.dart';
+import '../../widgets/censored_profile_card.dart';
+import '../../services/block_service.dart';
 
 class GroupMembersScreen extends StatefulWidget {
   final Post post;
@@ -30,6 +32,7 @@ class GroupMembersScreen extends StatefulWidget {
 class _GroupMembersScreenState extends State<GroupMembersScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final ReportService _reportService = ReportService();
+  final BlockService _blockService = BlockService();
   final TextEditingController _descriptionController = TextEditingController();
   List<UserModel> _members = [];
   bool _isLoading = true;
@@ -353,18 +356,73 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
       padding: const EdgeInsets.all(16),
       itemCount: _members.length,
       itemBuilder: (context, index) {
-        return _buildMemberCard(_members[index]);
+        return FutureBuilder<Widget>(
+          future: _buildMemberCard(_members[index]),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                color: AppColors.surface,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(radius: 24),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            LinearProgressIndicator(),
+                            SizedBox(height: 8),
+                            Text('Loading...', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return snapshot.data ?? const SizedBox.shrink();
+          },
+        );
       },
     );
   }
 
-  Widget _buildMemberCard(UserModel member) {
+  Future<Widget> _buildMemberCard(UserModel member) async {
     final currentUserId = Provider.of<AuthProvider>(
       context,
       listen: false,
     ).currentUser?.id;
     final isCurrentUser = member.id == currentUserId;
     final isAuthor = member.id == widget.post.authorId;
+
+    // Don't censor current user's own profile
+    if (isCurrentUser) {
+      return _buildRegularMemberCard(member, isCurrentUser, isAuthor);
+    }
+
+    // Check if current user has blocked this member
+    if (currentUserId != null) {
+      final isBlocked = await _blockService.isBlocked(member.id);
+      if (isBlocked) {
+        return CensoredProfileCard(
+          memberId: member.id,
+          isAuthor: isAuthor,
+        );
+      }
+    }
+
+    return _buildRegularMemberCard(member, isCurrentUser, isAuthor);
+  }
+
+  Widget _buildRegularMemberCard(UserModel member, bool isCurrentUser, bool isAuthor) {
+    final currentUserId = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).currentUser?.id;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

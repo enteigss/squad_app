@@ -18,6 +18,10 @@ class UserModel {
   final List<String> subscribedTopics;
   final List<String> blockedUserIds;
   final List<String> blockedByUserIds;
+  final String authProvider; // 'google' or 'apple'
+  final bool isEmailVerified;
+  final String? verifiedEmail; // BU.edu email for Apple users
+  final String? appleUserId;
 
   UserModel({
     required this.id,
@@ -39,6 +43,10 @@ class UserModel {
     this.subscribedTopics = const [],
     this.blockedUserIds = const [],
     this.blockedByUserIds = const [],
+    this.authProvider = 'google',
+    this.isEmailVerified = true,
+    this.verifiedEmail,
+    this.appleUserId,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -62,6 +70,10 @@ class UserModel {
       subscribedTopics: List<String>.from(map['subscribedTopics'] ?? []),
       blockedUserIds: List<String>.from(map['blockedUserIds'] ?? []),
       blockedByUserIds: List<String>.from(map['blockedByUserIds'] ?? []),
+      authProvider: map['authProvider'] ?? 'google',
+      isEmailVerified: map['isEmailVerified'] ?? true,
+      verifiedEmail: map['verifiedEmail'],
+      appleUserId: map['appleUserId'],
     );
   }
 
@@ -96,6 +108,10 @@ class UserModel {
       'subscribedTopics': subscribedTopics,
       'blockedUserIds': blockedUserIds,
       'blockedByUserIds': blockedByUserIds,
+      'authProvider': authProvider,
+      'isEmailVerified': isEmailVerified,
+      'verifiedEmail': verifiedEmail,
+      'appleUserId': appleUserId,
     };
   }
 
@@ -119,6 +135,10 @@ class UserModel {
     List<String>? subscribedTopics,
     List<String>? blockedUserIds,
     List<String>? blockedByUserIds,
+    String? authProvider,
+    bool? isEmailVerified,
+    String? verifiedEmail,
+    String? appleUserId,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -140,6 +160,10 @@ class UserModel {
       subscribedTopics: subscribedTopics ?? this.subscribedTopics,
       blockedUserIds: blockedUserIds ?? this.blockedUserIds,
       blockedByUserIds: blockedByUserIds ?? this.blockedByUserIds,
+      authProvider: authProvider ?? this.authProvider,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      verifiedEmail: verifiedEmail ?? this.verifiedEmail,
+      appleUserId: appleUserId ?? this.appleUserId,
     );
   }
 }

@@ -8,9 +8,8 @@ import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/post_chat_service.dart';
 import '../../services/block_service.dart';
-import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
-import '../../widgets/custom_button.dart';
+import '../../widgets/blocked_message_bubble.dart';
 
 class PostChatScreen extends StatefulWidget {
   final Post post;
@@ -75,19 +74,34 @@ class _PostChatScreenState extends State<PostChatScreen> {
       return messages;
     }
 
-    // Filter out messages from blocked users
-    return messages.where((message) {
-      final shouldFilter = _blockService.shouldFilterContent(
+    // Mark messages from blocked users as censored instead of filtering them out
+    return messages.map((message) {
+      final shouldCensor = _blockService.shouldCensorContent(
         message.senderId,
         _currentUser!.blockedUserIds,
         _currentUser!.blockedByUserIds,
       );
 
-      if (shouldFilter) {
-        debugPrint('🚫 PostChat: Filtering message from blocked user ${message.senderName} (${message.senderId})');
+      if (shouldCensor) {
+        debugPrint('🚫 PostChat: Censoring message from blocked user ${message.senderName} (${message.senderId})');
+        // Create a modified message with censored flag
+        return PostChatMessage(
+          id: message.id,
+          postId: message.postId,
+          senderId: message.senderId,
+          senderName: message.senderName,
+          senderPhotoUrl: message.senderPhotoUrl,
+          content: 'CENSORED_MESSAGE', // Special marker for censored content
+          timestamp: message.timestamp,
+          type: message.type,
+          readBy: message.readBy,
+          imageUrl: message.imageUrl,
+          isEdited: message.isEdited,
+          editedAt: message.editedAt,
+        );
       }
 
-      return !shouldFilter;
+      return message;
     }).toList();
   }
 
@@ -327,9 +341,17 @@ class _PostChatScreenState extends State<PostChatScreen> {
     final currentUserId = Provider.of<AuthProvider>(context, listen: false).currentUser?.id;
     final isOwnMessage = message.senderId == currentUserId;
     final isSystemMessage = message.type == PostChatMessageType.system;
+    final isCensoredMessage = message.content == 'CENSORED_MESSAGE';
 
     if (isSystemMessage) {
       return _buildSystemMessage(message);
+    }
+
+    if (isCensoredMessage) {
+      return BlockedMessageBubble(
+        blockedUserName: message.senderName,
+        timestamp: message.timestamp,
+      );
     }
 
     return Container(

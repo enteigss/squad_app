@@ -4,6 +4,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 class AuthService {
@@ -75,6 +76,7 @@ class AuthService {
           createdAt: DateTime.now(),
           isOnline: true,
           hasCreatedProfile: false,
+          authProvider: 'email',
         );
 
         final userData = {
@@ -85,6 +87,8 @@ class AuthService {
           'createdAt': DateTime.now(),
           'isOnline': true,
           'hasCreatedProfile': false,
+          'authProvider': 'email',
+          'isEmailVerified': true,
         };
 
         await _firestore
@@ -223,6 +227,8 @@ class AuthService {
               'createdAt': DateTime.now(),
               'isOnline': true,
               'hasCreatedProfile': false,
+              'authProvider': 'google',
+              'isEmailVerified': true,
                 };
 
             try {
@@ -300,6 +306,192 @@ class AuthService {
 
       rethrow;
     }
+  }
+
+  Future<UserModel?> signInWithApple() async {
+    try {
+      debugPrint('🍎 AuthService.signInWithApple: Starting Apple Sign-In process');
+
+      // Log sign-in attempt to Crashlytics
+      await FirebaseCrashlytics.instance.log('Apple Sign-In attempt started');
+      await FirebaseCrashlytics.instance.setCustomKey(
+        'signin_attempt_apple',
+        DateTime.now().toIso8601String(),
+      );
+
+      // Check if Apple Sign In is available
+      final isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        debugPrint('❌ Apple Sign In is not available on this platform');
+        throw Exception('Apple Sign In is not available on this platform');
+      }
+
+      debugPrint('🍎 Requesting Apple Sign In credentials...');
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        webAuthenticationOptions: WebAuthenticationOptions(
+          clientId: 'com.squadapp.linkupbu.web',
+          redirectUri: Uri.parse('https://linkup-bu-default-rtdb.firebaseio.com/__/auth/handler'),
+        ),
+      );
+
+      debugPrint('✅ Apple credentials received');
+      debugPrint('🍎 Apple User ID: ${appleCredential.userIdentifier}');
+      debugPrint('🍎 Apple Email: ${appleCredential.email ?? "not provided"}');
+      debugPrint('🍎 Apple Full Name: ${appleCredential.givenName} ${appleCredential.familyName}');
+
+      // Create Firebase credential
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      debugPrint('🔥 Signing in to Firebase with Apple credential...');
+      final UserCredential result = await _auth.signInWithCredential(oauthCredential);
+
+      if (result.user == null) {
+        debugPrint('❌ Firebase authentication failed - no user returned');
+        throw Exception('Apple Sign In failed');
+      }
+
+      debugPrint('✅ Firebase authentication successful for user: ${result.user!.uid}');
+      debugPrint('📧 Firebase User email: ${result.user!.email}');
+
+      // Determine the email to validate
+      String? emailToValidate = appleCredential.email ?? result.user!.email;
+
+      if (emailToValidate == null || emailToValidate.isEmpty) {
+        debugPrint('⚠️ No email provided by Apple - will need email verification flow');
+        // For now, we'll create a user that needs email verification
+        // In Phase 3, we'll implement the email verification flow
+        emailToValidate = 'needs-verification@temp.local';
+      }
+
+      debugPrint('🎓 Validating email: $emailToValidate');
+
+      // Check if this is a BU email or test account
+      bool isBUEmail = await _isBUEmail(emailToValidate);
+
+      if (!isBUEmail && emailToValidate != 'needs-verification@temp.local') {
+        // Sign out from Firebase since this is not authorized
+        await _auth.signOut();
+        throw Exception(
+          'Access restricted to Boston University students only. Please use your @bu.edu email address or complete email verification.',
+        );
+      }
+
+      // Set user ID for analytics
+      await _analytics.setUserId(id: result.user!.uid);
+      debugPrint('✅ Analytics User ID set: ${result.user!.uid}');
+
+      // Check if user document exists in Firestore
+      debugPrint('🔍 Checking for existing user document in Firestore...');
+      final existingUser = await getUserData(result.user!.uid);
+
+      if (existingUser == null) {
+        debugPrint('➕ Creating new user document for Apple Sign-In');
+
+        // Create new user document
+        final UserModel newUser = UserModel(
+          id: result.user!.uid,
+          email: emailToValidate,
+          username: _generateUsernameFromEmail(emailToValidate),
+          displayName: _buildDisplayName(appleCredential),
+          photoUrl: null, // Apple doesn't provide photo URLs
+          createdAt: DateTime.now(),
+          isOnline: true,
+          hasCreatedProfile: false,
+          authProvider: 'apple',
+          isEmailVerified: isBUEmail,
+          verifiedEmail: isBUEmail ? emailToValidate : null,
+          appleUserId: appleCredential.userIdentifier,
+        );
+
+        final userData = newUser.toMap();
+
+        try {
+          await _firestore
+              .collection('users')
+              .doc(result.user!.uid)
+              .set(userData);
+
+          // Check for pending party pack invitations if email is verified
+          if (isBUEmail) {
+            await _processPendingInvitations(emailToValidate);
+          }
+
+          debugPrint('✅ Apple user document created successfully');
+
+          // Log successful sign-in to Crashlytics
+          await FirebaseCrashlytics.instance.log('Apple Sign-In completed successfully');
+          await FirebaseCrashlytics.instance.setCustomKey(
+            'signin_success_apple',
+            DateTime.now().toIso8601String(),
+          );
+
+          return newUser;
+        } catch (e) {
+          debugPrint('❌ Error creating user document: $e');
+          // Still return the user model even if Firestore write fails
+          return newUser;
+        }
+      } else {
+        debugPrint('🔄 Updating existing Apple user online status');
+        // Update online status for existing user
+        await _updateUserOnlineStatus(result.user!.uid, true);
+
+        // Log successful sign-in to Crashlytics
+        await FirebaseCrashlytics.instance.log('Apple Sign-In completed successfully (existing user)');
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'signin_success_apple',
+          DateTime.now().toIso8601String(),
+        );
+
+        return existingUser;
+      }
+    } catch (e) {
+      debugPrint('❌ AuthService.signInWithApple error: $e');
+      debugPrint('🔍 Error type: ${e.runtimeType}');
+
+      // Log to Crashlytics for production debugging
+      await FirebaseCrashlytics.instance.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Apple Sign-In failed',
+        information: [
+          'Platform: ${defaultTargetPlatform.name}',
+          'Build mode: ${kReleaseMode ? "release" : "debug"}',
+          'Error type: ${e.runtimeType}',
+        ],
+        fatal: false,
+      );
+
+      rethrow;
+    }
+  }
+
+  String _generateUsernameFromEmail(String email) {
+    if (email == 'needs-verification@temp.local') {
+      return 'user_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    }
+    return email.split('@')[0];
+  }
+
+  String? _buildDisplayName(AuthorizationCredentialAppleID credential) {
+    final givenName = credential.givenName;
+    final familyName = credential.familyName;
+
+    if (givenName != null && familyName != null) {
+      return '$givenName $familyName';
+    } else if (givenName != null) {
+      return givenName;
+    } else if (familyName != null) {
+      return familyName;
+    }
+    return null;
   }
 
   Future<void> signOut() async {
