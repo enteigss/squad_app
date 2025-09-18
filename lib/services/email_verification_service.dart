@@ -6,12 +6,7 @@ class EmailVerificationService {
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
   static const String _lastSentKey = 'email_verification_last_sent';
 
-  EmailVerificationService() {
-    // Use emulator in debug mode for testing
-    if (kDebugMode) {
-      _functions.useFunctionsEmulator('127.0.0.1', 5001);
-    }
-  }
+  EmailVerificationService();
 
   /// Send verification code to the provided email address
   /// Returns true if successful, throws exception if failed

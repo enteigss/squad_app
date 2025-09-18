@@ -71,99 +71,10 @@ class AppleSignInButton extends StatelessWidget {
   }
 
   Widget _buildAppleIcon() {
-    return Container(
-      width: 18,
-      height: 18,
-      child: CustomPaint(painter: AppleLogoPainter()),
+    return const Icon(
+      Icons.apple,
+      size: 18,
+      color: Colors.white,
     );
   }
-}
-
-class AppleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = Colors.white;
-
-    final double width = size.width;
-    final double height = size.height;
-
-    // Create Apple logo path
-    Path applePath = Path();
-
-    // Apple body (rounded rectangle-like shape)
-    applePath.moveTo(width * 0.5, height * 0.9);
-    applePath.cubicTo(
-      width * 0.3,
-      height * 0.9,
-      width * 0.1,
-      height * 0.7,
-      width * 0.1,
-      height * 0.5,
-    );
-    applePath.cubicTo(
-      width * 0.1,
-      height * 0.3,
-      width * 0.3,
-      height * 0.1,
-      width * 0.5,
-      height * 0.1,
-    );
-    applePath.cubicTo(
-      width * 0.7,
-      height * 0.1,
-      width * 0.9,
-      height * 0.3,
-      width * 0.9,
-      height * 0.5,
-    );
-    applePath.cubicTo(
-      width * 0.9,
-      height * 0.7,
-      width * 0.7,
-      height * 0.9,
-      width * 0.5,
-      height * 0.9,
-    );
-    applePath.close();
-
-    // Apple bite (right side)
-    Path bitePath = Path();
-    bitePath.addOval(
-      Rect.fromCenter(
-        center: Offset(width * 0.75, height * 0.4),
-        width: width * 0.25,
-        height: height * 0.25,
-      ),
-    );
-
-    // Subtract bite from apple
-    applePath = Path.combine(PathOperation.difference, applePath, bitePath);
-
-    canvas.drawPath(applePath, paint);
-
-    // Apple stem/leaf
-    paint.strokeWidth = width * 0.08;
-    paint.style = PaintingStyle.stroke;
-    paint.strokeCap = StrokeCap.round;
-
-    // Stem
-    canvas.drawLine(
-      Offset(width * 0.55, height * 0.1),
-      Offset(width * 0.6, height * 0.05),
-      paint,
-    );
-
-    // Small leaf
-    paint.strokeWidth = width * 0.05;
-    canvas.drawLine(
-      Offset(width * 0.58, height * 0.06),
-      Offset(width * 0.65, height * 0.03),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

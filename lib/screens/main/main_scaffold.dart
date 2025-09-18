@@ -9,7 +9,6 @@ import '../../providers/tab_navigation_provider.dart';
 import '../../models/meetup_feedback.dart';
 import '../../services/feedback_service.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
-import '../home/home_screen.dart';
 import '../feed/feed_screen.dart';
 import '../feed/create_post_screen.dart';
 import '../profile/profile_screen.dart';

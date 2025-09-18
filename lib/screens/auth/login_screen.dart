@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'To access LinkUp BU, you must sign in with your Boston University Google account (@bu.edu)',
+                      'To access LinkUp BU, you must be a Boston University student. If signing in with Google, use your @bu.edu email address.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.primary,
                         height: 1.4,
@@ -184,17 +184,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 40),
 
-              // Apple Sign In Button
-              AppleSignInButton(
-                onPressed: _isGoogleLoading ? null : _signInWithApple,
-                isLoading: _isAppleLoading,
-                width: double.infinity,
-                height: 56,
-                text: 'Sign in with Apple',
-              ),
-
-              const SizedBox(height: 16),
-
               // Google Sign In Button
               GoogleSignInButton(
                 onPressed: _isAppleLoading ? null : _signInWithGoogle,
@@ -202,6 +191,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 height: 56,
                 text: 'Sign in with BU Google Account',
+              ),
+
+              const SizedBox(height: 16),
+
+              // Apple Sign In Button
+              AppleSignInButton(
+                onPressed: _isGoogleLoading ? null : _signInWithApple,
+                isLoading: _isAppleLoading,
+                width: double.infinity,
+                height: 56,
+                text: 'Sign in with Apple',
               ),
 
               const SizedBox(height: 24),

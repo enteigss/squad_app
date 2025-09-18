@@ -18,8 +18,11 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
       allow read: if isAuthenticated(); // Allow reading other users for features
+      allow create: if isOwner(userId);
+      // Allow user to update their own data except email verification fields
+      allow update: if isOwner(userId) &&
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isEmailVerified', 'verifiedEmail']);
       // Allow updating blockedByUserIds when someone blocks/unblocks this user
       allow update: if isAuthenticated() &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['blockedByUserIds']);

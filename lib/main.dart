@@ -13,7 +13,6 @@ import 'providers/tab_navigation_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/auth/email_verification_screen.dart';
-import 'screens/home/group_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/feed/create_post_screen.dart';
 import 'screens/feed/hangout_detail_screen.dart';
@@ -89,11 +88,11 @@ class _SquadAppState extends State<SquadApp> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize auth tracking variable and router
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     _router = _createRouter(authProvider);
-    
+
     // Initialize deep linking after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _deepLinkService.initialize(context);
@@ -124,7 +123,6 @@ class _SquadAppState extends State<SquadApp> {
   }
 
   GoRouter _createRouter(AuthProvider authProvider) {
-
     return GoRouter(
       navigatorKey: NavigationService.navigatorKey,
       refreshListenable: authProvider,
@@ -157,14 +155,17 @@ class _SquadAppState extends State<SquadApp> {
         }
 
         if (!isAuthenticated) {
-            _wasAuthenticated = false; // Explicitly set to false when not authenticated
-            return '/login';
+          _wasAuthenticated =
+              false; // Explicitly set to false when not authenticated
+          return '/login';
         }
 
         // Check email verification BEFORE profile check
         if (isAuthenticated && !isEmailVerified) {
           if (currentPath != '/email-verification') {
-            debugPrint('🚦 Redirecting to /email-verification (authenticated but unverified user)');
+            debugPrint(
+              '🚦 Redirecting to /email-verification (authenticated but unverified user)',
+            );
             return '/email-verification';
           }
           return null;
@@ -172,18 +173,24 @@ class _SquadAppState extends State<SquadApp> {
 
         // Handle authentication state changes and ensure proper routing
         if (wasAuthenticated != isAuthenticated) {
-          // Updated tracker to new state 
+          // Updated tracker to new state
           _wasAuthenticated = isAuthenticated;
-          debugPrint('🚦 Auth state changed! wasAuthenticated: $wasAuthenticated -> isAuthenticated: $isAuthenticated');
+          debugPrint(
+            '🚦 Auth state changed! wasAuthenticated: $wasAuthenticated -> isAuthenticated: $isAuthenticated',
+          );
 
           if (isAuthenticated && isEmailVerified && hasProfile) {
-            debugPrint('🚦 Redirecting to /main (authenticated, verified user with profile)');
+            debugPrint(
+              '🚦 Redirecting to /main (authenticated, verified user with profile)',
+            );
             return '/main';
           }
 
           if (isAuthenticated && isEmailVerified && !hasProfile) {
             if (currentPath != '/profile-setup') {
-              debugPrint('🚦 Redirecting to /profile-setup (authenticated, verified user without profile)');
+              debugPrint(
+                '🚦 Redirecting to /profile-setup (authenticated, verified user without profile)',
+              );
               return '/profile-setup';
             }
             return null;
@@ -191,7 +198,9 @@ class _SquadAppState extends State<SquadApp> {
 
           if (isAuthenticated && !isEmailVerified) {
             if (currentPath != '/email-verification') {
-              debugPrint('🚦 Redirecting to /email-verification (authenticated but unverified user)');
+              debugPrint(
+                '🚦 Redirecting to /email-verification (authenticated but unverified user)',
+              );
               return '/email-verification';
             }
             return null;
@@ -199,20 +208,34 @@ class _SquadAppState extends State<SquadApp> {
         }
 
         // Ensure authenticated users with profiles stay on main routes, not login
-        if (isAuthenticated && isEmailVerified && hasProfile && currentPath == '/login') {
-          debugPrint('🚦 Authenticated, verified user with profile on login page - redirecting to /main');
+        if (isAuthenticated &&
+            isEmailVerified &&
+            hasProfile &&
+            currentPath == '/login') {
+          debugPrint(
+            '🚦 Authenticated, verified user with profile on login page - redirecting to /main',
+          );
           return '/main';
         }
 
         // Ensure authenticated users without profiles go to profile setup, not login
-        if (isAuthenticated && isEmailVerified && !hasProfile && currentPath == '/login') {
-          debugPrint('🚦 Authenticated, verified user without profile on login page - redirecting to /profile-setup');
+        if (isAuthenticated &&
+            isEmailVerified &&
+            !hasProfile &&
+            currentPath == '/login') {
+          debugPrint(
+            '🚦 Authenticated, verified user without profile on login page - redirecting to /profile-setup',
+          );
           return '/profile-setup';
         }
 
         // Ensure unverified users go to email verification, not login or other screens
-        if (isAuthenticated && !isEmailVerified && currentPath != '/email-verification') {
-          debugPrint('🚦 Authenticated but unverified user trying to access $currentPath - redirecting to /email-verification');
+        if (isAuthenticated &&
+            !isEmailVerified &&
+            currentPath != '/email-verification') {
+          debugPrint(
+            '🚦 Authenticated but unverified user trying to access $currentPath - redirecting to /email-verification',
+          );
           return '/email-verification';
         }
 
@@ -252,10 +275,6 @@ class _SquadAppState extends State<SquadApp> {
         GoRoute(
           path: '/profile',
           builder: (context, state) => const MainScaffold(initialIndex: 2),
-        ),
-        GoRoute(
-          path: '/group',
-          builder: (context, state) => const GroupScreen(),
         ),
         GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
         GoRoute(

@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.healthCheck = exports.submitReport = exports.hangoutNotifications = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
+exports.healthCheck = exports.validateVerificationCode = exports.sendVerificationEmail = exports.submitReport = exports.hangoutNotifications = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
@@ -46,6 +46,10 @@ Object.defineProperty(exports, "hangoutNotifications", { enumerable: true, get: 
 // Report Submission Functions
 var report_submissions_1 = require("./report-submissions");
 Object.defineProperty(exports, "submitReport", { enumerable: true, get: function () { return report_submissions_1.submitReport; } });
+// Email Verification Functions
+var email_verification_1 = require("./email-verification");
+Object.defineProperty(exports, "sendVerificationEmail", { enumerable: true, get: function () { return email_verification_1.sendVerificationEmail; } });
+Object.defineProperty(exports, "validateVerificationCode", { enumerable: true, get: function () { return email_verification_1.validateVerificationCode; } });
 // Health check endpoint
 exports.healthCheck = (0, https_1.onRequest)((req, res) => {
     res.json({

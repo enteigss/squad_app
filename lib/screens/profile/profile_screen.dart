@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
 import '../../utils/url_launcher_helper.dart';
 import '../../services/block_service.dart';
+import '../../services/notification_service.dart';
 import '../../models/user_model.dart';
 import 'edit_profile_screen.dart';
 import 'analytics_screen.dart';
@@ -18,6 +19,25 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final NotificationService _notificationService = NotificationService();
+  bool _notificationsEnabled = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkNotificationStatus();
+  }
+
+  Future<void> _checkNotificationStatus() async {
+    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    if (user != null) {
+      setState(() {
+        _notificationsEnabled = user.subscribedTopics.isNotEmpty;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,6 +139,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 
+                const SizedBox(height: 12),
+
+                // Notifications Toggle
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.notifications,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Notifications',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              'Receive notifications for new hangouts',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              ),
+                            )
+                          : Switch(
+                              value: _notificationsEnabled,
+                              onChanged: _toggleNotifications,
+                              activeColor: AppColors.primary,
+                            ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 12),
 
                 // Contact & Feedback Section
@@ -672,6 +757,92 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: AppColors.error,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _toggleNotifications(bool enabled) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.currentUser;
+
+      if (user == null) {
+        throw Exception('User not found');
+      }
+
+      if (enabled) {
+        // Check if user has notification permissions first
+        final hasPermission = await _notificationService.hasPermission();
+        if (!hasPermission) {
+          // Request permissions
+          await _notificationService.requestPermission();
+
+          // Check again if permission was granted
+          final permissionGranted = await _notificationService.hasPermission();
+          if (!permissionGranted) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please enable notifications in your device settings'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+            return;
+          }
+        }
+
+        // Subscribe to topics based on user's gender
+        await _notificationService.subscribeToHangoutTopicsBasedOnGender(user.gender);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Notifications enabled'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else {
+        // Unsubscribe from all topics
+        await _notificationService.unsubscribeFromTopics(user.subscribedTopics);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Notifications disabled'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      }
+
+      // Update local state
+      setState(() {
+        _notificationsEnabled = enabled;
+      });
+
+      // Refresh user data to get updated subscribedTopics
+      await authProvider.refreshCurrentUser();
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update notifications: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }

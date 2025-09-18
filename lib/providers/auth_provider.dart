@@ -207,22 +207,34 @@ class AuthProvider with ChangeNotifier {
       final isNewUser = _currentUser == null;
       debugPrint('👶 Is new user: $isNewUser');
 
-      debugPrint('📞 AuthProvider: About to call AuthService.signInWithApple()');
+      debugPrint(
+        '📞 AuthProvider: About to call AuthService.signInWithApple()',
+      );
       final signInResult = await _authService.signInWithApple();
-      debugPrint('📞 AuthProvider: AuthService.signInWithApple() completed successfully');
-      debugPrint('📝 Apple sign-in result from AuthService: ${signInResult?.toMap()}');
+      debugPrint(
+        '📞 AuthProvider: AuthService.signInWithApple() completed successfully',
+      );
+      debugPrint(
+        '📝 Apple sign-in result from AuthService: ${signInResult?.toMap()}',
+      );
       _currentUser = signInResult;
 
       if (_currentUser == null) {
-        debugPrint('❌ AuthProvider.signInWithApple: _currentUser is null after sign-in');
+        debugPrint(
+          '❌ AuthProvider.signInWithApple: _currentUser is null after sign-in',
+        );
         throw Exception('Failed to sign in with Apple');
       }
 
-      debugPrint('✅ AuthProvider.signInWithApple: Sign-in successful for user ${_currentUser!.id}');
+      debugPrint(
+        '✅ AuthProvider.signInWithApple: Sign-in successful for user ${_currentUser!.id}',
+      );
 
       // Check if user needs email verification
       if (!_currentUser!.isEmailVerified) {
-        debugPrint('📧 User needs email verification - navigation will be handled by GoRouter redirect');
+        debugPrint(
+          '📧 User needs email verification - navigation will be handled by GoRouter redirect',
+        );
         // GoRouter will automatically redirect to /email-verification based on isEmailVerified status
       }
 
@@ -231,7 +243,9 @@ class AuthProvider with ChangeNotifier {
         debugPrint('🔔 Requesting notification permissions for Apple user...');
         final notificationService = NotificationService();
         await notificationService.requestPermission();
-        debugPrint('✅ Notification permissions requested successfully for Apple user');
+        debugPrint(
+          '✅ Notification permissions requested successfully for Apple user',
+        );
 
         // Unsubscribe from hangout topics then subscribe based on gender
         debugPrint('🔕 Unsubscribing from all hangout notification topics...');
@@ -240,14 +254,24 @@ class AuthProvider with ChangeNotifier {
           'new_hangouts_bu_women',
           'new_hangouts_bu_anyone',
         ]);
-        debugPrint('✅ Successfully unsubscribed from all hangout topics for Apple user');
+        debugPrint(
+          '✅ Successfully unsubscribed from all hangout topics for Apple user',
+        );
 
         // Subscribe to appropriate topics based on user gender
-        debugPrint('🔔 Subscribing to hangout topics based on gender: ${_currentUser?.gender}');
-        await notificationService.subscribeToHangoutTopicsBasedOnGender(_currentUser?.gender);
-        debugPrint('✅ Successfully subscribed to appropriate hangout topics for Apple user');
+        debugPrint(
+          '🔔 Subscribing to hangout topics based on gender: ${_currentUser?.gender}',
+        );
+        await notificationService.subscribeToHangoutTopicsBasedOnGender(
+          _currentUser?.gender,
+        );
+        debugPrint(
+          '✅ Successfully subscribed to appropriate hangout topics for Apple user',
+        );
       } catch (e) {
-        debugPrint('⚠️ Warning: Failed to setup notifications for Apple user: $e');
+        debugPrint(
+          '⚠️ Warning: Failed to setup notifications for Apple user: $e',
+        );
         // Don't fail the sign-in process if notification setup fails
       }
 
@@ -357,9 +381,11 @@ class AuthProvider with ChangeNotifier {
       // If gender changed, update notification topic subscriptions
       if (isGenderChanging) {
         try {
-          debugPrint('🔔 Gender changed from $previousGender to $gender, updating notification topics...');
+          debugPrint(
+            '🔔 Gender changed from $previousGender to $gender, updating notification topics...',
+          );
           final notificationService = NotificationService();
-          
+
           // Unsubscribe from all hangout topics first
           await notificationService.unsubscribeFromTopics([
             'new_hangouts_bu_men',
@@ -367,16 +393,21 @@ class AuthProvider with ChangeNotifier {
             'new_hangouts_bu_nonbinary',
             'new_hangouts_all_genders',
           ]);
-          
+
           // Subscribe to appropriate topics based on new gender
-          await notificationService.subscribeToHangoutTopicsBasedOnGender(gender);
-          debugPrint('✅ Successfully updated notification topics for new gender');
+          await notificationService.subscribeToHangoutTopicsBasedOnGender(
+            gender,
+          );
+          debugPrint(
+            '✅ Successfully updated notification topics for new gender',
+          );
         } catch (e) {
-          debugPrint('⚠️ Warning: Failed to update notification topics after gender change: $e');
+          debugPrint(
+            '⚠️ Warning: Failed to update notification topics after gender change: $e',
+          );
           // Don't fail the profile update if notification setup fails
         }
       }
-
     } catch (e) {
       _error = _getErrorMessage(e);
       rethrow;
@@ -462,5 +493,4 @@ class AuthProvider with ChangeNotifier {
     }
     return errorMessage;
   }
-
 }
