@@ -346,27 +346,28 @@ class AuthService {
       // Determine the email to validate
       String? emailToValidate = result.user!.email;
 
+      // Determine if email verification is needed
+      bool needsEmailVerification = false;
+      bool isBUEmail = false;
+
       if (emailToValidate == null || emailToValidate.isEmpty) {
         debugPrint(
           '⚠️ No email provided by Apple - will need email verification flow',
         );
-        // For now, we'll create a user that needs email verification
-        // In Phase 3, we'll implement the email verification flow
-        emailToValidate = 'needs-verification@temp.local';
+        // Set placeholder email for users who hide their email
+        emailToValidate = 'hidden-email@apple.privaterelay.com';
+        needsEmailVerification = true;
+      } else {
+        // Check if this is a BU email or test account
+        isBUEmail = await _isBUEmail(emailToValidate);
+
+        if (!isBUEmail) {
+          debugPrint('📧 Non-BU email provided: $emailToValidate - will need verification');
+          needsEmailVerification = true;
+        }
       }
 
-      debugPrint('🎓 Validating email: $emailToValidate');
-
-      // Check if this is a BU email or test account
-      bool isBUEmail = await _isBUEmail(emailToValidate);
-
-      if (!isBUEmail && emailToValidate != 'needs-verification@temp.local') {
-        // Sign out from Firebase since this is not authorized
-        await _auth.signOut();
-        throw Exception(
-          'Access restricted to Boston University students only. Please use your @bu.edu email address or complete email verification.',
-        );
-      }
+      debugPrint('🎓 Email validation result - isBUEmail: $isBUEmail, needsVerification: $needsEmailVerification');
 
       // Set user ID for analytics
       await _analytics.setUserId(id: result.user!.uid);
@@ -390,8 +391,8 @@ class AuthService {
           isOnline: true,
           hasCreatedProfile: false,
           authProvider: 'apple',
-          isEmailVerified: isBUEmail,
-          verifiedEmail: isBUEmail ? emailToValidate : null,
+          isEmailVerified: !needsEmailVerification,
+          verifiedEmail: !needsEmailVerification ? emailToValidate : null,
         );
 
         final userData = newUser.toMap();
@@ -402,10 +403,6 @@ class AuthService {
               .doc(result.user!.uid)
               .set(userData);
 
-          // Check for pending party pack invitations if email is verified
-          if (isBUEmail) {
-            await _processPendingInvitations(emailToValidate);
-          }
 
           debugPrint('✅ Apple user document created successfully');
 

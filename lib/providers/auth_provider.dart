@@ -220,6 +220,12 @@ class AuthProvider with ChangeNotifier {
 
       debugPrint('✅ AuthProvider.signInWithApple: Sign-in successful for user ${_currentUser!.id}');
 
+      // Check if user needs email verification
+      if (!_currentUser!.isEmailVerified) {
+        debugPrint('📧 User needs email verification - navigation will be handled by GoRouter redirect');
+        // GoRouter will automatically redirect to /email-verification based on isEmailVerified status
+      }
+
       // Request notification permissions and get FCM token
       try {
         debugPrint('🔔 Requesting notification permissions for Apple user...');

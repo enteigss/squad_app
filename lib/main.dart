@@ -12,6 +12,7 @@ import 'providers/post_provider.dart';
 import 'providers/tab_navigation_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
+import 'screens/auth/email_verification_screen.dart';
 import 'screens/home/group_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/feed/create_post_screen.dart';
@@ -134,6 +135,7 @@ class _SquadAppState extends State<SquadApp> {
         final wasAuthenticated = _wasAuthenticated;
         final currentUserInfo = authProvider.currentUser;
         final hasProfile = currentUserInfo?.hasCreatedProfile ?? false;
+        final isEmailVerified = currentUserInfo?.isEmailVerified ?? false;
         final isLoading = authProvider.isLoading;
 
         final currentPath = state.uri.toString();
@@ -145,6 +147,7 @@ class _SquadAppState extends State<SquadApp> {
         debugPrint('🚦 AuthProvider.wasAuthenticated: $wasAuthenticated');
         debugPrint('🚦 AuthProvider.currentUser: ${currentUserInfo?.toMap()}');
         debugPrint('🚦 hasProfile: $hasProfile');
+        debugPrint('🚦 isEmailVerified: $isEmailVerified');
 
         if (isLoading) {
           debugPrint(
@@ -158,36 +161,59 @@ class _SquadAppState extends State<SquadApp> {
             return '/login';
         }
 
+        // Check email verification BEFORE profile check
+        if (isAuthenticated && !isEmailVerified) {
+          if (currentPath != '/email-verification') {
+            debugPrint('🚦 Redirecting to /email-verification (authenticated but unverified user)');
+            return '/email-verification';
+          }
+          return null;
+        }
+
         // Handle authentication state changes and ensure proper routing
         if (wasAuthenticated != isAuthenticated) {
           // Updated tracker to new state 
           _wasAuthenticated = isAuthenticated;
           debugPrint('🚦 Auth state changed! wasAuthenticated: $wasAuthenticated -> isAuthenticated: $isAuthenticated');
 
-          if (isAuthenticated && hasProfile) {
-            debugPrint('🚦 Redirecting to /main (authenticated user with profile)');
+          if (isAuthenticated && isEmailVerified && hasProfile) {
+            debugPrint('🚦 Redirecting to /main (authenticated, verified user with profile)');
             return '/main';
           }
 
-          if (isAuthenticated && !hasProfile) {
+          if (isAuthenticated && isEmailVerified && !hasProfile) {
             if (currentPath != '/profile-setup') {
-              debugPrint('🚦 Redirecting to /profile-setup (authenticated user without profile)');
+              debugPrint('🚦 Redirecting to /profile-setup (authenticated, verified user without profile)');
               return '/profile-setup';
+            }
+            return null;
+          }
+
+          if (isAuthenticated && !isEmailVerified) {
+            if (currentPath != '/email-verification') {
+              debugPrint('🚦 Redirecting to /email-verification (authenticated but unverified user)');
+              return '/email-verification';
             }
             return null;
           }
         }
 
         // Ensure authenticated users with profiles stay on main routes, not login
-        if (isAuthenticated && hasProfile && currentPath == '/login') {
-          debugPrint('🚦 Authenticated user with profile on login page - redirecting to /main');
+        if (isAuthenticated && isEmailVerified && hasProfile && currentPath == '/login') {
+          debugPrint('🚦 Authenticated, verified user with profile on login page - redirecting to /main');
           return '/main';
         }
 
-        // Ensure authenticated users without profiles go to profile setup, not login  
-        if (isAuthenticated && !hasProfile && currentPath == '/login') {
-          debugPrint('🚦 Authenticated user without profile on login page - redirecting to /profile-setup');
+        // Ensure authenticated users without profiles go to profile setup, not login
+        if (isAuthenticated && isEmailVerified && !hasProfile && currentPath == '/login') {
+          debugPrint('🚦 Authenticated, verified user without profile on login page - redirecting to /profile-setup');
           return '/profile-setup';
+        }
+
+        // Ensure unverified users go to email verification, not login or other screens
+        if (isAuthenticated && !isEmailVerified && currentPath != '/email-verification') {
+          debugPrint('🚦 Authenticated but unverified user trying to access $currentPath - redirecting to /email-verification');
+          return '/email-verification';
         }
 
         debugPrint('✅ No redirect needed');
@@ -206,6 +232,10 @@ class _SquadAppState extends State<SquadApp> {
         GoRoute(
           path: '/profile-setup',
           builder: (context, state) => const ProfileSetupScreen(),
+        ),
+        GoRoute(
+          path: '/email-verification',
+          builder: (context, state) => const EmailVerificationScreen(),
         ),
         GoRoute(
           path: '/main',
