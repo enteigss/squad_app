@@ -146,7 +146,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Email verified successfully! Welcome to Squad.'),
+            content: Text('Email verified successfully! Welcome to LinkUp BU.'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
           ),
@@ -249,7 +249,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 const SizedBox(height: 12),
 
                 const Text(
-                  'Please verify your Boston University email address to continue using Squad',
+                  'Please verify your Boston University email address to continue using LinkUp BU',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey,

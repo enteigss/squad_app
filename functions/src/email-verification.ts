@@ -77,7 +77,7 @@ export const sendVerificationEmail = onCall(async (request) => {
     // Send email
     const transporter = createTransporter();
 
-    const emailSubject = "Verify your BU email for Squad";
+    const emailSubject = "Verify your BU email for LinkUp BU";
     const emailHTML = `
     <!DOCTYPE html>
     <html>
@@ -102,8 +102,8 @@ export const sendVerificationEmail = onCall(async (request) => {
           <h1>📧 Verify Your BU Email</h1>
         </div>
         <div class="content">
-          <h2>Welcome to Squad!</h2>
-          <p>Please enter this verification code in the Squad app to complete
+          <h2>Welcome to LinkUp BU!</h2>
+          <p>Please enter this verification code in the LinkUp BU app to complete
              your account setup:</p>
 
           <div class="code">${code}</div>
@@ -114,7 +114,7 @@ export const sendVerificationEmail = onCall(async (request) => {
              ignore this email.</p>
         </div>
         <div class="footer">
-          <p>Squad App - Boston University<br>
+          <p>LinkUp BU - Boston University<br>
           This is an automated message.</p>
         </div>
       </div>
@@ -123,9 +123,9 @@ export const sendVerificationEmail = onCall(async (request) => {
     `;
 
     const emailText = `
-Squad - Email Verification
+LinkUp BU - Email Verification
 
-Please enter this verification code in the Squad app:
+Please enter this verification code in the LinkUp BU app:
 
 ${code}
 
@@ -134,11 +134,11 @@ This code will expire in 10 minutes.
 If you didn't request this verification, you can safely ignore this email.
 
 ---
-Squad App - Boston University
+LinkUp BU - Boston University
     `;
 
     const mailOptions = {
-      from: `"Squad App" <${process.env.EMAIL_USER || "jordan.anderson.green@gmail.com"}>`,
+      from: `"LinkUp BU" <${process.env.EMAIL_USER || "jordan.anderson.green@gmail.com"}>`,
       to: emailLower,
       subject: emailSubject,
       text: emailText,
