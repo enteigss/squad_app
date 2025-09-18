@@ -4,7 +4,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 class AuthService {
@@ -216,7 +215,7 @@ class AuthService {
               createdAt: DateTime.now(),
               isOnline: true,
               hasCreatedProfile: false,
-                );
+            );
 
             final userData = {
               'id': result.user!.uid,
@@ -229,7 +228,7 @@ class AuthService {
               'hasCreatedProfile': false,
               'authProvider': 'google',
               'isEmailVerified': true,
-                };
+            };
 
             try {
               await _firestore
@@ -310,7 +309,9 @@ class AuthService {
 
   Future<UserModel?> signInWithApple() async {
     try {
-      debugPrint('🍎 AuthService.signInWithApple: Starting Apple Sign-In process');
+      debugPrint(
+        '🍎 AuthService.signInWithApple: Starting Apple Sign-In process',
+      );
 
       // Log sign-in attempt to Crashlytics
       await FirebaseCrashlytics.instance.log('Apple Sign-In attempt started');
@@ -319,72 +320,36 @@ class AuthService {
         DateTime.now().toIso8601String(),
       );
 
-      // Check if Apple Sign In is available
-      final isAvailable = await SignInWithApple.isAvailable();
-      if (!isAvailable) {
-        debugPrint('❌ Apple Sign In is not available on this platform');
-        throw Exception('Apple Sign In is not available on this platform');
-      }
+      debugPrint('🍎 Using Firebase native Apple Sign In...');
 
-      debugPrint('🍎 Requesting Apple Sign In credentials...');
-      debugPrint('🔧 Client ID: com.androidservice.linkupbu');
-      debugPrint('🔧 Redirect URI: https://squad-7bc7e.firebaseapp.com/__/auth/handler');
-      debugPrint('🔧 Platform: ${defaultTargetPlatform.name}');
-      
-      final appleCredential;
-      try {
-        appleCredential = await SignInWithApple.getAppleIDCredential(
-          scopes: [
-            AppleIDAuthorizationScopes.email,
-            AppleIDAuthorizationScopes.fullName,
-          ],
-          // Temporarily comment out web options to test iOS-only
-          // webAuthenticationOptions: WebAuthenticationOptions(
-          //   clientId: 'com.androidservice.linkupbu',
-          //   redirectUri: Uri.parse('https://squad-7bc7e.firebaseapp.com/__/auth/handler'),
-          // ),
-        );
-        debugPrint('✅ Apple credentials request successful');
-      } catch (appleError) {
-        debugPrint('❌ Apple credentials request failed');
-        debugPrint('🔍 Apple Error Type: ${appleError.runtimeType}');
-        debugPrint('🔍 Apple Error Details: $appleError');
-        
-        if (appleError is SignInWithAppleAuthorizationException) {
-          debugPrint('🔍 Authorization Error Code: ${appleError.code}');
-          debugPrint('🔍 Authorization Error Message: ${appleError.message}');
-        }
-        
-        rethrow;
-      }
+      // Create Apple auth provider with scopes
+      final appleAuthProvider = AppleAuthProvider()
+        ..addScope("email")
+        ..addScope("name");
 
-      debugPrint('✅ Apple credentials received');
-      debugPrint('🍎 Apple User ID: ${appleCredential.userIdentifier}');
-      debugPrint('🍎 Apple Email: ${appleCredential.email ?? "not provided"}');
-      debugPrint('🍎 Apple Full Name: ${appleCredential.givenName} ${appleCredential.familyName}');
-
-      // Create Firebase credential
-      final oauthCredential = OAuthProvider("apple.com").credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
+      debugPrint('🔥 Signing in to Firebase with Apple provider...');
+      final UserCredential result = await _auth.signInWithProvider(
+        appleAuthProvider,
       );
-
-      debugPrint('🔥 Signing in to Firebase with Apple credential...');
-      final UserCredential result = await _auth.signInWithCredential(oauthCredential);
 
       if (result.user == null) {
         debugPrint('❌ Firebase authentication failed - no user returned');
         throw Exception('Apple Sign In failed');
       }
 
-      debugPrint('✅ Firebase authentication successful for user: ${result.user!.uid}');
+      debugPrint(
+        '✅ Firebase authentication successful for user: ${result.user!.uid}',
+      );
       debugPrint('📧 Firebase User email: ${result.user!.email}');
+      debugPrint('👤 Firebase User display name: ${result.user!.displayName}');
 
       // Determine the email to validate
-      String? emailToValidate = appleCredential.email ?? result.user!.email;
+      String? emailToValidate = result.user!.email;
 
       if (emailToValidate == null || emailToValidate.isEmpty) {
-        debugPrint('⚠️ No email provided by Apple - will need email verification flow');
+        debugPrint(
+          '⚠️ No email provided by Apple - will need email verification flow',
+        );
         // For now, we'll create a user that needs email verification
         // In Phase 3, we'll implement the email verification flow
         emailToValidate = 'needs-verification@temp.local';
@@ -419,15 +384,14 @@ class AuthService {
           id: result.user!.uid,
           email: emailToValidate,
           username: _generateUsernameFromEmail(emailToValidate),
-          displayName: _buildDisplayName(appleCredential),
-          photoUrl: null, // Apple doesn't provide photo URLs
+          displayName: result.user!.displayName,
+          photoUrl: result.user!.photoURL,
           createdAt: DateTime.now(),
           isOnline: true,
           hasCreatedProfile: false,
           authProvider: 'apple',
           isEmailVerified: isBUEmail,
           verifiedEmail: isBUEmail ? emailToValidate : null,
-          appleUserId: appleCredential.userIdentifier,
         );
 
         final userData = newUser.toMap();
@@ -446,7 +410,9 @@ class AuthService {
           debugPrint('✅ Apple user document created successfully');
 
           // Log successful sign-in to Crashlytics
-          await FirebaseCrashlytics.instance.log('Apple Sign-In completed successfully');
+          await FirebaseCrashlytics.instance.log(
+            'Apple Sign-In completed successfully',
+          );
           await FirebaseCrashlytics.instance.setCustomKey(
             'signin_success_apple',
             DateTime.now().toIso8601String(),
@@ -464,7 +430,9 @@ class AuthService {
         await _updateUserOnlineStatus(result.user!.uid, true);
 
         // Log successful sign-in to Crashlytics
-        await FirebaseCrashlytics.instance.log('Apple Sign-In completed successfully (existing user)');
+        await FirebaseCrashlytics.instance.log(
+          'Apple Sign-In completed successfully (existing user)',
+        );
         await FirebaseCrashlytics.instance.setCustomKey(
           'signin_success_apple',
           DateTime.now().toIso8601String(),
@@ -476,10 +444,10 @@ class AuthService {
       debugPrint('❌ AuthService.signInWithApple error: $e');
       debugPrint('🔍 Error type: ${e.runtimeType}');
 
-      if (e is SignInWithAppleAuthorizationException) {
-        debugPrint('🔍 Apple Authorization Error Code: ${e.code}');
-        debugPrint('🔍 Apple Authorization Error Message: ${e.message}');
-        debugPrint('🔍 Apple Error Details: ${e.toString()}');
+      if (e is FirebaseAuthException) {
+        debugPrint('🔍 Firebase Auth Error Code: ${e.code}');
+        debugPrint('🔍 Firebase Auth Error Message: ${e.message}');
+        debugPrint('🔍 Firebase Auth Error Details: ${e.toString()}');
       }
 
       // Log to Crashlytics for production debugging
@@ -491,7 +459,7 @@ class AuthService {
           'Platform: ${defaultTargetPlatform.name}',
           'Build mode: ${kReleaseMode ? "release" : "debug"}',
           'Error type: ${e.runtimeType}',
-          if (e is SignInWithAppleAuthorizationException) 'Apple Error Code: ${e.code}',
+          if (e is FirebaseAuthException) 'Firebase Auth Error Code: ${e.code}',
         ],
         fatal: false,
       );
@@ -505,20 +473,6 @@ class AuthService {
       return 'user_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     }
     return email.split('@')[0];
-  }
-
-  String? _buildDisplayName(AuthorizationCredentialAppleID credential) {
-    final givenName = credential.givenName;
-    final familyName = credential.familyName;
-
-    if (givenName != null && familyName != null) {
-      return '$givenName $familyName';
-    } else if (givenName != null) {
-      return givenName;
-    } else if (familyName != null) {
-      return familyName;
-    }
-    return null;
   }
 
   Future<void> signOut() async {
@@ -616,7 +570,6 @@ class AuthService {
     }
   }
 
-
   Future<bool> _isBUEmail(String email) async {
     final emailLower = email.toLowerCase();
 
@@ -668,7 +621,6 @@ class AuthService {
 
     return isInFallback;
   }
-
 
   Future<void> _processPendingInvitations(String userEmail) async {
     try {
