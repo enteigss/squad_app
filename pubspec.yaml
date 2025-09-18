@@ -61,6 +61,7 @@ dependencies:
   # Utilities
   intl: ^0.19.0
   uuid: ^4.3.3
+  shared_preferences: ^2.2.2
   
   
   # HTTP requests for cloud functions
