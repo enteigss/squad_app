@@ -188,7 +188,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     return null;
   }
 
-  String? _validateCode(String? value) {
+  String? _validateCodeInput(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please enter the verification code';
     }
@@ -341,7 +341,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   TextFormField(
                     controller: _codeController,
                     focusNode: _codeFocusNode,
-                    validator: _validateCode,
+                    validator: _validateCodeInput,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
