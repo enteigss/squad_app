@@ -35,7 +35,10 @@ class NavigationService {
   
   /// Navigate to a hangout detail page
   static void goToHangout(String hangoutId) {
-    goToPath('/hangout/$hangoutId');
+    debugPrint('🎯 NavigationService.goToHangout() called with hangoutId: $hangoutId');
+    final path = '/hangout/$hangoutId';
+    debugPrint('🎯 Generated path: $path');
+    goToPath(path);
   }
   
   /// Navigate back

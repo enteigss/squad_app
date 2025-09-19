@@ -8,6 +8,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/tab_navigation_provider.dart';
 import '../../models/meetup_feedback.dart';
 import '../../services/feedback_service.dart';
+import '../../services/analytics_service.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
 import '../feed/feed_screen.dart';
 import '../feed/create_post_screen.dart';
@@ -145,6 +146,9 @@ class _MainScaffoldState extends State<MainScaffold> {
       // No onCancel callback - this makes the prompt non-dismissible
       onConfirmDelete: (didMeetup) async {
         try {
+          // Track meetup feedback
+          await AnalyticsService().trackMeetupSuccess(didMeetup);
+
           await _feedbackService.submitFeedback(
             hangoutId: prompt.hangoutId,
             userId: prompt.userId,

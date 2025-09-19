@@ -151,6 +151,6 @@ DEPLOYMENT INSTRUCTIONS:
 6. Test the complete flow:
    - Visit: https://squad-7bc7e.web.app/hangout/test123
    - Should show preview page with correct hangout title and links
-   - Test deep link: linkupbu://hangout/test123
+   - Test deep link: com.jordan.linkupbu://hangout/test123
    - Test beta links for both iOS and Android
 */

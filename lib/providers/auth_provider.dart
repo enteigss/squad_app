@@ -2,19 +2,22 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import '../services/analytics_service.dart';
 import '../services/notification_service.dart';
+import '../services/account_deletion_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  final AccountDeletionService _deletionService = AccountDeletionService();
 
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _error;
+  bool _accountDeletionCompleted = false;
 
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get accountDeletionCompleted => _accountDeletionCompleted;
   bool get isAuthenticated {
     final authenticated = _currentUser != null;
     debugPrint(
@@ -126,6 +129,9 @@ class AuthProvider with ChangeNotifier {
       );
       _currentUser = signInResult;
 
+      // Reset account deletion flag on successful sign in
+      _accountDeletionCompleted = false;
+
       if (_currentUser == null) {
         debugPrint(
           '❌ AuthProvider.signInWithGoogle: _currentUser is null after sign-in',
@@ -166,25 +172,6 @@ class AuthProvider with ChangeNotifier {
         // Don't fail the sign-in process if notification setup fails
       }
 
-      // Track signup for new users, login for returning users
-      if (isNewUser) {
-        await AnalyticsService().trackUserSignup(
-          method: 'google',
-          userId: _currentUser!.id,
-        );
-
-        // Set user properties for analytics
-        await AnalyticsService().setUserId(_currentUser!.id);
-        await AnalyticsService().setUserProperties(
-          signupDate: DateTime.now().toIso8601String().split('T')[0],
-          gender: _currentUser!.gender,
-        );
-      } else {
-        await AnalyticsService().trackLogin(
-          method: 'google',
-          userId: _currentUser!.id,
-        );
-      }
     } catch (e) {
       debugPrint('🚨 AuthProvider.signInWithGoogle: Exception caught: $e');
       debugPrint('🚨 AuthProvider: Exception type: ${e.runtimeType}');
@@ -218,6 +205,9 @@ class AuthProvider with ChangeNotifier {
         '📝 Apple sign-in result from AuthService: ${signInResult?.toMap()}',
       );
       _currentUser = signInResult;
+
+      // Reset account deletion flag on successful sign in
+      _accountDeletionCompleted = false;
 
       if (_currentUser == null) {
         debugPrint(
@@ -275,25 +265,6 @@ class AuthProvider with ChangeNotifier {
         // Don't fail the sign-in process if notification setup fails
       }
 
-      // Track signup for new users, login for returning users
-      if (isNewUser) {
-        await AnalyticsService().trackUserSignup(
-          method: 'apple',
-          userId: _currentUser!.id,
-        );
-
-        // Set user properties for analytics
-        await AnalyticsService().setUserId(_currentUser!.id);
-        await AnalyticsService().setUserProperties(
-          signupDate: DateTime.now().toIso8601String().split('T')[0],
-          gender: _currentUser!.gender,
-        );
-      } else {
-        await AnalyticsService().trackLogin(
-          method: 'apple',
-          userId: _currentUser!.id,
-        );
-      }
     } catch (e) {
       debugPrint('🚨 AuthProvider.signInWithApple: Exception caught: $e');
       debugPrint('🚨 AuthProvider: Exception type: ${e.runtimeType}');
@@ -325,8 +296,6 @@ class AuthProvider with ChangeNotifier {
 
       await _authService.signOut();
 
-      // Reset analytics first-time flags for new user session
-      AnalyticsService().resetFirstTimeFlags();
 
       _currentUser = null;
       notifyListeners(); // Ensure UI is updated immediately after sign out
@@ -460,6 +429,11 @@ class AuthProvider with ChangeNotifier {
     _clearError();
   }
 
+  void resetAccountDeletionFlag() {
+    _accountDeletionCompleted = false;
+    notifyListeners();
+  }
+
   String _getErrorMessage(dynamic error) {
     if (error is FirebaseAuthException) {
       switch (error.code) {
@@ -492,5 +466,119 @@ class AuthProvider with ChangeNotifier {
       return errorMessage.substring('Exception: '.length);
     }
     return errorMessage;
+  }
+
+  /// Re-authenticate user for sensitive operations like account deletion
+  Future<bool> reauthenticateUser() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final success = await _authService.reauthenticateUser();
+      if (!success) {
+        _error = 'Re-authentication failed';
+      }
+      return success;
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Check if user has active subscriptions
+  Future<bool> hasActiveSubscriptions() async {
+    if (_currentUser == null) return false;
+
+    try {
+      return await _deletionService.hasActiveSubscriptions(_currentUser!.id);
+    } catch (e) {
+      debugPrint('Error checking subscriptions: $e');
+      return false;
+    }
+  }
+
+  /// Delete user account with progress updates
+  Stream<String> deleteAccount() async* {
+    if (_currentUser == null) {
+      yield 'Error: No user found';
+      return;
+    }
+
+    try {
+      debugPrint('🗑️ AuthProvider: Starting account deletion process');
+
+
+      // Stream deletion progress
+      await for (final step in _deletionService.deleteUserAccount(
+        _currentUser!.id,
+      )) {
+        yield step;
+      }
+
+      // Clear local state FIRST before setting deletion flag
+      // This ensures isAuthenticated becomes false immediately
+      _currentUser = null;
+
+      // Now set deletion completed flag and notify listeners once
+      _accountDeletionCompleted = true;
+      debugPrint(
+        '🚨 AuthProvider: About to call notifyListeners() after account deletion - this will trigger redirect',
+      );
+      notifyListeners();
+
+
+      debugPrint('✅ AuthProvider: Account deletion completed successfully');
+    } catch (e) {
+      debugPrint('❌ AuthProvider: Account deletion failed: $e');
+
+
+      yield 'Account deletion failed: $e';
+      rethrow;
+    }
+  }
+
+  /// Schedule account deletion for future date
+  Future<void> scheduleAccountDeletion(DateTime deletionDate) async {
+    if (_currentUser == null) return;
+
+    try {
+      _setLoading(true);
+      _clearError();
+
+      await _deletionService.scheduleAccountDeletion(
+        _currentUser!.id,
+        deletionDate,
+      );
+
+
+      debugPrint('✅ Account deletion scheduled for $deletionDate');
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Cancel scheduled account deletion
+  Future<void> cancelScheduledDeletion() async {
+    if (_currentUser == null) return;
+
+    try {
+      _setLoading(true);
+      _clearError();
+
+      await _deletionService.cancelScheduledDeletion(_currentUser!.id);
+
+
+      debugPrint('✅ Scheduled account deletion cancelled');
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
   }
 }

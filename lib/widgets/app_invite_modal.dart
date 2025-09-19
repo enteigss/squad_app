@@ -218,11 +218,6 @@ class _AppInviteModalState extends State<AppInviteModal> {
   void _handleShareLink(BuildContext context) async {
     print('DEBUG: _handleShareLink() called for app invite');
     try {
-      // Track app invite sent
-      await AnalyticsService().trackAppInviteSent(
-        inviterId: widget.inviterUserId,
-        method: 'share_link',
-      );
 
       // Generate the app invite URL
       final shareUrl =
@@ -279,11 +274,6 @@ class _AppInviteModalState extends State<AppInviteModal> {
 
   void _handleCopyLink(BuildContext context) async {
     try {
-      // Track app invite sent via copy
-      await AnalyticsService().trackAppInviteSent(
-        inviterId: widget.inviterUserId,
-        method: 'copy_link',
-      );
 
       // Generate the app invite URL
       final shareUrl =

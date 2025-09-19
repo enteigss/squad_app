@@ -53,7 +53,7 @@
 			<string>squad.hangout.invite</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>linkupbu</string>
+				<string>com.jordan.linkupbu</string>
 			</array>
 		</dict>
 		<dict>

@@ -749,18 +749,9 @@ class _FeedScreenState extends State<FeedScreen> {
     final success = await postProvider.joinPost(post.id, userId);
 
     // Track hangout join attempt from feed screen
-    await AnalyticsService().trackHangoutJoined(
-      hangoutId: post.id,
-      hangoutTitle: post.title,
-      userId: userId,
-      authorId: post.authorId,
-      participantsAfterJoin: success
-          ? post.participantIds.length + 1
-          : post.participantIds.length,
-      maxParticipants: post.maxParticipants,
-      isSuccessful: success,
-      joinSource: 'feed_screen',
-    );
+    if (success) {
+      await AnalyticsService().trackHangoutJoined();
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -843,6 +834,9 @@ class _FeedScreenState extends State<FeedScreen> {
         // User cancelled deletion - do nothing
       },
       onConfirmDelete: (didMeetup) async {
+        // Track meetup feedback
+        await AnalyticsService().trackMeetupSuccess(didMeetup);
+
         // User confirmed deletion with feedback - proceed with deletion
         final success = await postProvider.deletePostWithFeedback(
           post.id,

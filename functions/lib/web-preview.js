@@ -258,7 +258,7 @@ function generateHangoutPage(hangout, hangoutId) {
         </div>
 
         <!-- Continue in App button (hidden by default) -->
-        <a href="linkupbu://hangout/${hangoutId}" class="button primary hidden" id="continueBtn">
+        <a href="com.jordan.linkupbu://hangout/${hangoutId}" class="button primary hidden" id="continueBtn">
             📱 Continue in App
         </a>
         

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
 import '../../utils/url_launcher_helper.dart';
 import '../../services/block_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/analytics_service.dart';
 import '../../models/user_model.dart';
 import 'edit_profile_screen.dart';
 import 'analytics_screen.dart';
@@ -21,12 +23,14 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final NotificationService _notificationService = NotificationService();
   bool _notificationsEnabled = false;
+  bool _analyticsEnabled = false;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _checkNotificationStatus();
+    _checkAnalyticsStatus();
   }
 
   Future<void> _checkNotificationStatus() async {
@@ -35,6 +39,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _notificationsEnabled = user.subscribedTopics.isNotEmpty;
       });
+    }
+  }
+
+  Future<void> _checkAnalyticsStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasConsent = prefs.getBool('analytics_consent') ?? false;
+      setState(() {
+        _analyticsEnabled = hasConsent;
+      });
+    } catch (e) {
+      debugPrint('Error checking analytics status: $e');
+    }
+  }
+
+  Future<void> _toggleAnalytics(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('analytics_consent', enabled);
+
+      if (enabled) {
+        AnalyticsService().initialize();
+        debugPrint('✅ Analytics enabled by user');
+      } else {
+        AnalyticsService().disable();
+        debugPrint('📊 Analytics disabled by user');
+      }
+
+      setState(() {
+        _analyticsEnabled = enabled;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              enabled
+                ? 'Analytics enabled - helps us improve the app'
+                : 'Analytics disabled - no data will be collected',
+            ),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error toggling analytics: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update analytics preference'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
@@ -288,6 +346,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ],
+
+                const SizedBox(height: 20),
+
+                // Delete Account Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _showDeleteAccountDialog,
+                    icon: const Icon(Icons.delete_forever, size: 18),
+                    label: const Text('Delete Account'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -469,15 +547,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: Text(
-            'Legal & Privacy',
-            style: TextStyle(color: AppColors.textPrimary),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppColors.surface,
+              title: Text(
+                'Legal & Privacy',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.analytics, color: AppColors.primary),
+                    title: Text(
+                      'Analytics Data',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                    subtitle: Text(
+                      'Help improve the app with anonymous usage data',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    ),
+                    trailing: Switch(
+                      value: _analyticsEnabled,
+                      onChanged: (value) async {
+                        await _toggleAnalytics(value);
+                        setDialogState(() {}); // Update dialog UI immediately
+                      },
+                      activeColor: AppColors.primary,
+                    ),
+                  ),
               ListTile(
                 leading: Icon(Icons.privacy_tip, color: AppColors.primary),
                 title: Text(
@@ -551,6 +650,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ],
+        );
+          },
         );
       },
     );
@@ -845,5 +946,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     }
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: AppColors.error),
+              const SizedBox(width: 8),
+              Text(
+                'Delete Account',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This action will permanently delete your account and all associated data.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Are you sure you want to continue?',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push('/profile/delete-account');
+              },
+              child: Text(
+                'Continue',
+                style: TextStyle(color: AppColors.error),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

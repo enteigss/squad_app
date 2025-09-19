@@ -679,4 +679,91 @@ class AuthService {
       // Don't throw error - this shouldn't block user registration
     }
   }
+
+  /// Re-authenticate user with Google Sign In
+  Future<bool> reauthenticateWithGoogle() async {
+    try {
+      debugPrint('🔐 Starting Google re-authentication...');
+
+      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      googleSignIn.initialize(
+        serverClientId:
+            "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
+      );
+
+      // Disconnect first to force account selection
+      await googleSignIn.disconnect();
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.authenticate();
+      if (googleUser == null) {
+        debugPrint('❌ Google re-authentication cancelled by user');
+        return false;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      // Re-authenticate the current user
+      await _auth.currentUser?.reauthenticateWithCredential(credential);
+
+      debugPrint('✅ Google re-authentication successful');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Google re-authentication failed: $e');
+      return false;
+    }
+  }
+
+  /// Re-authenticate user with Apple Sign In
+  Future<bool> reauthenticateWithApple() async {
+    try {
+      debugPrint('🍎 Starting Apple re-authentication...');
+
+      final appleAuthProvider = AppleAuthProvider()
+        ..addScope("email")
+        ..addScope("name");
+
+      final UserCredential result = await _auth.signInWithProvider(appleAuthProvider);
+
+      if (result.user == null) {
+        debugPrint('❌ Apple re-authentication failed - no user returned');
+        return false;
+      }
+
+      debugPrint('✅ Apple re-authentication successful');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Apple re-authentication failed: $e');
+      return false;
+    }
+  }
+
+  /// Re-authenticate user based on their auth provider
+  Future<bool> reauthenticateUser() async {
+    try {
+      final user = currentUser;
+      if (user == null) return false;
+
+      // Get user data to determine auth provider
+      final userData = await getUserData(user.uid);
+      if (userData == null) return false;
+
+      final authProvider = userData.authProvider;
+
+      switch (authProvider) {
+        case 'google':
+          return await reauthenticateWithGoogle();
+        case 'apple':
+          return await reauthenticateWithApple();
+        default:
+          debugPrint('❌ Unsupported auth provider for re-authentication: $authProvider');
+          return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Re-authentication failed: $e');
+      return false;
+    }
+  }
 }

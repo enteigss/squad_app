@@ -994,15 +994,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
         if (success) {
           // Track hangout creation in analytics
-          final hangoutId = postProvider.lastCreatedPostId ?? '';
-          await AnalyticsService().trackHangoutCreated(
-            hangoutId: hangoutId,
-            title: _titleController.text.trim(),
-            authorId: currentUser.id,
-            scheduledTime: _selectedDateTime!,
-            genderPreference: _selectedGenders.join(', '),
-            hasDescription: _descriptionController.text.trim().isNotEmpty,
-          );
+          await AnalyticsService().trackHangoutCreated();
 
           // Navigate back to hangouts page first
           if (mounted) {
@@ -1014,6 +1006,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             tabProvider.navigateToHangouts(tab: 'yourPosts');
 
             // Then show success message with invite option on hangouts page
+            final hangoutId = postProvider.lastCreatedPostId ?? '';
             _showSuccessWithInviteOption(
               hangoutTitle: _titleController.text.trim(),
               hangoutId: hangoutId,

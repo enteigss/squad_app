@@ -37,16 +37,6 @@ class HangoutDetailScreen extends StatelessWidget {
               final canJoin = postProvider.canUserJoinPost(hangout, currentUser.id, userGender: currentUser.gender);
               final isParticipant = hangout.participantIds.contains(currentUser.id);
               
-              AnalyticsService().trackHangoutViewed(
-                hangoutId: hangoutId,
-                hangoutTitle: hangout.title,
-                viewerId: currentUser.id,
-                authorId: hangout.authorId,
-                canJoin: canJoin,
-                isParticipant: isParticipant,
-                currentParticipants: hangout.participantIds.length,
-                maxParticipants: hangout.maxParticipants,
-              );
             });
           }
           
@@ -377,18 +367,11 @@ class HangoutDetailScreen extends StatelessWidget {
       debugPrint('✅ joinPost() completed with success: $success');
       
       // Track hangout join attempt
-      debugPrint('📊 Tracking analytics for join attempt');
-      await AnalyticsService().trackHangoutJoined(
-        hangoutId: hangout.id,
-        hangoutTitle: hangout.title,
-        userId: userId,
-        authorId: hangout.authorId,
-        participantsAfterJoin: success ? hangout.participantIds.length + 1 : hangout.participantIds.length,
-        maxParticipants: hangout.maxParticipants,
-        isSuccessful: success,
-        joinSource: 'detail_screen',
-      );
-      debugPrint('✅ Analytics tracking completed');
+      if (success) {
+        debugPrint('📊 Tracking analytics for join attempt');
+        await AnalyticsService().trackHangoutJoined();
+        debugPrint('✅ Analytics tracking completed');
+      }
       
       // Dismiss loading
       debugPrint('❌ Dismissing loading dialog');

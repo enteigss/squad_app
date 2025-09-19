@@ -342,14 +342,7 @@ class PostService {
           additionalFeedback: null,
         );
 
-        await _analyticsService.trackHangoutDeletionFeedback(
-          hangoutId: postId,
-          authorId: authorId,
-          didMeetupHappen: authorDidMeetup,
-          participantCount: post.participantIds.length,
-          hangoutCreatedAt: post.createdAt,
-          additionalFeedback: null,
-        );
+        await _analyticsService.trackMeetupSuccess(authorDidMeetup);
         debugPrint('DeletePostWithFeedback: Saved author feedback for $authorId');
       }
     } catch (e) {

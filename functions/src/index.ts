@@ -26,6 +26,9 @@ export {submitReport} from "./report-submissions";
 // Email Verification Functions
 export {sendVerificationEmail, validateVerificationCode} from "./email-verification";
 
+// Account Deletion Functions
+export {deleteUserAccount} from "./account-deletion";
+
 // Health check endpoint
 export const healthCheck = onRequest((req, res) => {
   res.json({

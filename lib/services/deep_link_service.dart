@@ -9,7 +9,7 @@ class DeepLinkService {
   factory DeepLinkService() => _instance;
   DeepLinkService._internal();
 
-  static const String hangoutScheme = 'linkupbu';
+  static const String hangoutScheme = 'com.jordan.linkupbu';
 
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
