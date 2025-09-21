@@ -373,6 +373,32 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 const SizedBox(height: 16),
 
+                // Selected Interests
+                if (_interests.isNotEmpty) ...[
+                  Text(
+                    'Your Interests (${_interests.length})',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _interests
+                        .map(
+                          (interest) => Chip(
+                            label: Text(interest),
+                            onDeleted: () => _removeInterest(interest),
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            deleteIconColor: AppColors.primary,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
                 // Popular Interests
                 if (_interests.length < 10) ...[
                   Text(
@@ -395,32 +421,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             },
                             backgroundColor: AppColors.surface,
                             selectedColor: AppColors.primary.withOpacity(0.2),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Selected Interests
-                if (_interests.isNotEmpty) ...[
-                  Text(
-                    'Your Interests (${_interests.length})',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _interests
-                        .map(
-                          (interest) => Chip(
-                            label: Text(interest),
-                            onDeleted: () => _removeInterest(interest),
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
-                            deleteIconColor: AppColors.primary,
                           ),
                         )
                         .toList(),

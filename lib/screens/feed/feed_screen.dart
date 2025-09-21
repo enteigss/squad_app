@@ -495,36 +495,7 @@ class _FeedScreenState extends State<FeedScreen> {
                               ),
                               backgroundColor: AppColors.error,
                             ),
-                          ] else if (isParticipant)
-                            CustomButton(
-                              text: 'Leave',
-                              onPressed: () =>
-                                  _leavePost(post, currentUserId, postProvider),
-                              width: 65,
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              backgroundColor: AppColors.error,
-                            )
-                          else if (postProvider.canUserJoinPost(
-                            post,
-                            currentUserId,
-                            userGender: authProvider.currentUser?.gender,
-                          ))
-                            CustomButton(
-                              text: 'Join',
-                              onPressed: () =>
-                                  _joinPost(post, currentUserId, postProvider),
-                              width: 65,
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                            )
-                          else
+                          ] else
                             const SizedBox.shrink(),
                         ],
                       );

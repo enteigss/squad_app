@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../utils/colors.dart';
@@ -16,11 +15,8 @@ import '../profile/profile_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   final int initialIndex;
-  
-  const MainScaffold({
-    super.key,
-    this.initialIndex = 0,
-  });
+
+  const MainScaffold({super.key, this.initialIndex = 0});
 
   @override
   State<MainScaffold> createState() => _MainScaffoldState();
@@ -29,12 +25,10 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   late PageController _pageController;
   final FeedbackService _feedbackService = FeedbackService();
-  
+
   bool _hasInitializedFeedback = false;
   bool _isShowingFeedbackDialog = false;
-  Set<String> _shownPromptIds = {};
-  Timer? _pendingPromptTimer;
-  StreamSubscription<List<PendingFeedbackPrompt>>? _promptsSubscription;
+  List<PendingFeedbackPrompt> _pendingPrompts = [];
 
   final List<Widget> _screens = [
     const FeedScreen(),
@@ -49,7 +43,10 @@ class _MainScaffoldState extends State<MainScaffold> {
 
     // Set initial tab in provider after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+      final tabProvider = Provider.of<TabNavigationProvider>(
+        context,
+        listen: false,
+      );
       tabProvider.setSelectedIndex(widget.initialIndex);
       tabProvider.addListener(_onTabChangeByProvider);
     });
@@ -62,7 +59,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   void _onTabChangeByProvider() {
-    final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+    final tabProvider = Provider.of<TabNavigationProvider>(
+      context,
+      listen: false,
+    );
     if (_pageController.page?.round() != tabProvider.selectedIndex) {
       _pageController.animateToPage(
         tabProvider.selectedIndex,
@@ -78,63 +78,89 @@ class _MainScaffoldState extends State<MainScaffold> {
 
       if (authProvider.isAuthenticated && authProvider.currentUser != null) {
         final currentUserId = authProvider.currentUser!.id;
-        debugPrint('MainScaffold: Initializing providers for userId: $currentUserId');
+        debugPrint(
+          'MainScaffold: Initializing providers for userId: $currentUserId',
+        );
 
         // Initialize PostProvider with user ID for automatic Firestore sync
         final postProvider = Provider.of<PostProvider>(context, listen: false);
         postProvider.initializeForUser(currentUserId);
-        debugPrint('MainScaffold: Initialized PostProvider with Firestore listener');
+        debugPrint(
+          'MainScaffold: Initialized PostProvider with Firestore listener',
+        );
 
         // Initialize ChatProvider with user ID for automatic Firestore sync
         final chatProvider = Provider.of<ChatProvider>(context, listen: false);
         chatProvider.initializeForUser(currentUserId);
-        debugPrint('MainScaffold: Initialized ChatProvider with Firestore listener');
+        debugPrint(
+          'MainScaffold: Initialized ChatProvider with Firestore listener',
+        );
       }
     }
   }
 
-  void _initializeFeedbackPrompts() {
+  void _initializeFeedbackPrompts() async {
     if (!_hasInitializedFeedback && mounted) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       if (authProvider.isAuthenticated && authProvider.currentUser != null) {
         final currentUserId = authProvider.currentUser!.id;
-        debugPrint('MainScaffold: Initializing feedback for userId: $currentUserId');
+        debugPrint(
+          'MainScaffold: Initializing feedback for userId: $currentUserId',
+        );
         _hasInitializedFeedback = true;
 
-        // Set up direct listener for feedback prompts
-        _setupFeedbackListener(currentUserId);
+        // Fetch all pending prompts once at login
+        await _loadPendingFeedbackPrompts(currentUserId);
       }
     }
   }
 
-  void _setupFeedbackListener(String userId) {
-    // Listen directly to feedback service for pending prompts
-    _promptsSubscription = _feedbackService.getPendingFeedbackPrompts(userId).listen(
-      (prompts) {
-        debugPrint('MainScaffold: Received ${prompts.length} pending prompts');
-        if (prompts.isNotEmpty && !_isShowingFeedbackDialog) {
-          final nextPrompt = prompts.first;
-          
-          // Check if we've already shown this prompt in this session
-          if (!_shownPromptIds.contains(nextPrompt.id)) {
-            _showFeedbackPrompt(nextPrompt);
-          }
-        }
-      },
-      onError: (error) {
-        debugPrint('MainScaffold: Error loading prompts: $error');
-      },
-    );
+  Future<void> _loadPendingFeedbackPrompts(String userId) async {
+    try {
+      debugPrint(
+        'MainScaffold: Loading pending feedback prompts for userId: $userId',
+      );
+
+      // Get the stream once and take the first emission (current state)
+      final prompts = await _feedbackService
+          .getPendingFeedbackPrompts(userId)
+          .first;
+
+      setState(() {
+        _pendingPrompts = List.from(prompts);
+      });
+
+      debugPrint(
+        'MainScaffold: Loaded ${_pendingPrompts.length} pending prompts',
+      );
+
+      // Show the first prompt if any exist
+      _showNextPromptIfAvailable();
+    } catch (error) {
+      debugPrint('MainScaffold: Error loading pending prompts: $error');
+    }
   }
 
+  void _showNextPromptIfAvailable() {
+    if (_pendingPrompts.isNotEmpty && !_isShowingFeedbackDialog) {
+      final nextPrompt = _pendingPrompts.first;
+      debugPrint('MainScaffold: Showing next prompt: ${nextPrompt.id}');
+      _showFeedbackPrompt(nextPrompt);
+    } else {
+      debugPrint(
+        'MainScaffold: No more prompts to show. Queue length: ${_pendingPrompts.length}, Dialog showing: $_isShowingFeedbackDialog',
+      );
+    }
+  }
 
   void _showFeedbackPrompt(PendingFeedbackPrompt prompt) {
     _isShowingFeedbackDialog = true;
-    _shownPromptIds.add(prompt.id);
-    
-    debugPrint('MainScaffold: Showing required feedback dialog for prompt ${prompt.id}');
-    
+
+    debugPrint(
+      'MainScaffold: Showing required feedback dialog for prompt ${prompt.id}',
+    );
+
     MeetupOutcomeDialog.show(
       context,
       hangoutTitle: prompt.hangoutTitle,
@@ -149,6 +175,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           // Track meetup feedback
           await AnalyticsService().trackMeetupSuccess(didMeetup);
 
+          // Submit feedback to Firestore (this also deletes the prompt)
           await _feedbackService.submitFeedback(
             hangoutId: prompt.hangoutId,
             userId: prompt.userId,
@@ -156,24 +183,41 @@ class _MainScaffoldState extends State<MainScaffold> {
             didMeetup: didMeetup,
             additionalFeedback: null,
           );
-          
+
+          debugPrint(
+            'MainScaffold: Feedback submitted successfully for prompt ${prompt.id}',
+          );
+
+          // Remove from local queue immediately
+          setState(() {
+            _pendingPrompts.removeWhere((p) => p.id == prompt.id);
+          });
+
           _isShowingFeedbackDialog = false;
-          debugPrint('MainScaffold: Feedback submitted');
-          
+          debugPrint(
+            'MainScaffold: Removed prompt from local queue. Remaining prompts: ${_pendingPrompts.length}',
+          );
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  didMeetup 
+                  didMeetup
                       ? 'Thanks for the feedback! Glad your hangout was successful! 🎉'
                       : 'Thanks for the feedback! We\'ll work on improving the experience.',
                 ),
-                backgroundColor: didMeetup ? AppColors.success : AppColors.primary,
+                backgroundColor: didMeetup
+                    ? AppColors.success
+                    : AppColors.primary,
               ),
             );
+
+            // Show next prompt immediately if available
+            _showNextPromptIfAvailable();
           }
         } catch (e) {
           _isShowingFeedbackDialog = false;
+          debugPrint('MainScaffold: Failed to submit feedback: $e');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -186,19 +230,18 @@ class _MainScaffoldState extends State<MainScaffold> {
       },
     );
   }
-  
 
   @override
   void dispose() {
-    _pendingPromptTimer?.cancel();
-    _promptsSubscription?.cancel();
-    _shownPromptIds.clear();
     _pageController.dispose();
     super.dispose();
   }
 
   void _onItemTapped(int index) {
-    final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+    final tabProvider = Provider.of<TabNavigationProvider>(
+      context,
+      listen: false,
+    );
     tabProvider.setSelectedIndex(index);
     _pageController.animateToPage(
       index,
@@ -213,7 +256,10 @@ class _MainScaffoldState extends State<MainScaffold> {
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
-          final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+          final tabProvider = Provider.of<TabNavigationProvider>(
+            context,
+            listen: false,
+          );
           tabProvider.setSelectedIndex(index);
         },
         children: _screens,
@@ -224,25 +270,22 @@ class _MainScaffoldState extends State<MainScaffold> {
             type: BottomNavigationBarType.fixed,
             currentIndex: tabProvider.selectedIndex,
             onTap: _onItemTapped,
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.feed),
-            label: 'Hangouts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add),
-            label: 'Create',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+            backgroundColor: AppColors.surface,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: AppColors.textSecondary,
+            selectedFontSize: 12,
+            unselectedFontSize: 12,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.feed),
+                label: 'Hangouts',
+              ),
+              BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
           );
         },
       ),

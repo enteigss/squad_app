@@ -273,4 +273,99 @@ class FeedbackService {
       return [];
     }
   }
+
+  // DEBUG ONLY: Create test prompts for development/testing
+  Future<void> createTestFeedbackPrompts(String userId) async {
+    if (kDebugMode) {
+      debugPrint('FeedbackService: Creating test feedback prompts for userId: $userId');
+
+      final testPrompts = [
+        {
+          'id': 'test_hangout_1_$userId',
+          'hangoutId': 'test_hangout_1',
+          'userId': userId,
+          'hangoutTitle': 'Coffee at Starbucks Downtown',
+          'hangoutCompletedAt': DateTime.now().subtract(const Duration(hours: 2)),
+          'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
+          'isShown': false,
+          'shownAt': null,
+        },
+        {
+          'id': 'test_hangout_2_$userId',
+          'hangoutId': 'test_hangout_2',
+          'userId': userId,
+          'hangoutTitle': 'Study Group - Library',
+          'hangoutCompletedAt': DateTime.now().subtract(const Duration(hours: 3)),
+          'createdAt': DateTime.now().subtract(const Duration(hours: 3)),
+          'isShown': false,
+          'shownAt': null,
+        },
+        {
+          'id': 'test_hangout_3_$userId',
+          'hangoutId': 'test_hangout_3',
+          'userId': userId,
+          'hangoutTitle': 'Basketball Game - Rec Center',
+          'hangoutCompletedAt': DateTime.now().subtract(const Duration(hours: 4)),
+          'createdAt': DateTime.now().subtract(const Duration(hours: 4)),
+          'isShown': false,
+          'shownAt': null,
+        },
+      ];
+
+      for (final promptData in testPrompts) {
+        try {
+          final prompt = PendingFeedbackPrompt(
+            id: promptData['id'] as String,
+            hangoutId: promptData['hangoutId'] as String,
+            userId: promptData['userId'] as String,
+            hangoutTitle: promptData['hangoutTitle'] as String,
+            hangoutCompletedAt: promptData['hangoutCompletedAt'] as DateTime,
+            createdAt: promptData['createdAt'] as DateTime,
+            isShown: promptData['isShown'] as bool,
+            shownAt: promptData['shownAt'] as DateTime?,
+          );
+
+          await _firestore
+              .collection(_pendingPromptsCollection)
+              .doc(prompt.id)
+              .set(prompt.toMap());
+
+          debugPrint('FeedbackService: Created test prompt: ${prompt.id}');
+        } catch (e) {
+          debugPrint('FeedbackService: Failed to create test prompt: $e');
+        }
+      }
+
+      debugPrint('FeedbackService: Finished creating test prompts');
+    } else {
+      debugPrint('FeedbackService: createTestFeedbackPrompts only works in debug mode');
+    }
+  }
+
+  // DEBUG ONLY: Clear all test prompts
+  Future<void> clearTestFeedbackPrompts(String userId) async {
+    if (kDebugMode) {
+      debugPrint('FeedbackService: Clearing test feedback prompts for userId: $userId');
+
+      final testPromptIds = [
+        'test_hangout_1_$userId',
+        'test_hangout_2_$userId',
+        'test_hangout_3_$userId',
+      ];
+
+      for (final promptId in testPromptIds) {
+        try {
+          await _firestore
+              .collection(_pendingPromptsCollection)
+              .doc(promptId)
+              .delete();
+          debugPrint('FeedbackService: Deleted test prompt: $promptId');
+        } catch (e) {
+          debugPrint('FeedbackService: Failed to delete test prompt $promptId: $e');
+        }
+      }
+
+      debugPrint('FeedbackService: Finished clearing test prompts');
+    }
+  }
 }

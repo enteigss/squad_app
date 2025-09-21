@@ -187,91 +187,157 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
       ),
       bottomNavigationBar: widget.isParticipant
           ? _buildBottomActions(isGroupFull)
-          : null,
+          : _buildJoinBottomAction(),
     );
   }
 
   Widget _buildBottomActions(bool isGroupFull) {
-    final bool showInvite = !isGroupFull;
-    final bool showChat = true; // Always show chat for participants
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final currentUserId = authProvider.currentUser?.id;
+        if (currentUserId == null) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        24,
-      ), // Added extra bottom padding for safe area
-      color: AppColors.background, // Match scaffold background
-      child: showInvite && showChat
-          ? Row(
-              children: [
-                // Group Chat button
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _openChat,
-                    icon: const Icon(Icons.chat, size: 18),
-                    label: const Text('Group Chat'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Invite Friends button
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _openInviteModal,
-                    icon: const Icon(Icons.person_add, size: 18),
-                    label: const Text('Invite Friends'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : showChat
-              ? ElevatedButton.icon(
-                  onPressed: _openChat,
-                  icon: const Icon(Icons.chat, size: 18),
-                  label: const Text('Group Chat'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                )
-              : ElevatedButton.icon(
-                  onPressed: _openInviteModal,
-                  icon: const Icon(Icons.person_add, size: 18),
-                  label: const Text('Invite Friends'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+        final bool isAuthor = currentUserId == widget.post.authorId;
+        final bool showInvite = !isGroupFull;
+        final bool showChat = true; // Always show chat for participants
+        final bool showLeave = !isAuthor; // Show leave button for non-authors
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          color: AppColors.background,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildActionButtons(showInvite, showChat, showLeave, currentUserId),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildActionButtons(bool showInvite, bool showChat, bool showLeave, String currentUserId) {
+    final List<Widget> widgets = [];
+
+    // Invite Friends button on its own row (only for authors)
+    if (showInvite) {
+      widgets.add(
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _openInviteModal,
+            icon: const Icon(Icons.person_add, size: 18),
+            label: const Text('Invite Friends'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Add spacing between invite button and bottom row
+      if (showChat || showLeave) {
+        widgets.add(const SizedBox(height: 12));
+      }
+    }
+
+    // Bottom row with Chat and Leave buttons
+    final List<Widget> bottomRowButtons = [];
+
+    // Group Chat button
+    if (showChat) {
+      bottomRowButtons.add(
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _openChat,
+            icon: const Icon(Icons.chat, size: 18),
+            label: const Text('Group Chat'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Leave button (only for non-authors)
+    if (showLeave) {
+      if (bottomRowButtons.isNotEmpty) bottomRowButtons.add(const SizedBox(width: 12));
+      bottomRowButtons.add(
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => _leavePost(currentUserId),
+            icon: const Icon(Icons.exit_to_app, size: 18),
+            label: const Text('Leave Group'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Add bottom row if there are buttons
+    if (bottomRowButtons.isNotEmpty) {
+      widgets.add(Row(children: bottomRowButtons));
+    }
+
+    return widgets.isEmpty
+        ? const SizedBox.shrink()
+        : Column(children: widgets);
+  }
+
+  Widget _buildJoinBottomAction() {
+    return Consumer2<AuthProvider, PostProvider>(
+      builder: (context, authProvider, postProvider, child) {
+        final currentUserId = authProvider.currentUser?.id;
+        if (currentUserId == null) return const SizedBox.shrink();
+
+        final canJoin = postProvider.canUserJoinPost(
+          widget.post,
+          currentUserId,
+          userGender: authProvider.currentUser?.gender,
+        );
+
+        if (!canJoin) return const SizedBox.shrink();
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          color: AppColors.background,
+          child: ElevatedButton.icon(
+            onPressed: () => _joinPost(currentUserId, postProvider),
+            icon: const Icon(Icons.group_add, size: 18),
+            label: const Text('Join Hangout'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1010,6 +1076,52 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
             backgroundColor: AppColors.error,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _joinPost(String userId, PostProvider postProvider) async {
+    final success = await postProvider.joinPost(widget.post.id, userId);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Joined "${widget.post.title}"!'
+                : postProvider.error ?? 'Failed to join hangout',
+          ),
+          backgroundColor: success ? AppColors.success : AppColors.error,
+        ),
+      );
+
+      // If successfully joined, update the participant status and reload
+      if (success) {
+        // Navigate back or refresh the page to show as participant
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  Future<void> _leavePost(String userId) async {
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    final success = await postProvider.leavePost(widget.post.id, userId);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Left "${widget.post.title}"'
+                : postProvider.error ?? 'Failed to leave hangout',
+          ),
+          backgroundColor: success ? AppColors.success : AppColors.error,
+        ),
+      );
+
+      // If successfully left, navigate back to feed
+      if (success) {
+        Navigator.of(context).pop();
       }
     }
   }

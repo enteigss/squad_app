@@ -9,6 +9,7 @@ import '../../utils/url_launcher_helper.dart';
 import '../../services/block_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/feedback_service.dart';
 import '../../models/user_model.dart';
 import 'edit_profile_screen.dart';
 import 'analytics_screen.dart';
@@ -96,6 +97,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // DEBUG ONLY: Create test feedback prompts
+  Future<void> _createTestFeedbackPrompts(String userId) async {
+    if (kDebugMode) {
+      try {
+        final feedbackService = FeedbackService();
+        await feedbackService.createTestFeedbackPrompts(userId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Test feedback prompts created! Restart the app to see them.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('Failed to create test feedback prompts: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to create test feedback prompts'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
                 
                 // Profile Info Cards
@@ -196,7 +227,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                
+
+                // DEBUG ONLY: Test Feedback Prompts Button
+                if (kDebugMode) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _createTestFeedbackPrompts(user.id),
+                      icon: const Icon(Icons.bug_report, size: 18),
+                      label: const Text('Create Test Feedback Prompts'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 12),
 
                 // Notifications Toggle

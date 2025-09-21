@@ -20,6 +20,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _scrollController = ScrollController();
+
+  // Keys for scrolling to error locations
+  final _titleSectionKey = GlobalKey();
+  final _dateTimeSectionKey = GlobalKey();
+  final _genderSectionKey = GlobalKey();
 
   DateTime? _selectedDateTime;
   Set<String> _selectedGenders = {'Men', 'Women', 'Non-binary'}; // All selected by default
@@ -44,6 +50,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -67,14 +74,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Title Section
-              _buildSectionTitle('What are you planning?'),
-              const SizedBox(height: 8),
-              _buildTitleField(),
+              Container(
+                key: _titleSectionKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSectionTitle('What are you planning?'),
+                    const SizedBox(height: 8),
+                    _buildTitleField(),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 12),
 
@@ -91,16 +107,32 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               const SizedBox(height: 24),
 
               // Date/Time Section
-              _buildSectionTitle('When will it be?'),
-              const SizedBox(height: 8),
-              _buildDateTimeSelector(),
+              Container(
+                key: _dateTimeSectionKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSectionTitle('When will it be?'),
+                    const SizedBox(height: 8),
+                    _buildDateTimeSelector(),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 24),
 
               // Gender Preference Section
-              _buildSectionTitle('Who are you looking to hang out with?'),
-              const SizedBox(height: 8),
-              _buildGenderSelector(),
+              Container(
+                key: _genderSectionKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSectionTitle('Who are you looking to hang out with?'),
+                    const SizedBox(height: 8),
+                    _buildGenderSelector(),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 24),
 
@@ -914,129 +946,150 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return null;
   }
 
+  void _scrollToError(GlobalKey sectionKey) {
+    final context = sectionKey.currentContext;
+    if (context != null) {
+      final RenderBox renderBox = context.findRenderObject() as RenderBox;
+      final position = renderBox.localToGlobal(Offset.zero);
+
+      _scrollController.animateTo(
+        _scrollController.offset + position.dy - 100, // 100px offset for padding
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   Future<void> _createPost() async {
-    if (_formKey.currentState!.validate()) {
-      // Validate gender selection first
-      final genderValidationError = _validateGenderSelection();
-      if (genderValidationError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(genderValidationError),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        return;
-      }
+    if (!_formKey.currentState!.validate()) {
+      // Form validation failed - scroll to title field (first error)
+      _scrollToError(_titleSectionKey);
+      return;
+    }
 
-      if (_selectedDateTime == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a date and time'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
-      final now = DateTime.now();
-      // Allow "now" hangouts or future hangouts, but not past hangouts (unless it's "now")
-      if (_selectedDateTime!.isBefore(now) && !_isNow(_selectedDateTime!)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please select a future date and time, or choose "Now"',
-            ),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
-      // Get user information
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final postProvider = Provider.of<PostProvider>(context, listen: false);
-
-      final currentUser = authProvider.currentUser;
-      if (currentUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must be logged in to create a hangout'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+    // Validate gender selection first
+    final genderValidationError = _validateGenderSelection();
+    if (genderValidationError != null) {
+      _scrollToError(_genderSectionKey);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(genderValidationError),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
         ),
       );
+      return;
+    }
 
-      try {
-        // Create the hangout
-        final success = await postProvider.createPost(
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          authorId: currentUser.id,
-          authorName: currentUser.displayName ?? 'Unknown User',
-          scheduledTime: _selectedDateTime!,
-          genderPreferences: _selectedGenders.toList(),
-          maxParticipants: _maxParticipants,
-        );
+    if (_selectedDateTime == null) {
+      _scrollToError(_dateTimeSectionKey);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a date and time'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
-        // Dismiss loading dialog
-        if (mounted) Navigator.of(context).pop();
+    final now = DateTime.now();
+    // Allow "now" hangouts or future hangouts, but not past hangouts (unless it's "now")
+    if (_selectedDateTime!.isBefore(now) && !_isNow(_selectedDateTime!)) {
+      _scrollToError(_dateTimeSectionKey);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a future date and time, or choose "Now"',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
-        if (success) {
-          // Track hangout creation in analytics
-          await AnalyticsService().trackHangoutCreated();
+    // Get user information
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
 
-          // Navigate back to hangouts page first
-          if (mounted) {
-            print(
-              'DEBUG: Hangout created successfully, navigating to hangouts page',
-            );
-            // Switch to the hangouts tab (index 0) using provider and show "yourPosts" tab
-            final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
-            tabProvider.navigateToHangouts(tab: 'yourPosts');
+    final currentUser = authProvider.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be logged in to create a hangout'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
-            // Then show success message with invite option on hangouts page
-            final hangoutId = postProvider.lastCreatedPostId ?? '';
-            _showSuccessWithInviteOption(
-              hangoutTitle: _titleController.text.trim(),
-              hangoutId: hangoutId,
-              inviterName: currentUser.displayName ?? 'Unknown User',
-            );
-          }
-        } else {
-          // Show error message
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(postProvider.error ?? 'Failed to create hangout'),
-                backgroundColor: AppColors.error,
-              ),
-            );
-          }
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+
+    try {
+      // Create the hangout
+      final success = await postProvider.createPost(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        authorId: currentUser.id,
+        authorName: currentUser.displayName ?? 'Unknown User',
+        scheduledTime: _selectedDateTime!,
+        genderPreferences: _selectedGenders.toList(),
+        maxParticipants: _maxParticipants,
+      );
+
+      // Dismiss loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (success) {
+        // Track hangout creation in analytics
+        await AnalyticsService().trackHangoutCreated();
+
+        // Navigate back to hangouts page first
+        if (mounted) {
+          print(
+            'DEBUG: Hangout created successfully, navigating to hangouts page',
+          );
+          // Switch to the hangouts tab (index 0) using provider and show "yourPosts" tab
+          final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+          tabProvider.navigateToHangouts(tab: 'yourPosts');
+
+          // Then show success message with invite option on hangouts page
+          final hangoutId = postProvider.lastCreatedPostId ?? '';
+          _showSuccessWithInviteOption(
+            hangoutTitle: _titleController.text.trim(),
+            hangoutId: hangoutId,
+            inviterName: currentUser.displayName ?? 'Unknown User',
+          );
         }
-      } catch (e) {
-        // Dismiss loading dialog
-        if (mounted) Navigator.of(context).pop();
-
+      } else {
         // Show error message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to create hangout: $e'),
+              content: Text(postProvider.error ?? 'Failed to create hangout'),
               backgroundColor: AppColors.error,
             ),
           );
         }
+      }
+    } catch (e) {
+      // Dismiss loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create hangout: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     }
   }
