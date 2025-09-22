@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/colors.dart';
-import '../services/analytics_service.dart';
 
 class AppInviteModal extends StatefulWidget {
   final String inviterName;

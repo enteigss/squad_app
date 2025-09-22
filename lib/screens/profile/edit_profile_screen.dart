@@ -6,6 +6,7 @@ import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../constants/bu_dorms.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -35,6 +36,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _selectedGender;
   bool _isLoading = false;
   String? _error;
+  String? _selectedLocation;
+  bool _showCustomLocationField = false;
 
   // Class year options
   final List<String> _classYearOptions = [
@@ -86,10 +89,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _initializeControllers() {
     _displayNameController = TextEditingController(text: widget.user.displayName ?? '');
     _bioController = TextEditingController(text: widget.user.bio ?? '');
-    _locationController = TextEditingController(text: widget.user.location ?? '');
+    _locationController = TextEditingController();
     _selectedClassYear = widget.user.classYear;
     _selectedInterests = Set<String>.from(widget.user.interests);
     _selectedGender = widget.user.gender;
+
+    // Initialize location dropdown
+    final userLocation = widget.user.location ?? '';
+    if (userLocation.isNotEmpty && BUDorms.dormitories.contains(userLocation)) {
+      _selectedLocation = userLocation;
+      _showCustomLocationField = false;
+    } else if (userLocation.isNotEmpty) {
+      _selectedLocation = 'Other';
+      _showCustomLocationField = true;
+      _locationController.text = userLocation;
+    } else {
+      _selectedLocation = null;
+      _showCustomLocationField = false;
+    }
   }
 
   @override
@@ -161,12 +178,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 16),
 
               // Location
-              _buildSectionTitle('Location (optional)'),
-              const SizedBox(height: 6),
-              CustomTextField(
-                controller: _locationController,
-                hint: 'Enter your dorm',
-              ),
+              _buildLocationSection(),
 
               const SizedBox(height: 16),
 
@@ -261,6 +273,80 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
       ),
+    );
+  }
+
+  Widget _buildLocationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Location (optional)'),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedLocation,
+            decoration: InputDecoration(
+              hintText: 'Select your dorm',
+              hintStyle: TextStyle(color: AppColors.textSecondary),
+              prefixIcon: const Icon(Icons.location_on_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            items: BUDorms.dormitories.map((String dorm) {
+              return DropdownMenuItem<String>(
+                value: dorm,
+                child: Text(
+                  dorm,
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+              );
+            }).toList(),
+            onChanged: (String? value) {
+              setState(() {
+                _selectedLocation = value;
+                _showCustomLocationField = value == 'Other';
+                if (value != 'Other') {
+                  _locationController.clear();
+                }
+              });
+            },
+            dropdownColor: AppColors.surface,
+            icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+          ),
+        ),
+        if (_showCustomLocationField) ...[
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _locationController,
+            hint: 'Enter your custom location',
+            prefixIcon: const Icon(Icons.edit_location_outlined),
+          ),
+        ],
+      ],
     );
   }
 
@@ -606,9 +692,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         bio: _bioController.text.trim().isEmpty 
             ? null 
             : _bioController.text.trim(),
-        location: _locationController.text.trim().isEmpty 
-            ? null 
-            : _locationController.text.trim(),
+        location: _selectedLocation == null
+            ? null
+            : _selectedLocation == 'Other'
+                ? (_locationController.text.trim().isEmpty ? null : _locationController.text.trim())
+                : _selectedLocation,
         classYear: _selectedClassYear,
         interests: _selectedInterests.toList(),
         gender: _selectedGender,

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class BlockModel {
   final String id;
   final String blockerId;

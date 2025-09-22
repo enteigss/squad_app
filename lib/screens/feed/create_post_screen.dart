@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/tab_navigation_provider.dart';
@@ -356,7 +355,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         maxLines: 4,
         decoration: InputDecoration(
           hintText:
-              'Share more details about your plans (e.g., "watching rick and morty in our dorm pu to room ___")...',
+              'Share more details about your plans...',
           hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.7)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

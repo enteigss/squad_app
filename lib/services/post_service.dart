@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/post_model.dart';
-import '../models/user_model.dart';
 import 'post_chat_service.dart';
 import 'firestore_service.dart';
 import 'feedback_service.dart';

@@ -24,16 +24,22 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      debugPrint('🍎 LoginScreen: About to call authProvider.signInWithApple()');
+      debugPrint(
+        '🍎 LoginScreen: About to call authProvider.signInWithApple()',
+      );
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signInWithApple();
-      debugPrint('🍎 LoginScreen: authProvider.signInWithApple() completed successfully');
+      debugPrint(
+        '🍎 LoginScreen: authProvider.signInWithApple() completed successfully',
+      );
     } catch (e) {
       debugPrint('🚨 LoginScreen: Apple Sign In Exception caught: $e');
       debugPrint('🚨 LoginScreen: Exception type: ${e.runtimeType}');
       debugPrint('🚨 LoginScreen: mounted = $mounted');
       if (mounted) {
-        debugPrint('🚨 LoginScreen: Showing snackbar with error: ${e.toString()}');
+        debugPrint(
+          '🚨 LoginScreen: Showing snackbar with error: ${e.toString()}',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
@@ -45,7 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
         debugPrint('🚨 LoginScreen: Widget not mounted - skipping snackbar');
       }
     } finally {
-      debugPrint('🔄 LoginScreen: Apple Sign In finally block - mounted = $mounted');
+      debugPrint(
+        '🔄 LoginScreen: Apple Sign In finally block - mounted = $mounted',
+      );
       if (mounted) {
         setState(() {
           _isAppleLoading = false;
@@ -62,16 +70,22 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      debugPrint('🖱️ LoginScreen: About to call authProvider.signInWithGoogle()');
+      debugPrint(
+        '🖱️ LoginScreen: About to call authProvider.signInWithGoogle()',
+      );
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signInWithGoogle();
-      debugPrint('🖱️ LoginScreen: authProvider.signInWithGoogle() completed successfully');
+      debugPrint(
+        '🖱️ LoginScreen: authProvider.signInWithGoogle() completed successfully',
+      );
     } catch (e) {
       debugPrint('🚨 LoginScreen: Exception caught: $e');
       debugPrint('🚨 LoginScreen: Exception type: ${e.runtimeType}');
       debugPrint('🚨 LoginScreen: mounted = $mounted');
       if (mounted) {
-        debugPrint('🚨 LoginScreen: Showing snackbar with error: ${e.toString()}');
+        debugPrint(
+          '🚨 LoginScreen: Showing snackbar with error: ${e.toString()}',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
@@ -112,13 +126,11 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 80),
 
               // App Logo/Title
-              Icon(
-                Icons.groups,
-                size: 80,
-                color: AppColors.primary,
+              Image.asset(
+                'assets/images/linkup_logo_300.png',
+                width: 100,
+                height: 100,
               ),
-              
-              const SizedBox(height: 24),
 
               Text(
                 'LinkUp BU',
@@ -155,11 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.school,
-                      color: AppColors.primary,
-                      size: 32,
-                    ),
+                    Icon(Icons.school, color: AppColors.primary, size: 32),
                     const SizedBox(height: 12),
                     Text(
                       'Exclusive to BU Students',
@@ -226,10 +234,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         Expanded(
                           child: Text(
                             'Need help?',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                         ),
                       ],
@@ -262,7 +271,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   GestureDetector(
                     onTap: () async {
-                      final success = await UrlLauncherHelper.launchPrivacyPolicy();
+                      final success =
+                          await UrlLauncherHelper.launchPrivacyPolicy();
                       if (!success && mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(

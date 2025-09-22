@@ -39,6 +39,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
   bool _isEditingDescription = false;
   String _currentDescription = '';
   String? _error;
+  bool _currentUserIsParticipant = false;
 
   @override
   void initState() {
@@ -54,7 +55,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
     super.dispose();
   }
 
-  Future<void> _loadGroupMembers() async {
+  Future<void> _loadGroupMembers([Post? post]) async {
     try {
       setState(() {
         _isLoading = true;
@@ -63,8 +64,15 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
 
       final members = <UserModel>[];
 
+      // Use the provided post or fallback to widget.post
+      final currentPost = post ?? widget.post;
+
+      // Get current user ID to check participation
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUserId = authProvider.currentUser?.id;
+
       // Load each participant's user data
-      for (final participantId in widget.post.participantIds) {
+      for (final participantId in currentPost.participantIds) {
         try {
           final user = await _firestoreService.getUser(participantId);
           if (user != null) {
@@ -78,6 +86,9 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
 
       setState(() {
         _members = members;
+        _currentUserIsParticipant =
+            currentUserId != null &&
+            currentPost.participantIds.contains(currentUserId);
         _isLoading = false;
       });
     } catch (e) {
@@ -90,8 +101,10 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isGroupFull =
-        widget.post.participantIds.length >= (widget.post.maxParticipants);
+    // Use local state instead of Consumer to avoid rebuilds from PostProvider timer
+    final currentPost = widget.post; // Use original post data
+    final bool isGroupFull = _members.length >= (currentPost.maxParticipants);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -103,9 +116,9 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
           },
         ),
         title: Text(
-          widget.isParticipant
-              ? 'Group Members (${widget.post.participantIds.length})'
-              : 'Group Preview (${widget.post.participantIds.length})',
+          _currentUserIsParticipant
+              ? 'Group Members (${_members.length})'
+              : 'Group Preview (${_members.length})',
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -131,7 +144,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.post.title,
+                  currentPost.title,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -149,7 +162,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${widget.post.participantIds.length} members',
+                      '${currentPost.participantIds.length} members',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -162,7 +175,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
           ),
 
           // Preview notice for non-participants
-          if (!widget.isParticipant)
+          if (!_currentUserIsParticipant)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -185,38 +198,52 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
           Expanded(child: _buildMembersList()),
         ],
       ),
-      bottomNavigationBar: widget.isParticipant
-          ? _buildBottomActions(isGroupFull)
+      bottomNavigationBar: _shouldShowParticipantActions(currentPost)
+          ? _buildBottomActions(isGroupFull, currentPost)
           : _buildJoinBottomAction(),
     );
   }
 
-  Widget _buildBottomActions(bool isGroupFull) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        final currentUserId = authProvider.currentUser?.id;
-        if (currentUserId == null) return const SizedBox.shrink();
+  bool _shouldShowParticipantActions(Post currentPost) {
+    // Use local state instead of checking post data
+    return _currentUserIsParticipant;
+  }
 
-        final bool isAuthor = currentUserId == widget.post.authorId;
-        final bool showInvite = !isGroupFull;
-        final bool showChat = true; // Always show chat for participants
-        final bool showLeave = !isAuthor; // Show leave button for non-authors
+  Widget _buildBottomActions(bool isGroupFull, Post currentPost) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = authProvider.currentUser?.id;
+    if (currentUserId == null) return const SizedBox.shrink();
 
-        return Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          color: AppColors.background,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildActionButtons(showInvite, showChat, showLeave, currentUserId),
-            ],
+    final bool isAuthor = currentUserId == currentPost.authorId;
+    final bool showInvite = !isGroupFull;
+    final bool showChat = true; // Always show chat for participants
+    final bool showLeave = !isAuthor; // Show leave button for non-authors
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      color: AppColors.background,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildActionButtons(
+            showInvite,
+            showChat,
+            showLeave,
+            currentUserId,
+            currentPost,
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
-  Widget _buildActionButtons(bool showInvite, bool showChat, bool showLeave, String currentUserId) {
+  Widget _buildActionButtons(
+    bool showInvite,
+    bool showChat,
+    bool showLeave,
+    String currentUserId,
+    Post currentPost,
+  ) {
     final List<Widget> widgets = [];
 
     // Invite Friends button on its own row (only for authors)
@@ -225,14 +252,17 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: _openInviteModal,
+            onPressed: () => _openInviteModal(currentPost),
             icon: const Icon(Icons.person_add, size: 18),
             label: const Text('Invite Friends'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -255,14 +285,17 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
       bottomRowButtons.add(
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _openChat,
+            onPressed: () => _openChat(currentPost),
             icon: const Icon(Icons.chat, size: 18),
             label: const Text('Group Chat'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -274,7 +307,8 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
 
     // Leave button (only for non-authors)
     if (showLeave) {
-      if (bottomRowButtons.isNotEmpty) bottomRowButtons.add(const SizedBox(width: 12));
+      if (bottomRowButtons.isNotEmpty)
+        bottomRowButtons.add(const SizedBox(width: 12));
       bottomRowButtons.add(
         Expanded(
           child: ElevatedButton.icon(
@@ -285,7 +319,10 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -306,43 +343,42 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
   }
 
   Widget _buildJoinBottomAction() {
-    return Consumer2<AuthProvider, PostProvider>(
-      builder: (context, authProvider, postProvider, child) {
-        final currentUserId = authProvider.currentUser?.id;
-        if (currentUserId == null) return const SizedBox.shrink();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    final currentUserId = authProvider.currentUser?.id;
 
-        final canJoin = postProvider.canUserJoinPost(
-          widget.post,
-          currentUserId,
-          userGender: authProvider.currentUser?.gender,
-        );
+    if (currentUserId == null) return const SizedBox.shrink();
 
-        if (!canJoin) return const SizedBox.shrink();
+    final canJoin = postProvider.canUserJoinPost(
+      widget.post,
+      currentUserId,
+      userGender: authProvider.currentUser?.gender,
+    );
 
-        return Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          color: AppColors.background,
-          child: ElevatedButton.icon(
-            onPressed: () => _joinPost(currentUserId, postProvider),
-            icon: const Icon(Icons.group_add, size: 18),
-            label: const Text('Join Hangout'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+    if (!canJoin) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      color: AppColors.background,
+      child: ElevatedButton.icon(
+        onPressed: () => _joinPost(currentUserId, postProvider),
+        icon: const Icon(Icons.group_add, size: 18),
+        label: const Text('Join Hangout'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
   // NEW: Method to handle opening the invite modal.
-  void _openInviteModal() {
+  void _openInviteModal(Post currentPost) {
     // Get the current user's name from AuthProvider
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final inviterName = authProvider.currentUser?.displayName ?? 'A friend';
@@ -351,8 +387,8 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
     // The Navigator.pop() call from your example is removed as it's not needed here.
     InviteOptionsModal.show(
       context,
-      hangoutId: widget.post.id,
-      hangoutTitle: widget.post.title,
+      hangoutId: currentPost.id,
+      hangoutTitle: currentPost.title,
       inviterName: inviterName,
     );
   }
@@ -429,7 +465,9 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 color: AppColors.surface,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: const Padding(
                   padding: EdgeInsets.all(16),
                   child: Row(
@@ -474,17 +512,18 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
     if (currentUserId != null) {
       final isBlocked = await _blockService.isBlocked(member.id);
       if (isBlocked) {
-        return CensoredProfileCard(
-          memberId: member.id,
-          isAuthor: isAuthor,
-        );
+        return CensoredProfileCard(memberId: member.id, isAuthor: isAuthor);
       }
     }
 
     return _buildRegularMemberCard(member, isCurrentUser, isAuthor);
   }
 
-  Widget _buildRegularMemberCard(UserModel member, bool isCurrentUser, bool isAuthor) {
+  Widget _buildRegularMemberCard(
+    UserModel member,
+    bool isCurrentUser,
+    bool isAuthor,
+  ) {
     final currentUserId = Provider.of<AuthProvider>(
       context,
       listen: false,
@@ -652,7 +691,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
   // Check if current user can remove a member
   bool _canRemoveMember(String? currentUserId, String memberId) {
     // Only participants can remove members
-    if (!widget.isParticipant) return false;
+    if (!_currentUserIsParticipant) return false;
 
     // Only the post author (host) can remove members
     if (currentUserId != widget.post.authorId) return false;
@@ -777,11 +816,11 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
     }
   }
 
-  void _openChat() {
+  void _openChat(Post currentPost) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PostChatScreen(post: widget.post),
+        builder: (context) => PostChatScreen(post: currentPost),
       ),
     );
   }
@@ -801,7 +840,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
       context,
       listen: false,
     ).currentUser?.id;
-    
+
     // Don't show report button to the host
     return currentUserId != widget.post.authorId;
   }
@@ -810,7 +849,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
   Future<void> _showReportDialog() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = authProvider.currentUser;
-    
+
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -872,7 +911,9 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Report submitted successfully. Thank you for helping keep our community safe.'),
+            content: Text(
+              'Report submitted successfully. Thank you for helping keep our community safe.',
+            ),
             backgroundColor: AppColors.success,
             duration: Duration(seconds: 4),
           ),
@@ -905,7 +946,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
 
   Widget _buildDescriptionDisplay(bool isAuthor) {
     final hasDescription = _currentDescription.isNotEmpty;
-    
+
     return Row(
       children: [
         Expanded(
@@ -918,25 +959,21 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
                   ),
                 )
               : isAuthor
-                  ? Text(
-                      'Add description',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary.withValues(alpha: 0.7),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+              ? Text(
+                  'Add description',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
         if (isAuthor) ...[
           const SizedBox(width: 8),
           GestureDetector(
             onTap: _startEditingDescription,
-            child: Icon(
-              Icons.edit,
-              size: 16,
-              color: AppColors.textSecondary,
-            ),
+            child: Icon(Icons.edit, size: 16, color: AppColors.textSecondary),
           ),
         ],
       ],
@@ -950,21 +987,23 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         TextField(
           controller: _descriptionController,
           maxLines: null,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textPrimary,
-          ),
+          style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: 'Enter description...',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+              borderSide: BorderSide(
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: AppColors.primary),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
           ),
           autofocus: true,
         ),
@@ -975,7 +1014,10 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
             GestureDetector(
               onTap: _cancelEditing,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.textSecondary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
@@ -1000,7 +1042,10 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
             GestureDetector(
               onTap: _saveDescription,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(4),
@@ -1012,10 +1057,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
                     const SizedBox(width: 4),
                     const Text(
                       'Save',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.white),
                     ),
                   ],
                 ),
@@ -1043,20 +1085,24 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
   Future<void> _saveDescription() async {
     final newDescription = _descriptionController.text.trim();
     final postProvider = Provider.of<PostProvider>(context, listen: false);
-    
+
     try {
       final updatedPost = widget.post.copyWith(description: newDescription);
       final success = await postProvider.updatePost(updatedPost);
-      
+
       if (success && mounted) {
         setState(() {
           _currentDescription = newDescription;
           _isEditingDescription = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(newDescription.isEmpty ? 'Description removed' : 'Description updated'),
+            content: Text(
+              newDescription.isEmpty
+                  ? 'Description removed'
+                  : 'Description updated',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -1095,10 +1141,22 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         ),
       );
 
-      // If successfully joined, update the participant status and reload
+      // If successfully joined, manually add user to members list
       if (success) {
-        // Navigate back or refresh the page to show as participant
-        Navigator.of(context).pop();
+        final user = await _firestoreService.getUser(userId);
+        if (user != null && mounted) {
+          setState(() {
+            _members.add(user);
+            final authProvider = Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            );
+            final currentUserId = authProvider.currentUser?.id;
+            if (userId == currentUserId) {
+              _currentUserIsParticipant = true;
+            }
+          });
+        }
       }
     }
   }
@@ -1119,9 +1177,22 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         ),
       );
 
-      // If successfully left, navigate back to feed
+      // If successfully left, update local state and navigate back if current user left
       if (success) {
-        Navigator.of(context).pop();
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final currentUserId = authProvider.currentUser?.id;
+
+        setState(() {
+          _members.removeWhere((member) => member.id == userId);
+          if (userId == currentUserId) {
+            _currentUserIsParticipant = false;
+          }
+        });
+
+        // If current user left, navigate back to feed
+        if (userId == currentUserId) {
+          Navigator.of(context).pop();
+        }
       }
     }
   }

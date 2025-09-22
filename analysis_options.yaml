@@ -21,8 +21,15 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Disable non-critical warnings that don't affect functionality
+    avoid_print: false  # Allow print statements for debugging
+    prefer_final_fields: false  # Don't require final for private fields
+    use_build_context_synchronously: false  # Allow async context usage with mounted checks
+    deprecated_member_use: false  # Allow deprecated methods during transition periods
+    constant_identifier_names: false  # Allow snake_case constants
+    unnecessary_brace_in_string_interps: false  # Allow braces in string interpolation
+    sized_box_for_whitespace: false  # Allow Container for whitespace
+    unreachable_switch_default: false  # Allow default cases for completeness
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

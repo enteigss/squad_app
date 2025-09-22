@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../utils/colors.dart';
+import '../../constants/bu_dorms.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -24,7 +25,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   bool _isLoading = false;
   List<String> _interests = [];
   String? _selectedGender;
-  
+  String? _selectedLocation;
+  bool _showCustomLocationField = false;
 
   final List<String> _classYearOptions = [
     'Freshman',
@@ -63,7 +65,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     {'value': 'non_binary', 'label': 'Non-binary'},
     {'value': 'prefer_not_to_say', 'label': 'Prefer not to say'},
   ];
-
 
   @override
   void dispose() {
@@ -122,11 +123,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               prefixIcon: const Icon(Icons.school_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+                borderSide: BorderSide(
+                  color: AppColors.divider.withValues(alpha: 0.3),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+                borderSide: BorderSide(
+                  color: AppColors.divider.withValues(alpha: 0.3),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -134,7 +139,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
               filled: true,
               fillColor: AppColors.surface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             items: _classYearOptions.map((String classYear) {
               return DropdownMenuItem<String>(
@@ -164,6 +172,108 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
+  Widget _buildLocationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Location',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedLocation,
+            decoration: InputDecoration(
+              hintText: 'Select your dorm',
+              hintStyle: TextStyle(color: AppColors.textSecondary),
+              prefixIcon: const Icon(Icons.location_on_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: AppColors.divider.withValues(alpha: 0.3),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: AppColors.divider.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            items: BUDorms.dormitories.map((String dorm) {
+              return DropdownMenuItem<String>(
+                value: dorm,
+                child: Text(
+                  dorm,
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+              );
+            }).toList(),
+            onChanged: (String? value) {
+              setState(() {
+                _selectedLocation = value;
+                _showCustomLocationField = value == 'Other';
+                if (value != 'Other') {
+                  _locationController.clear();
+                }
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please select your location';
+              }
+              return null;
+            },
+            dropdownColor: AppColors.surface,
+            icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+          ),
+        ),
+        if (_showCustomLocationField) ...[
+          const SizedBox(height: 12),
+          CustomTextField(
+            label: 'Custom Location',
+            hint: 'Enter your location',
+            controller: _locationController,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.next,
+            prefixIcon: const Icon(Icons.edit_location_outlined),
+            validator: (value) {
+              if (_selectedLocation == 'Other' &&
+                  (value == null || value.trim().isEmpty)) {
+                return 'Please enter your custom location';
+              }
+              return null;
+            },
+          ),
+        ],
+      ],
+    );
+  }
 
   Future<void> _completeProfile() async {
     if (!_formKey.currentState!.validate()) return;
@@ -198,9 +308,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       await authProvider.updateProfile(
         displayName: _fullNameController.text.trim(),
         photoUrl: null,
-        bio: _aboutController.text.trim().isNotEmpty ? _aboutController.text.trim() : null,
+        bio: _aboutController.text.trim().isNotEmpty
+            ? _aboutController.text.trim()
+            : null,
         classYear: _selectedClassYear,
-        location: _locationController.text.trim(),
+        location: _selectedLocation == 'Other'
+            ? _locationController.text.trim()
+            : _selectedLocation ?? '',
         interests: _interests,
         gender: _selectedGender!,
       );
@@ -265,10 +379,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       Expanded(
                         child: Text(
                           'This information will be publicly visible to other users',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
                       ),
                     ],
@@ -301,20 +416,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 16),
 
                 // Location Field
-                CustomTextField(
-                  label: 'Location',
-                  hint: 'Enter your dorm',
-                  controller: _locationController,
-                  keyboardType: TextInputType.text,
-                  textInputAction: TextInputAction.next,
-                  prefixIcon: const Icon(Icons.location_on_outlined),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your location';
-                    }
-                    return null;
-                  },
-                ),
+                _buildLocationSection(),
 
                 const SizedBox(height: 16),
 
@@ -458,9 +560,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       Expanded(
                         child: Text(
                           'This information is collected for user safety and will not be shown to other users',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
                         ),
                       ),
                     ],
@@ -526,9 +627,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               const SizedBox(width: 12),
                               Text(
                                 option['label']!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       color: isSelected
                                           ? AppColors.primary
