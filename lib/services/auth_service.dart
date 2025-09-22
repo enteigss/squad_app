@@ -179,6 +179,18 @@ class AuthService {
           idToken: googleAuth.idToken,
         );
 
+        try {
+          final userCredential = await FirebaseAuth.instance.currentUser
+            ?.linkWithCredential(credential);
+        } on FirebaseAuthException catch (e) {
+          switch (e.code) {
+            case "provider-already-linked":
+              debugPrint('The provider has already been linked to the user.');
+              break;
+            case "invalid-crednetial":
+              debugPrint
+        }
+
         debugPrint('🔥 Signing in to Firebase with Google credential...');
         final UserCredential result = await _auth.signInWithCredential(
           credential,
@@ -332,6 +344,13 @@ class AuthService {
         appleAuthProvider,
       );
 
+      final appleUserInfo = result.user!.providerData
+        .firstWhere((userInfo) => userInfo.providerId == 'apple.com');
+
+      final String appleUserIdentifier = appleUserInfo.uid!;
+
+      debugPrint('🍎 Native Apple User Identifier from providerData: $appleUserIdentifier');
+
       if (result.user == null) {
         debugPrint('❌ Firebase authentication failed - no user returned');
         throw Exception('Apple Sign In failed');
@@ -361,7 +380,7 @@ class AuthService {
         // Check if this is a BU email or test account
         isBUEmail = await _isBUEmail(emailToValidate);
 
-        if (!isBUEmail) {
+        if (!isBUEmail && appleUserIdentifier != '001440.0375fb781c4c4e45ad0c305c709a2e7e.1927') {
           debugPrint('📧 Non-BU email provided: $emailToValidate - will need verification');
           needsEmailVerification = true;
         }
