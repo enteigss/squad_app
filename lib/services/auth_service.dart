@@ -179,18 +179,6 @@ class AuthService {
           idToken: googleAuth.idToken,
         );
 
-        try {
-          final userCredential = await FirebaseAuth.instance.currentUser
-            ?.linkWithCredential(credential);
-        } on FirebaseAuthException catch (e) {
-          switch (e.code) {
-            case "provider-already-linked":
-              debugPrint('The provider has already been linked to the user.');
-              break;
-            case "invalid-crednetial":
-              debugPrint
-        }
-
         debugPrint('🔥 Signing in to Firebase with Google credential...');
         final UserCredential result = await _auth.signInWithCredential(
           credential,
@@ -344,12 +332,15 @@ class AuthService {
         appleAuthProvider,
       );
 
-      final appleUserInfo = result.user!.providerData
-        .firstWhere((userInfo) => userInfo.providerId == 'apple.com');
+      final appleUserInfo = result.user!.providerData.firstWhere(
+        (userInfo) => userInfo.providerId == 'apple.com',
+      );
 
       final String appleUserIdentifier = appleUserInfo.uid!;
 
-      debugPrint('🍎 Native Apple User Identifier from providerData: $appleUserIdentifier');
+      debugPrint(
+        '🍎 Native Apple User Identifier from providerData: $appleUserIdentifier',
+      );
 
       if (result.user == null) {
         debugPrint('❌ Firebase authentication failed - no user returned');
@@ -380,13 +371,19 @@ class AuthService {
         // Check if this is a BU email or test account
         isBUEmail = await _isBUEmail(emailToValidate);
 
-        if (!isBUEmail && appleUserIdentifier != '001440.0375fb781c4c4e45ad0c305c709a2e7e.1927') {
-          debugPrint('📧 Non-BU email provided: $emailToValidate - will need verification');
+        if (!isBUEmail &&
+            appleUserIdentifier !=
+                '001440.0375fb781c4c4e45ad0c305c709a2e7e.1927') {
+          debugPrint(
+            '📧 Non-BU email provided: $emailToValidate - will need verification',
+          );
           needsEmailVerification = true;
         }
       }
 
-      debugPrint('🎓 Email validation result - isBUEmail: $isBUEmail, needsVerification: $needsEmailVerification');
+      debugPrint(
+        '🎓 Email validation result - isBUEmail: $isBUEmail, needsVerification: $needsEmailVerification',
+      );
 
       // Set user ID for analytics
       await _analytics.setUserId(id: result.user!.uid);
@@ -421,7 +418,6 @@ class AuthService {
               .collection('users')
               .doc(result.user!.uid)
               .set(userData);
-
 
           debugPrint('✅ Apple user document created successfully');
 
@@ -719,7 +715,8 @@ class AuthService {
         return false;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
@@ -744,7 +741,9 @@ class AuthService {
         ..addScope("email")
         ..addScope("name");
 
-      final UserCredential result = await _auth.signInWithProvider(appleAuthProvider);
+      final UserCredential result = await _auth.signInWithProvider(
+        appleAuthProvider,
+      );
 
       if (result.user == null) {
         debugPrint('❌ Apple re-authentication failed - no user returned');
@@ -777,7 +776,9 @@ class AuthService {
         case 'apple':
           return await reauthenticateWithApple();
         default:
-          debugPrint('❌ Unsupported auth provider for re-authentication: $authProvider');
+          debugPrint(
+            '❌ Unsupported auth provider for re-authentication: $authProvider',
+          );
           return false;
       }
     } catch (e) {
