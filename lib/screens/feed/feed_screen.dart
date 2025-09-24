@@ -10,7 +10,7 @@ import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
 import '../../widgets/app_invite_modal.dart';
-import 'group_members_screen.dart';
+import 'hangout_screen.dart';
 
 enum FeedTab { upcoming, ongoing, yourPosts }
 
@@ -1124,12 +1124,6 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   void _viewGroup(Post post, {required bool isParticipant}) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            GroupMembersScreen(post: post, isParticipant: isParticipant),
-      ),
-    );
+    context.push('/group-members/${post.id}');
   }
 }

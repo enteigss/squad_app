@@ -5,6 +5,7 @@ import 'post_chat_service.dart';
 import 'firestore_service.dart';
 import 'feedback_service.dart';
 import 'analytics_service.dart';
+import 'notification_service.dart';
 
 class PostService {
   static final PostService _instance = PostService._internal();
@@ -17,6 +18,7 @@ class PostService {
   final FirestoreService _firestoreService = FirestoreService();
   final FeedbackService _feedbackService = FeedbackService();
   final AnalyticsService _analyticsService = AnalyticsService();
+  final NotificationService _notificationService = NotificationService();
 
   // Create a new post
   Future<String> createPost(Post post) async {
@@ -167,6 +169,7 @@ class PostService {
   Future<void> joinPost(String postId, String userId) async {
     try {
       final docRef = _firestore.collection(_collection).doc(postId);
+      Post? postForNotification;
 
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(docRef);
@@ -175,6 +178,7 @@ class PostService {
         }
 
         final post = Post.fromMap(snapshot.data()!);
+        postForNotification = post; // Store for notification use
 
         // Check if user is already a participant
         if (post.participantIds.contains(userId)) {
@@ -223,6 +227,25 @@ class PostService {
         // Don't fail the join operation if chat notification fails
         debugPrint('Failed to send chat join notification: $e');
       }
+
+      // Send FCM notification to hangout owner
+      if (postForNotification != null) {
+        try {
+          final user = await _firestoreService.getUser(userId);
+          final userName = user?.displayName ?? 'Unknown User';
+          
+          await _notificationService.notifyHangoutOwnerOfJoin(
+            hangoutId: postId,
+            hangoutTitle: postForNotification!.title,
+            ownerId: postForNotification!.authorId,
+            joinerName: userName,
+            joinerId: userId,
+          );
+        } catch (e) {
+          // Don't fail the join operation if notification fails
+          debugPrint('Failed to send join FCM notification: $e');
+        }
+      }
     } catch (e) {
       throw Exception('Failed to join post: $e');
     }
@@ -232,6 +255,7 @@ class PostService {
   Future<void> leavePost(String postId, String userId) async {
     try {
       final docRef = _firestore.collection(_collection).doc(postId);
+      Post? postForNotification;
 
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(docRef);
@@ -240,6 +264,7 @@ class PostService {
         }
 
         final post = Post.fromMap(snapshot.data()!);
+        postForNotification = post; // Store for notification use
 
         // Check if user is a participant
         if (!post.participantIds.contains(userId)) {
@@ -275,6 +300,25 @@ class PostService {
       } catch (e) {
         // Don't fail the leave operation if chat notification fails
         debugPrint('Failed to send chat leave notification: $e');
+      }
+
+      // Send FCM notification to hangout owner
+      if (postForNotification != null) {
+        try {
+          final user = await _firestoreService.getUser(userId);
+          final userName = user?.displayName ?? 'Unknown User';
+          
+          await _notificationService.notifyHangoutOwnerOfLeave(
+            hangoutId: postId,
+            hangoutTitle: postForNotification!.title,
+            ownerId: postForNotification!.authorId,
+            leaverName: userName,
+            leaverId: userId,
+          );
+        } catch (e) {
+          // Don't fail the leave operation if notification fails
+          debugPrint('Failed to send leave FCM notification: $e');
+        }
       }
     } catch (e) {
       throw Exception('Failed to leave post: $e');

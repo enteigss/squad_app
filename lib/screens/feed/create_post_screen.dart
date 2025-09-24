@@ -7,6 +7,7 @@ import '../../services/analytics_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/invite_options_modal.dart';
+import '../../constants/bu_locations.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -19,10 +20,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _customLocationController = TextEditingController();
   final _scrollController = ScrollController();
 
   // Keys for scrolling to error locations
   final _titleSectionKey = GlobalKey();
+  final _locationSectionKey = GlobalKey();
   final _dateTimeSectionKey = GlobalKey();
   final _genderSectionKey = GlobalKey();
 
@@ -30,6 +33,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Set<String> _selectedGenders = {'Men', 'Women', 'Non-binary'}; // All selected by default
   bool _showSuggestions = false;
   int _maxParticipants = 10;
+  String? _selectedLocation;
+  String? _customLocation;
+  bool _showLocationSearch = false;
+  List<String> _filteredLocations = [];
 
   // Gender preference options - now fixed for all users
   final List<String> _genderPreferenceOptions = ['Men', 'Women', 'Non-binary'];
@@ -49,6 +56,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _customLocationController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -102,6 +110,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               _buildSectionTitle('Tell us more (optional)'),
               const SizedBox(height: 8),
               _buildDescriptionField(),
+
+              const SizedBox(height: 24),
+
+              // Location Section
+              Container(
+                key: _locationSectionKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSectionTitle('Where will it be?'),
+                    const SizedBox(height: 8),
+                    _buildLocationSelector(),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 24),
 
@@ -633,6 +656,202 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
+  Widget _buildLocationSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Main location selector
+          InkWell(
+            onTap: () {
+              setState(() {
+                _showLocationSearch = !_showLocationSearch;
+                if (_showLocationSearch) {
+                  _filteredLocations = BULocations.allLocations;
+                }
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.location_on, color: AppColors.primary, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Location',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          BULocations.getDisplayText(_selectedLocation, _customLocation),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _selectedLocation == null 
+                                ? AppColors.textSecondary.withValues(alpha: 0.7)
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      if (_selectedLocation != null)
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedLocation = null;
+                              _customLocation = null;
+                              _customLocationController.clear();
+                            });
+                          },
+                          child: Icon(
+                            Icons.clear,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        _showLocationSearch ? Icons.expand_less : Icons.expand_more,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Expandable location search
+          if (_showLocationSearch) ...[
+            const Divider(height: 1),
+            _buildLocationSearchContent(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationSearchContent() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search field
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'Search locations...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+            ),
+            onChanged: _filterLocations,
+          ),
+          const SizedBox(height: 16),
+          
+          // Other option first
+          if (_filteredLocations.contains(BULocations.otherOption))
+            _buildLocationCategory('Custom', [BULocations.otherOption]),
+          
+          // Location categories
+          ...BULocations.locationsByCategory.entries.map((category) {
+            final categoryLocations = _filteredLocations
+                .where((location) => category.value.contains(location))
+                .toList();
+            
+            if (categoryLocations.isEmpty) return const SizedBox.shrink();
+            
+            return _buildLocationCategory(category.key, categoryLocations);
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationCategory(String categoryName, List<String> locations) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          categoryName,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...locations.map((location) {
+          return InkWell(
+            onTap: () => _selectLocation(location),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                color: _selectedLocation == location 
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: _selectedLocation == location 
+                      ? AppColors.primary.withValues(alpha: 0.3)
+                      : Colors.transparent,
+                ),
+              ),
+              child: Text(
+                location,
+                style: TextStyle(
+                  color: _selectedLocation == location 
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
+                  fontWeight: _selectedLocation == location 
+                      ? FontWeight.w500
+                      : FontWeight.normal,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   Widget _buildMaxParticipantsSelector() {
     return Container(
       decoration: BoxDecoration(
@@ -901,6 +1120,100 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
+  void _filterLocations(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredLocations = BULocations.allLocations;
+      } else {
+        _filteredLocations = BULocations.allLocations
+            .where((location) => 
+                location.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
+  void _selectLocation(String location) {
+    setState(() {
+      _selectedLocation = location;
+      _showLocationSearch = false;
+      
+      // If "Other" is selected, show custom input dialog
+      if (BULocations.isOtherOption(location)) {
+        _showCustomLocationDialog();
+      }
+    });
+  }
+
+  Future<void> _showCustomLocationDialog() async {
+    _customLocationController.text = _customLocation ?? '';
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Custom Location'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your custom hangout location:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _customLocationController,
+                decoration: InputDecoration(
+                  hintText: 'e.g., Starbucks on Comm Ave',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                ),
+                autofocus: true,
+                maxLength: 100,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(null);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final customText = _customLocationController.text.trim();
+                Navigator.of(context).pop(customText.isNotEmpty ? customText : null);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _customLocation = result;
+      });
+    } else {
+      // User cancelled, clear the "Other" selection
+      setState(() {
+        _selectedLocation = null;
+        _customLocation = null;
+      });
+    }
+  }
+
   String? _validateGenderSelection() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = authProvider.currentUser;
@@ -1031,6 +1344,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
 
     try {
+      // Determine the final location value
+      String? finalLocation;
+      if (_selectedLocation != null) {
+        if (BULocations.isOtherOption(_selectedLocation!)) {
+          finalLocation = _customLocation;
+        } else {
+          finalLocation = _selectedLocation;
+        }
+      }
+
       // Create the hangout
       final success = await postProvider.createPost(
         title: _titleController.text.trim(),
@@ -1040,6 +1363,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         scheduledTime: _selectedDateTime!,
         genderPreferences: _selectedGenders.toList(),
         maxParticipants: _maxParticipants,
+        location: finalLocation,
       );
 
       // Dismiss loading dialog

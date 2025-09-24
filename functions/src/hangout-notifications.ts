@@ -1,4 +1,5 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import * as admin from "firebase-admin";
 
@@ -218,3 +219,207 @@ async function sendNotificationToTopic(
     });
   }
 }
+
+/**
+ * Cloud Function to send notification when someone joins a hangout
+ */
+export const sendJoinNotification = onCall(async (request) => {
+  try {
+    const {hangoutId, hangoutTitle, ownerId, joinerName, joinerId} = request.data;
+
+    // Validate required parameters
+    if (!hangoutId || !hangoutTitle || !ownerId || !joinerName || !joinerId) {
+      logger.error("Missing required parameters for join notification", {
+        hangoutId,
+        hangoutTitle,
+        ownerId,
+        joinerName,
+        joinerId,
+      });
+      throw new Error("Missing required parameters");
+    }
+
+    // Don't notify if the owner joined their own hangout
+    if (ownerId === joinerId) {
+      logger.info("Skipping notification - owner joined their own hangout", {
+        hangoutId,
+        ownerId,
+      });
+      return {success: true, message: "Owner joined own hangout - no notification needed"};
+    }
+
+    logger.info("Processing join notification", {
+      hangoutId,
+      hangoutTitle,
+      ownerId,
+      joinerName,
+      joinerId,
+    });
+
+    // Get the hangout owner's FCM token
+    const ownerDoc = await admin.firestore().collection("users").doc(ownerId).get();
+    
+    if (!ownerDoc.exists) {
+      logger.error("Hangout owner not found", {ownerId});
+      throw new Error("Hangout owner not found");
+    }
+
+    const ownerData = ownerDoc.data();
+    const fcmToken = ownerData?.fcmToken;
+
+    if (!fcmToken) {
+      logger.warn("Owner does not have FCM token", {ownerId});
+      return {success: true, message: "Owner has no FCM token - notification not sent"};
+    }
+
+    // Create notification payload
+    const message = {
+      token: fcmToken,
+      notification: {
+        title: `${joinerName} joined your hangout!`,
+        body: `Someone joined "${hangoutTitle}". Tap to view.`,
+      },
+      data: {
+        type: "hangout_join",
+        hangoutId: hangoutId,
+        hangoutTitle: hangoutTitle,
+        joinerName: joinerName,
+        joinerId: joinerId,
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+      },
+      android: {
+        notification: {
+          icon: "ic_notification",
+          color: "#FF6B35",
+          sound: "default",
+          channelId: "hangout_notifications",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+            category: "hangout_notification",
+          },
+        },
+      },
+    };
+
+    // Send the notification
+    const response = await admin.messaging().send(message);
+
+    logger.info("Successfully sent join notification", {
+      hangoutId,
+      ownerId,
+      messageId: response,
+    });
+
+    return {success: true, messageId: response};
+  } catch (error) {
+    logger.error("Error sending join notification:", error);
+    throw error;
+  }
+});
+
+/**
+ * Cloud Function to send notification when someone leaves a hangout
+ */
+export const sendLeaveNotification = onCall(async (request) => {
+  try {
+    const {hangoutId, hangoutTitle, ownerId, leaverName, leaverId} = request.data;
+
+    // Validate required parameters
+    if (!hangoutId || !hangoutTitle || !ownerId || !leaverName || !leaverId) {
+      logger.error("Missing required parameters for leave notification", {
+        hangoutId,
+        hangoutTitle,
+        ownerId,
+        leaverName,
+        leaverId,
+      });
+      throw new Error("Missing required parameters");
+    }
+
+    // Don't notify if the owner left their own hangout
+    if (ownerId === leaverId) {
+      logger.info("Skipping notification - owner left their own hangout", {
+        hangoutId,
+        ownerId,
+      });
+      return {success: true, message: "Owner left own hangout - no notification needed"};
+    }
+
+    logger.info("Processing leave notification", {
+      hangoutId,
+      hangoutTitle,
+      ownerId,
+      leaverName,
+      leaverId,
+    });
+
+    // Get the hangout owner's FCM token
+    const ownerDoc = await admin.firestore().collection("users").doc(ownerId).get();
+    
+    if (!ownerDoc.exists) {
+      logger.error("Hangout owner not found", {ownerId});
+      throw new Error("Hangout owner not found");
+    }
+
+    const ownerData = ownerDoc.data();
+    const fcmToken = ownerData?.fcmToken;
+
+    if (!fcmToken) {
+      logger.warn("Owner does not have FCM token", {ownerId});
+      return {success: true, message: "Owner has no FCM token - notification not sent"};
+    }
+
+    // Create notification payload
+    const message = {
+      token: fcmToken,
+      notification: {
+        title: `${leaverName} left your hangout`,
+        body: `Someone left "${hangoutTitle}". Tap to view.`,
+      },
+      data: {
+        type: "hangout_leave",
+        hangoutId: hangoutId,
+        hangoutTitle: hangoutTitle,
+        leaverName: leaverName,
+        leaverId: leaverId,
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+      },
+      android: {
+        notification: {
+          icon: "ic_notification",
+          color: "#FF6B35",
+          sound: "default",
+          channelId: "hangout_notifications",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+            category: "hangout_notification",
+          },
+        },
+      },
+    };
+
+    // Send the notification
+    const response = await admin.messaging().send(message);
+
+    logger.info("Successfully sent leave notification", {
+      hangoutId,
+      ownerId,
+      messageId: response,
+    });
+
+    return {success: true, messageId: response};
+  } catch (error) {
+    logger.error("Error sending leave notification:", error);
+    throw error;
+  }
+});

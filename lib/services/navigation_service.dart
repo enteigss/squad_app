@@ -12,24 +12,34 @@ class NavigationService {
     
     final context = navigatorKey.currentContext;
     debugPrint('🔍 Navigator context available: ${context != null}');
+    debugPrint('🔍 NavigatorKey state: ${navigatorKey.currentState != null}');
     
     if (context != null) {
       debugPrint('🔍 Context mounted: ${context.mounted}');
+      debugPrint('🔍 Context widget: ${context.widget.runtimeType}');
       
       if (context.mounted) {
         debugPrint('✅ Context is valid, calling context.go("$path")');
         try {
           context.go(path);
           debugPrint('✅ context.go() call completed successfully');
+          
+          // Additional check after navigation
+          Future.delayed(Duration(milliseconds: 100), () {
+            debugPrint('🔍 Post-navigation check: Current route after 100ms delay');
+          });
         } catch (e) {
           debugPrint('💥 ERROR in context.go(): $e');
           debugPrint('🔍 Error type: ${e.runtimeType}');
+          debugPrint('🔍 Error details: ${e.toString()}');
         }
       } else {
         debugPrint('❌ Context is not mounted');
       }
     } else {
       debugPrint('❌ NavigationService: Unable to navigate - context not available');
+      debugPrint('🔍 NavigatorKey: $navigatorKey');
+      debugPrint('🔍 NavigatorKey hashCode: ${navigatorKey.hashCode}');
     }
   }
   

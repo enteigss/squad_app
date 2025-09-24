@@ -9,19 +9,60 @@ class StorageService {
   Future<String?> uploadProfileImage(String userId, XFile imageFile) async {
     try {
       final File file = File(imageFile.path);
-      final String fileName = 'profile_$userId.jpg';
+      
+      // Validate file size (limit to 5MB)
+      final int fileSizeInBytes = await file.length();
+      const int maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+      
+      if (fileSizeInBytes > maxSizeInBytes) {
+        throw Exception('Image size must be less than 5MB');
+      }
+      
+      // Create unique filename with timestamp to avoid conflicts
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final String fileName = 'profile_${userId}_$timestamp.jpg';
       
       final Reference ref = _storage
           .ref()
           .child('profile_images')
           .child(fileName);
 
-      final UploadTask uploadTask = ref.putFile(file);
+      // Set metadata for better file management
+      final SettableMetadata metadata = SettableMetadata(
+        contentType: 'image/jpeg',
+        customMetadata: {
+          'userId': userId,
+          'uploadedAt': DateTime.now().toIso8601String(),
+        },
+      );
+
+      final UploadTask uploadTask = ref.putFile(file, metadata);
       final TaskSnapshot snapshot = await uploadTask;
       
-      return await snapshot.ref.getDownloadURL();
+      if (snapshot.state == TaskState.success) {
+        return await snapshot.ref.getDownloadURL();
+      } else {
+        throw Exception('Upload failed with state: ${snapshot.state}');
+      }
+    } on FirebaseException catch (e) {
+      switch (e.code) {
+        case 'storage/unauthorized':
+          throw Exception('You don\'t have permission to upload images');
+        case 'storage/canceled':
+          throw Exception('Upload was canceled');
+        case 'storage/quota-exceeded':
+          throw Exception('Storage quota exceeded');
+        case 'storage/invalid-format':
+          throw Exception('Invalid image format');
+        case 'storage/unknown':
+        default:
+          throw Exception('Upload failed: ${e.message ?? 'Unknown error'}');
+      }
     } catch (e) {
-      throw e;
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Failed to upload image: ${e.toString()}');
     }
   }
 
@@ -123,8 +164,33 @@ class StorageService {
     try {
       final Reference ref = _storage.refFromURL(url);
       await ref.delete();
+    } on FirebaseException catch (e) {
+      switch (e.code) {
+        case 'storage/object-not-found':
+          // File doesn't exist, which is fine for deletion
+          return;
+        case 'storage/unauthorized':
+          throw Exception('You don\'t have permission to delete this file');
+        default:
+          throw Exception('Failed to delete file: ${e.message ?? 'Unknown error'}');
+      }
     } catch (e) {
-      throw e;
+      throw Exception('Failed to delete file: ${e.toString()}');
+    }
+  }
+
+  /// Delete old profile image when user uploads a new one
+  Future<void> deleteOldProfileImage(String? oldPhotoUrl) async {
+    if (oldPhotoUrl == null || oldPhotoUrl.isEmpty) return;
+    
+    try {
+      // Only delete if it's a Firebase Storage URL
+      if (oldPhotoUrl.contains('firebasestorage.googleapis.com')) {
+        await deleteFile(oldPhotoUrl);
+      }
+    } catch (e) {
+      // Log error but don't throw - failing to delete old image shouldn't break the upload
+      print('Warning: Failed to delete old profile image: $e');
     }
   }
 

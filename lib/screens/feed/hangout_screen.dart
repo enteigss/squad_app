@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/post_model.dart';
 import '../../models/user_model.dart';
 import '../../models/report_model.dart';
@@ -15,21 +16,21 @@ import '../../widgets/report_dialog.dart';
 import '../../widgets/censored_profile_card.dart';
 import '../../services/block_service.dart';
 
-class GroupMembersScreen extends StatefulWidget {
+class HangoutScreen extends StatefulWidget {
   final Post post;
   final bool isParticipant;
 
-  const GroupMembersScreen({
+  const HangoutScreen({
     super.key,
     required this.post,
     this.isParticipant = true, // Default to true for backward compatibility
   });
 
   @override
-  State<GroupMembersScreen> createState() => _GroupMembersScreenState();
+  State<HangoutScreen> createState() => _HangoutScreenState();
 }
 
-class _GroupMembersScreenState extends State<GroupMembersScreen> {
+class _HangoutScreenState extends State<HangoutScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final ReportService _reportService = ReportService();
   final BlockService _blockService = BlockService();
@@ -111,8 +112,17 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Use stack navigation to pop back to previous screen
-            Navigator.of(context).pop();
+            // Check if we came from a notification
+            final routeState = GoRouterState.of(context);
+            final fromNotification = routeState.uri.queryParameters['from'] == 'notification';
+            
+            if (fromNotification) {
+              // Navigate to feed hangouts tab if came from notification
+              context.go('/feed?tab=yourPosts');
+            } else {
+              // Use GoRouter to go back
+              context.pop();
+            }
           },
         ),
         title: Text(
@@ -817,12 +827,7 @@ class _GroupMembersScreenState extends State<GroupMembersScreen> {
   }
 
   void _openChat(Post currentPost) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PostChatScreen(post: currentPost),
-      ),
-    );
+    context.push('/post-chat/${currentPost.id}');
   }
 
   void _viewProfile(UserModel member) {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
+import '../../services/storage_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -23,6 +25,7 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final FirestoreService _firestoreService = FirestoreService();
+  final StorageService _storageService = StorageService();
 
   // Controllers
   late final TextEditingController _displayNameController;
@@ -38,6 +41,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _error;
   String? _selectedLocation;
   bool _showCustomLocationField = false;
+  bool _isUploadingPhoto = false;
+  String? _tempPhotoUrl;
 
   // Class year options
   final List<String> _classYearOptions = [
@@ -235,32 +240,66 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildProfilePictureSection() {
     return Column(
       children: [
-        // Profile Picture
-        CircleAvatar(
-          radius: 40,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          backgroundImage: widget.user.photoUrl != null 
-            ? NetworkImage(widget.user.photoUrl!) 
-            : null,
-          child: widget.user.photoUrl == null
-            ? Icon(
-                Icons.person,
-                size: 40,
-                color: AppColors.primary,
-              )
-            : null,
+        // Profile Picture with loading overlay
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              backgroundImage: (_tempPhotoUrl ?? widget.user.photoUrl) != null 
+                ? NetworkImage(_tempPhotoUrl ?? widget.user.photoUrl!) 
+                : null,
+              child: (_tempPhotoUrl ?? widget.user.photoUrl) == null
+                ? Icon(
+                    Icons.person,
+                    size: 40,
+                    color: AppColors.primary,
+                  )
+                : null,
+            ),
+            if (_isUploadingPhoto)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         
         const SizedBox(height: 12),
         
-        // Change Photo Button (placeholder for now)
-        TextButton.icon(
-          onPressed: _changeProfilePhoto,
-          icon: const Icon(Icons.camera_alt),
-          label: const Text('Change Photo'),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
-          ),
+        // Change/Remove Photo Buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton.icon(
+              onPressed: _isUploadingPhoto ? null : _changeProfilePhoto,
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('Change Photo'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+            if (_tempPhotoUrl != null || widget.user.photoUrl != null) ...[
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: _isUploadingPhoto ? null : _removeProfilePhoto,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remove'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -657,11 +696,188 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _changeProfilePhoto() {
-    // Placeholder for photo change functionality
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Choose Photo Source',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildPhotoSourceOption(
+                    icon: Icons.camera_alt,
+                    label: 'Camera',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImageFromCamera();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildPhotoSourceOption(
+                    icon: Icons.photo_library,
+                    label: 'Gallery',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImageFromGallery();
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoSourceOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final XFile? image = await _storageService.pickImageFromCamera();
+      if (image != null) {
+        await _uploadProfileImage(image);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Failed to capture image: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final XFile? image = await _storageService.pickImageFromGallery();
+      if (image != null) {
+        await _uploadProfileImage(image);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Failed to select image: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<void> _uploadProfileImage(XFile imageFile) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isUploadingPhoto = true;
+      _error = null;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUser = authProvider.currentUser;
+      
+      if (currentUser == null) {
+        throw Exception('User not found');
+      }
+
+      // Upload image to Firebase Storage
+      final downloadUrl = await _storageService.uploadProfileImage(
+        currentUser.id,
+        imageFile,
+      );
+
+      if (downloadUrl != null) {
+        setState(() {
+          _tempPhotoUrl = downloadUrl;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Photo uploaded successfully! Don\'t forget to save your changes.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to get download URL');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Failed to upload image: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+      }
+    }
+  }
+
+  void _removeProfilePhoto() {
+    setState(() {
+      _tempPhotoUrl = '';
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Photo upload functionality coming soon!'),
+        content: Text('Photo will be removed when you save changes.'),
         backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
       ),
     );
   }
@@ -700,6 +916,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         classYear: _selectedClassYear,
         interests: _selectedInterests.toList(),
         gender: _selectedGender,
+        photoUrl: _tempPhotoUrl,
       );
 
       if (mounted) {

@@ -18,7 +18,7 @@ export {hangoutPreview} from "./web-preview";
 export {appPreview} from "./app-preview";
 
 // Hangout Notification Functions
-export {hangoutNotifications} from "./hangout-notifications";
+export {hangoutNotifications, sendJoinNotification, sendLeaveNotification} from "./hangout-notifications";
 
 // Report Submission Functions
 export {submitReport} from "./report-submissions";

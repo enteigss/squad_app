@@ -2,10 +2,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/material.dart';
+import '../services/navigation_service.dart';
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   Future<void> requestPermission() async {
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -338,6 +342,208 @@ class NotificationService {
       }
     }
     return [];
+  }
+
+  // Initialize message handlers for foreground and background notifications
+  void initializeMessageHandlers() {
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    
+    // Handle notification taps when app was closed/background
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+    
+    // Handle initial message if app was opened from notification
+    _handleInitialMessage();
+  }
+
+  // Handle messages when app is in foreground
+  void _handleForegroundMessage(RemoteMessage message) {
+    if (kDebugMode) {
+      print('Received foreground message: ${message.messageId}');
+      print('Title: ${message.notification?.title}');
+      print('Body: ${message.notification?.body}');
+      print('Data: ${message.data}');
+    }
+
+    // Don't show notification if current user is the author (for new hangout notifications)
+    final notificationType = message.data['type'] as String?;
+    final authorId = message.data['author_id'] as String?;
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (notificationType == 'new_hangout' && 
+        authorId != null && 
+        currentUserId != null && 
+        authorId == currentUserId) {
+      if (kDebugMode) {
+        print('🚫 Blocking notification - user is the author of this hangout');
+      }
+      return; // Don't show notification to the author
+    }
+
+    // Show in-app notification or update UI
+    // You can customize this based on your UI framework
+    if (message.notification != null) {
+      _showInAppNotification(message);
+    }
+  }
+
+  // Handle notification tap navigation
+  void _handleNotificationTap(RemoteMessage message) {
+    if (kDebugMode) {
+      print('Notification tapped: ${message.messageId}');
+      print('Data: ${message.data}');
+    }
+
+    _navigateFromNotification(message.data);
+  }
+
+  // Handle initial message if app was opened from terminated state
+  Future<void> _handleInitialMessage() async {
+    final initialMessage = await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      if (kDebugMode) {
+        print('App opened from notification: ${initialMessage.messageId}');
+      }
+      _navigateFromNotification(initialMessage.data);
+    }
+  }
+
+  // Show in-app notification (customize based on your UI)
+  void _showInAppNotification(RemoteMessage message) {
+    // This is a basic implementation - you might want to use a more sophisticated approach
+    // like flutter_local_notifications or your own custom overlay
+    
+    final context = NavigationService.navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.notification?.title != null)
+                Text(
+                  message.notification!.title!,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              if (message.notification?.body != null)
+                Text(message.notification!.body!),
+            ],
+          ),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'View',
+            onPressed: () => _navigateFromNotification(message.data),
+          ),
+        ),
+      );
+    }
+  }
+
+  // Navigate based on notification data
+  void _navigateFromNotification(Map<String, dynamic> data) {
+    final notificationType = data['type'] as String?;
+    final hangoutId = data['hangoutId'] as String? ?? data['hangout_id'] as String?;
+
+    if (kDebugMode) {
+      print('🎯 Navigating from notification: type=$notificationType, hangoutId=$hangoutId');
+      print('🎯 All notification data keys: ${data.keys.toList()}');
+      print('🎯 All notification data: $data');
+      print('🎯 Navigation context available: ${NavigationService.isNavigationAvailable}');
+    }
+
+    // Ensure navigation context is available before attempting navigation
+    if (!NavigationService.isNavigationAvailable) {
+      if (kDebugMode) {
+        print('⚠️ Navigation context not available yet, delaying navigation...');
+      }
+      // Wait a short moment for context to become available
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _navigateFromNotification(data);
+      });
+      return;
+    }
+
+    if (notificationType == 'new_hangout' && hangoutId != null) {
+      // Navigate to hangout invitation screen for new hangout notifications
+      if (kDebugMode) {
+        print('🎯 Navigating to hangout invitation: $hangoutId');
+      }
+      NavigationService.goToPath('/hangout/$hangoutId?from=notification');
+    } else if ((notificationType == 'hangout_join' || notificationType == 'hangout_leave') && hangoutId != null) {
+      // Navigate to hangout screen (group members) for join/leave notifications
+      if (kDebugMode) {
+        print('🎯 Navigating to hangout screen: $hangoutId');
+      }
+      NavigationService.goToPath('/group-members/$hangoutId?from=notification');
+    }
+    // Add more notification types as needed
+  }
+
+  // Send notification when someone joins a hangout
+  Future<void> notifyHangoutOwnerOfJoin({
+    required String hangoutId,
+    required String hangoutTitle,
+    required String ownerId,
+    required String joinerName,
+    required String joinerId,
+  }) async {
+    try {
+      if (kDebugMode) {
+        print('Sending join notification for hangout: $hangoutId');
+      }
+
+      final callable = _functions.httpsCallable('sendJoinNotification');
+      await callable.call({
+        'hangoutId': hangoutId,
+        'hangoutTitle': hangoutTitle,
+        'ownerId': ownerId,
+        'joinerName': joinerName,
+        'joinerId': joinerId,
+      });
+
+      if (kDebugMode) {
+        print('Join notification sent successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sending join notification: $e');
+      }
+      // Don't throw error - notification failure shouldn't block join operation
+    }
+  }
+
+  // Send notification when someone leaves a hangout
+  Future<void> notifyHangoutOwnerOfLeave({
+    required String hangoutId,
+    required String hangoutTitle,
+    required String ownerId,
+    required String leaverName,
+    required String leaverId,
+  }) async {
+    try {
+      if (kDebugMode) {
+        print('Sending leave notification for hangout: $hangoutId');
+      }
+
+      final callable = _functions.httpsCallable('sendLeaveNotification');
+      await callable.call({
+        'hangoutId': hangoutId,
+        'hangoutTitle': hangoutTitle,
+        'ownerId': ownerId,
+        'leaverName': leaverName,
+        'leaverId': leaverId,
+      });
+
+      if (kDebugMode) {
+        print('Leave notification sent successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sending leave notification: $e');
+      }
+      // Don't throw error - notification failure shouldn't block leave operation
+    }
   }
 
   // You can add other methods here for handling incoming messages, etc.

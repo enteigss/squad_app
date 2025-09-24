@@ -4,10 +4,12 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/account_deletion_service.dart';
+import '../services/storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final AccountDeletionService _deletionService = AccountDeletionService();
+  final StorageService _storageService = StorageService();
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -324,9 +326,37 @@ class AuthProvider with ChangeNotifier {
       final previousGender = _currentUser?.gender;
       final isGenderChanging = gender != null && gender != previousGender;
 
+      // Handle photo URL changes
+      String? finalPhotoUrl = photoUrl;
+      if (photoUrl != null) {
+        // If photoUrl is empty string, user wants to remove photo
+        if (photoUrl.isEmpty) {
+          // Delete old photo if it exists
+          if (_currentUser?.photoUrl != null && _currentUser!.photoUrl!.isNotEmpty) {
+            try {
+              await _storageService.deleteOldProfileImage(_currentUser!.photoUrl);
+            } catch (e) {
+              debugPrint('Warning: Failed to delete old profile image: $e');
+            }
+          }
+          finalPhotoUrl = null;
+        } else {
+          // New photo URL provided - delete old one if different
+          if (_currentUser?.photoUrl != null && 
+              _currentUser!.photoUrl!.isNotEmpty && 
+              _currentUser!.photoUrl != photoUrl) {
+            try {
+              await _storageService.deleteOldProfileImage(_currentUser!.photoUrl);
+            } catch (e) {
+              debugPrint('Warning: Failed to delete old profile image: $e');
+            }
+          }
+        }
+      }
+
       await _authService.updateUserProfile(
         displayName: displayName,
-        photoUrl: photoUrl,
+        photoUrl: finalPhotoUrl,
         bio: bio,
         classYear: classYear,
         location: location,
@@ -338,7 +368,7 @@ class AuthProvider with ChangeNotifier {
       if (_currentUser != null) {
         _currentUser = _currentUser!.copyWith(
           displayName: displayName,
-          photoUrl: photoUrl,
+          photoUrl: finalPhotoUrl,
           bio: bio,
           classYear: classYear,
           location: location,

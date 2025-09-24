@@ -17,9 +17,9 @@ import 'screens/auth/email_verification_screen.dart';
 import 'screens/profile/delete_account_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/feed/create_post_screen.dart';
-import 'screens/feed/hangout_detail_screen.dart';
+import 'screens/feed/hangout_invitation_screen.dart';
 import 'screens/feed/post_chat_screen.dart';
-import 'screens/feed/group_members_screen.dart';
+import 'screens/feed/hangout_screen.dart';
 import 'screens/main/main_scaffold.dart';
 import 'screens/consent/consent_dialog_screen.dart';
 import 'services/deep_link_service.dart';
@@ -61,6 +61,7 @@ void main() async {
     debugPrint('🔔 Initializing Notification Service...');
     final notificationService = NotificationService();
     notificationService.initializeTokenRefresh();
+    notificationService.initializeMessageHandlers();
     debugPrint('✅ Notification Service initialized successfully');
   } catch (e) {
     debugPrint('❌ Firebase initialization error: $e');
@@ -491,7 +492,7 @@ class _SquadAppState extends State<SquadApp> {
           path: '/hangout/:hangoutId',
           builder: (context, state) {
             final hangoutId = state.pathParameters['hangoutId']!;
-            return HangoutDetailScreen(hangoutId: hangoutId);
+            return HangoutInvitationScreen(hangoutId: hangoutId);
           },
         ),
         GoRoute(
@@ -539,7 +540,7 @@ class _SquadAppState extends State<SquadApp> {
                     body: Center(child: Text('Post not found')),
                   );
                 }
-                return GroupMembersScreen(post: post);
+                return HangoutScreen(post: post);
               },
             );
           },

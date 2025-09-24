@@ -8,10 +8,10 @@ import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 
-class HangoutDetailScreen extends StatelessWidget {
+class HangoutInvitationScreen extends StatelessWidget {
   final String hangoutId;
 
-  const HangoutDetailScreen({
+  const HangoutInvitationScreen({
     super.key,
     required this.hangoutId,
   });

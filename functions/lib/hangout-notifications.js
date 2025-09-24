@@ -23,8 +23,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.hangoutNotifications = void 0;
+exports.sendLeaveNotification = exports.sendJoinNotification = exports.hangoutNotifications = void 0;
 const firestore_1 = require("firebase-functions/v2/firestore");
+const https_1 = require("firebase-functions/v2/https");
 const firebase_functions_1 = require("firebase-functions");
 const admin = __importStar(require("firebase-admin"));
 /**
@@ -203,4 +204,186 @@ async function sendNotificationToTopic(topic, commonPayload, postData, postId) {
         });
     }
 }
+/**
+ * Cloud Function to send notification when someone joins a hangout
+ */
+exports.sendJoinNotification = (0, https_1.onCall)(async (request) => {
+    try {
+        const { hangoutId, hangoutTitle, ownerId, joinerName, joinerId } = request.data;
+        // Validate required parameters
+        if (!hangoutId || !hangoutTitle || !ownerId || !joinerName || !joinerId) {
+            firebase_functions_1.logger.error("Missing required parameters for join notification", {
+                hangoutId,
+                hangoutTitle,
+                ownerId,
+                joinerName,
+                joinerId,
+            });
+            throw new Error("Missing required parameters");
+        }
+        // Don't notify if the owner joined their own hangout
+        if (ownerId === joinerId) {
+            firebase_functions_1.logger.info("Skipping notification - owner joined their own hangout", {
+                hangoutId,
+                ownerId,
+            });
+            return { success: true, message: "Owner joined own hangout - no notification needed" };
+        }
+        firebase_functions_1.logger.info("Processing join notification", {
+            hangoutId,
+            hangoutTitle,
+            ownerId,
+            joinerName,
+            joinerId,
+        });
+        // Get the hangout owner's FCM token
+        const ownerDoc = await admin.firestore().collection("users").doc(ownerId).get();
+        if (!ownerDoc.exists) {
+            firebase_functions_1.logger.error("Hangout owner not found", { ownerId });
+            throw new Error("Hangout owner not found");
+        }
+        const ownerData = ownerDoc.data();
+        const fcmToken = ownerData === null || ownerData === void 0 ? void 0 : ownerData.fcmToken;
+        if (!fcmToken) {
+            firebase_functions_1.logger.warn("Owner does not have FCM token", { ownerId });
+            return { success: true, message: "Owner has no FCM token - notification not sent" };
+        }
+        // Create notification payload
+        const message = {
+            token: fcmToken,
+            notification: {
+                title: `${joinerName} joined your hangout!`,
+                body: `Someone joined "${hangoutTitle}". Tap to view.`,
+            },
+            data: {
+                type: "hangout_join",
+                hangoutId: hangoutId,
+                hangoutTitle: hangoutTitle,
+                joinerName: joinerName,
+                joinerId: joinerId,
+                click_action: "FLUTTER_NOTIFICATION_CLICK",
+            },
+            android: {
+                notification: {
+                    icon: "ic_notification",
+                    color: "#FF6B35",
+                    sound: "default",
+                    channelId: "hangout_notifications",
+                },
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: "default",
+                        badge: 1,
+                        category: "hangout_notification",
+                    },
+                },
+            },
+        };
+        // Send the notification
+        const response = await admin.messaging().send(message);
+        firebase_functions_1.logger.info("Successfully sent join notification", {
+            hangoutId,
+            ownerId,
+            messageId: response,
+        });
+        return { success: true, messageId: response };
+    }
+    catch (error) {
+        firebase_functions_1.logger.error("Error sending join notification:", error);
+        throw error;
+    }
+});
+/**
+ * Cloud Function to send notification when someone leaves a hangout
+ */
+exports.sendLeaveNotification = (0, https_1.onCall)(async (request) => {
+    try {
+        const { hangoutId, hangoutTitle, ownerId, leaverName, leaverId } = request.data;
+        // Validate required parameters
+        if (!hangoutId || !hangoutTitle || !ownerId || !leaverName || !leaverId) {
+            firebase_functions_1.logger.error("Missing required parameters for leave notification", {
+                hangoutId,
+                hangoutTitle,
+                ownerId,
+                leaverName,
+                leaverId,
+            });
+            throw new Error("Missing required parameters");
+        }
+        // Don't notify if the owner left their own hangout
+        if (ownerId === leaverId) {
+            firebase_functions_1.logger.info("Skipping notification - owner left their own hangout", {
+                hangoutId,
+                ownerId,
+            });
+            return { success: true, message: "Owner left own hangout - no notification needed" };
+        }
+        firebase_functions_1.logger.info("Processing leave notification", {
+            hangoutId,
+            hangoutTitle,
+            ownerId,
+            leaverName,
+            leaverId,
+        });
+        // Get the hangout owner's FCM token
+        const ownerDoc = await admin.firestore().collection("users").doc(ownerId).get();
+        if (!ownerDoc.exists) {
+            firebase_functions_1.logger.error("Hangout owner not found", { ownerId });
+            throw new Error("Hangout owner not found");
+        }
+        const ownerData = ownerDoc.data();
+        const fcmToken = ownerData === null || ownerData === void 0 ? void 0 : ownerData.fcmToken;
+        if (!fcmToken) {
+            firebase_functions_1.logger.warn("Owner does not have FCM token", { ownerId });
+            return { success: true, message: "Owner has no FCM token - notification not sent" };
+        }
+        // Create notification payload
+        const message = {
+            token: fcmToken,
+            notification: {
+                title: `${leaverName} left your hangout`,
+                body: `Someone left "${hangoutTitle}". Tap to view.`,
+            },
+            data: {
+                type: "hangout_leave",
+                hangoutId: hangoutId,
+                hangoutTitle: hangoutTitle,
+                leaverName: leaverName,
+                leaverId: leaverId,
+                click_action: "FLUTTER_NOTIFICATION_CLICK",
+            },
+            android: {
+                notification: {
+                    icon: "ic_notification",
+                    color: "#FF6B35",
+                    sound: "default",
+                    channelId: "hangout_notifications",
+                },
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: "default",
+                        badge: 1,
+                        category: "hangout_notification",
+                    },
+                },
+            },
+        };
+        // Send the notification
+        const response = await admin.messaging().send(message);
+        firebase_functions_1.logger.info("Successfully sent leave notification", {
+            hangoutId,
+            ownerId,
+            messageId: response,
+        });
+        return { success: true, messageId: response };
+    }
+    catch (error) {
+        firebase_functions_1.logger.error("Error sending leave notification:", error);
+        throw error;
+    }
+});
 //# sourceMappingURL=hangout-notifications.js.map
