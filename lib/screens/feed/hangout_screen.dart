@@ -9,6 +9,7 @@ import '../../providers/post_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/report_service.dart';
 import '../../utils/colors.dart';
+import '../../widgets/profile_avatar.dart';
 import 'post_chat_screen.dart';
 import '../profile/profile_detail_screen.dart';
 import '../../widgets/invite_options_modal.dart';
@@ -550,16 +551,13 @@ class _HangoutScreenState extends State<HangoutScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Profile picture placeholder
-              CircleAvatar(
+              // Profile picture
+              ProfileAvatar(
+                imageUrl: member.photoUrl,
+                name: member.displayName ?? 'Unknown User',
                 radius: 24,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                backgroundImage: member.photoUrl != null
-                    ? NetworkImage(member.photoUrl!)
-                    : null,
-                child: member.photoUrl == null
-                    ? Icon(Icons.person, color: AppColors.primary, size: 24)
-                    : null,
+                textColor: AppColors.primary,
               ),
               const SizedBox(width: 16),
 

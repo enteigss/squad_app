@@ -11,6 +11,7 @@ import '../../services/notification_service.dart';
 import '../../services/analytics_service.dart';
 import '../../services/feedback_service.dart';
 import '../../models/user_model.dart';
+import '../../widgets/profile_avatar.dart';
 import 'edit_profile_screen.dart';
 import 'analytics_screen.dart';
 
@@ -159,19 +160,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Profile Picture
-                CircleAvatar(
+                ProfileAvatar(
+                  imageUrl: user.photoUrl,
+                  name: user.displayName ?? user.username,
                   radius: 40,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  backgroundImage: user.photoUrl != null 
-                    ? NetworkImage(user.photoUrl!) 
-                    : null,
-                  child: user.photoUrl == null
-                    ? Icon(
-                        Icons.person,
-                        size: 40,
-                        color: AppColors.primary,
-                      )
-                    : null,
+                  textColor: AppColors.primary,
                 ),
                 
                 const SizedBox(height: 16),
@@ -838,14 +832,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   itemBuilder: (context, index) {
                     final user = blockedUsers[index];
                     return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        backgroundImage: user.photoUrl != null
-                          ? NetworkImage(user.photoUrl!)
-                          : null,
-                        child: user.photoUrl == null
-                          ? Icon(Icons.person, color: AppColors.primary)
-                          : null,
+                      leading: ProfileAvatar(
+                        imageUrl: user.photoUrl,
+                        name: user.displayName ?? user.username,
+                        radius: 20,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        textColor: AppColors.primary,
                       ),
                       title: Text(
                         user.displayName ?? user.username,

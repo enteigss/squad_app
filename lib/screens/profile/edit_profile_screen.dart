@@ -8,6 +8,7 @@ import '../../services/storage_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/profile_avatar.dart';
 import '../../constants/bu_dorms.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -243,19 +244,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         // Profile Picture with loading overlay
         Stack(
           children: [
-            CircleAvatar(
+            ProfileAvatar(
+              imageUrl: _tempPhotoUrl ?? widget.user.photoUrl,
+              name: widget.user.displayName ?? widget.user.username,
               radius: 40,
               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              backgroundImage: (_tempPhotoUrl ?? widget.user.photoUrl) != null 
-                ? NetworkImage(_tempPhotoUrl ?? widget.user.photoUrl!) 
-                : null,
-              child: (_tempPhotoUrl ?? widget.user.photoUrl) == null
-                ? Icon(
-                    Icons.person,
-                    size: 40,
-                    color: AppColors.primary,
-                  )
-                : null,
+              textColor: AppColors.primary,
             ),
             if (_isUploadingPhoto)
               Positioned.fill(

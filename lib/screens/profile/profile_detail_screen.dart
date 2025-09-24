@@ -8,6 +8,7 @@ import '../../services/block_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/report_dialog.dart';
 import '../../widgets/block_confirmation_dialog.dart';
+import '../../widgets/profile_avatar.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/chat_provider.dart';
 
@@ -163,22 +164,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           // Profile Picture
           Stack(
             children: [
-              CircleAvatar(
+              ProfileAvatar(
+                imageUrl: user.photoUrl,
+                name: user.displayName ?? user.username,
                 radius: 50,
                 backgroundColor: Colors.white,
-                child: user.photoUrl != null
-                    ? ClipOval(
-                        child: Image.network(
-                          user.photoUrl!,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildDefaultAvatar(user);
-                          },
-                        ),
-                      )
-                    : _buildDefaultAvatar(user),
               ),
 
               // Online Status Indicator

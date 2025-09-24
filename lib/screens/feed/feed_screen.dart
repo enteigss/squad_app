@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/post_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/tab_navigation_provider.dart';
@@ -10,6 +11,7 @@ import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
 import '../../widgets/app_invite_modal.dart';
+import '../../widgets/profile_avatar.dart';
 import 'hangout_screen.dart';
 
 enum FeedTab { upcoming, ongoing, yourPosts }
@@ -362,64 +364,29 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Widget _buildProfilePicture(String authorId) {
-    return FutureBuilder<String?>(
-      future: _getUserPhotoUrl(authorId),
+    return FutureBuilder<UserModel?>(
+      future: _getUserData(authorId),
       builder: (context, snapshot) {
-        final photoUrl = snapshot.data;
+        final user = snapshot.data;
 
-        return Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: AppColors.textSecondary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.textSecondary.withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: photoUrl != null && photoUrl.isNotEmpty
-                ? Image.network(
-                    photoUrl,
-                    width: 28,
-                    height: 28,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.person,
-                        color: AppColors.textSecondary.withValues(alpha: 0.7),
-                        size: 16,
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Icon(
-                        Icons.person,
-                        color: AppColors.textSecondary.withValues(alpha: 0.7),
-                        size: 16,
-                      );
-                    },
-                  )
-                : Icon(
-                    Icons.person,
-                    color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    size: 16,
-                  ),
-          ),
+        return ProfileAvatar(
+          imageUrl: user?.photoUrl,
+          name: user?.displayName ?? user?.username,
+          radius: 14,
+          backgroundColor: AppColors.textSecondary.withValues(alpha: 0.1),
+          textColor: AppColors.textSecondary.withValues(alpha: 0.7),
         );
       },
     );
   }
 
-  Future<String?> _getUserPhotoUrl(String userId) async {
+  Future<UserModel?> _getUserData(String userId) async {
     try {
       final firestoreService = FirestoreService();
       final user = await firestoreService.getUser(userId);
-      return user?.photoUrl;
+      return user;
     } catch (e) {
-      debugPrint('Error fetching user photo: $e');
+      debugPrint('Error fetching user data: $e');
       return null;
     }
   }
