@@ -1,9 +1,9 @@
 class BULocations {
   // On-Campus Locations
   static const List<String> onCampusLocations = [
-    'BU Beach (large grassy area on campus)',
+    'BU Beach',
     'Marsh Plaza',
-    'George Sherman Union (GSU)',
+    'GSU',
     'Mugar Memorial Library',
     'Fenway Campus',
     'Student Village',
@@ -13,10 +13,22 @@ class BULocations {
     'Sleeper Hall',
     'Rich Hall',
     'Bay State Road brownstones',
-    'BU Central (dining area)',
-    'Fitness & Recreation Center (FitRec)',
+    'BU Central',
+    'FitRec',
     'Agganis Arena',
     'Nickerson Field',
+  ];
+
+  // BU Dining Halls
+  static const List<String> diningHalls = [
+    'Marciano Commons',
+    'Warren Towers Dining Hall',
+    'West Campus Dining Hall',
+    'Granby Commons',
+    'Bay State Underground',
+    'Late Night Kitchen at Warren',
+    'Hillel Dining',
+    'Buick Street Market',
   ];
 
   // Nearby Off-Campus Popular Spots
@@ -28,7 +40,7 @@ class BULocations {
     'Back Bay',
     'Allston',
     'Brighton',
-    'Harvard Avenue (Allston)',
+    'Harvard Avenue',
     'Commonwealth Avenue',
     'Storrow Drive Esplanade',
     'Charles River',
@@ -44,6 +56,7 @@ class BULocations {
     return [
       otherOption,
       ...onCampusLocations,
+      ...diningHalls,
       ...offCampusLocations,
     ];
   }
@@ -52,6 +65,7 @@ class BULocations {
   static Map<String, List<String>> get locationsByCategory {
     return {
       'On-Campus Locations': onCampusLocations,
+      'BU Dining Halls': diningHalls,
       'Nearby Off-Campus Spots': offCampusLocations,
     };
   }

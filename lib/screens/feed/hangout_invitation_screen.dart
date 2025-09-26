@@ -368,9 +368,17 @@ class HangoutInvitationScreen extends StatelessWidget {
       
       // Track hangout join attempt
       if (success) {
-        debugPrint('📊 Tracking analytics for join attempt');
-        await AnalyticsService().trackHangoutJoined();
-        debugPrint('✅ Analytics tracking completed');
+        debugPrint('📊 HANGOUT INVITATION SCREEN - Tracking hangout join analytics');
+        debugPrint('📋 User ID: $userId');
+        debugPrint('📋 Hangout ID: ${hangout.id}');
+        debugPrint('📋 Hangout Title: ${hangout.title}');
+        
+        await AnalyticsService().trackHangoutJoined(
+          userId: userId,
+          hangoutId: hangout.id,
+        );
+        
+        debugPrint('✅ HANGOUT INVITATION SCREEN - Analytics tracking completed');
       }
       
       // Dismiss loading

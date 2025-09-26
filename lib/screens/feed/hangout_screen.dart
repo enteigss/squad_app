@@ -16,6 +16,7 @@ import '../../widgets/invite_options_modal.dart';
 import '../../widgets/report_dialog.dart';
 import '../../widgets/censored_profile_card.dart';
 import '../../services/block_service.dart';
+import '../../services/analytics_service.dart';
 
 class HangoutScreen extends StatefulWidget {
   final Post post;
@@ -1143,6 +1144,21 @@ class _HangoutScreenState extends State<HangoutScreen> {
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
       );
+
+      // Track hangout join if successful
+      if (success) {
+        debugPrint('📊 HANGOUT SCREEN - Tracking hangout join analytics');
+        debugPrint('📋 User ID: $userId');
+        debugPrint('📋 Hangout ID: ${widget.post.id}');
+        debugPrint('📋 Hangout Title: ${widget.post.title}');
+        
+        await AnalyticsService().trackHangoutJoined(
+          userId: userId,
+          hangoutId: widget.post.id,
+        );
+        
+        debugPrint('✅ HANGOUT SCREEN - Analytics tracking completed');
+      }
 
       // If successfully joined, manually add user to members list
       if (success) {

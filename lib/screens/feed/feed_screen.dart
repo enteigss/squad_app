@@ -865,7 +865,10 @@ class _FeedScreenState extends State<FeedScreen> {
 
     // Track hangout join attempt from feed screen
     if (success) {
-      await AnalyticsService().trackHangoutJoined();
+      await AnalyticsService().trackHangoutJoined(
+        userId: userId,
+        hangoutId: post.id,
+      );
     }
 
     if (mounted) {
@@ -950,7 +953,10 @@ class _FeedScreenState extends State<FeedScreen> {
       },
       onConfirmDelete: (didMeetup) async {
         // Track meetup feedback
-        await AnalyticsService().trackMeetupSuccess(didMeetup);
+        await AnalyticsService().trackMeetupSuccess(
+          didMeetup: didMeetup,
+          hangoutId: post.id,
+        );
 
         // User confirmed deletion with feedback - proceed with deletion
         final success = await postProvider.deletePostWithFeedback(

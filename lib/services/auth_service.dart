@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'analytics_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -526,6 +527,10 @@ class AuthService {
   }) async {
     try {
       if (currentUser != null) {
+        // Check if user already has a profile to track sign up only once
+        final userData = await getUserData(currentUser!.uid);
+        final isFirstTimeProfile = userData?.hasCreatedProfile != true;
+
         final Map<String, dynamic> updates = {};
 
         if (displayName != null) updates['displayName'] = displayName;
@@ -543,6 +548,11 @@ class AuthService {
             .collection('users')
             .doc(currentUser!.uid)
             .update(updates);
+
+        // Track user sign up completion only on first profile creation
+        if (isFirstTimeProfile) {
+          await AnalyticsService().trackUserSignUp(userId: currentUser!.uid);
+        }
       }
     } catch (e) {
       throw e;

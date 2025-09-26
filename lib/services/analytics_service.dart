@@ -61,40 +61,92 @@ class AnalyticsService {
   }
 
   // Track hangout creation (metric 1: number of hangouts created)
-  Future<void> trackHangoutCreated() async {
+  Future<void> trackHangoutCreated({
+    required String userId,
+    required String hangoutId,
+  }) async {
     if (!_isInitialized || _analytics == null) return;
 
-    await _analytics!.logEvent(name: 'hangout_created');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    await _analytics!.logEvent(
+      name: 'hangout_created',
+      parameters: {
+        'user_id': userId,
+        'hangout_id': hangoutId,
+        'timestamp': timestamp,
+      },
+    );
 
     if (kDebugMode) {
-      print('Analytics: Hangout created');
+      print('Analytics: Hangout created - userId: $userId, hangoutId: $hangoutId, timestamp: $timestamp');
     }
   }
 
   // Track hangout join (metric 4: number of hangout joins)
-  Future<void> trackHangoutJoined() async {
+  Future<void> trackHangoutJoined({
+    required String userId,
+    required String hangoutId,
+  }) async {
     if (!_isInitialized || _analytics == null) return;
 
-    await _analytics!.logEvent(name: 'hangout_joined');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    await _analytics!.logEvent(
+      name: 'hangout_joined',
+      parameters: {
+        'user_id': userId,
+        'hangout_id': hangoutId,
+        'timestamp': timestamp,
+      },
+    );
 
     if (kDebugMode) {
-      print('Analytics: Hangout joined');
+      print('Analytics: Hangout joined - userId: $userId, hangoutId: $hangoutId, timestamp: $timestamp');
     }
   }
 
   // Track meetup success (metric 2: how many meetups happened)
-  Future<void> trackMeetupSuccess(bool didMeetup) async {
+  Future<void> trackMeetupSuccess({
+    required bool didMeetup,
+    required String hangoutId,
+  }) async {
     if (!_isInitialized || _analytics == null) return;
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     await _analytics!.logEvent(
       name: 'meetup_feedback',
       parameters: {
         'success': didMeetup ? 1 : 0,
+        'hangout_id': hangoutId,
+        'timestamp': timestamp,
       },
     );
 
     if (kDebugMode) {
-      print('Analytics: Meetup feedback - success: $didMeetup');
+      print('Analytics: Meetup feedback - success: $didMeetup, hangoutId: $hangoutId, timestamp: $timestamp');
+    }
+  }
+
+  // Track user sign up
+  Future<void> trackUserSignUp({
+    required String userId,
+  }) async {
+    if (!_isInitialized || _analytics == null) return;
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    await _analytics!.logEvent(
+      name: 'user_sign_up',
+      parameters: {
+        'user_id': userId,
+        'timestamp': timestamp,
+      },
+    );
+
+    if (kDebugMode) {
+      print('Analytics: User sign up - userId: $userId, timestamp: $timestamp');
     }
   }
 

@@ -173,7 +173,10 @@ class _MainScaffoldState extends State<MainScaffold> {
       onConfirmDelete: (didMeetup) async {
         try {
           // Track meetup feedback
-          await AnalyticsService().trackMeetupSuccess(didMeetup);
+          await AnalyticsService().trackMeetupSuccess(
+            didMeetup: didMeetup,
+            hangoutId: prompt.hangoutId,
+          );
 
           // Submit feedback to Firestore (this also deletes the prompt)
           await _feedbackService.submitFeedback(
