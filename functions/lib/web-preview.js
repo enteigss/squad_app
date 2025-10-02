@@ -88,7 +88,7 @@ function generateHangoutPageFromTemplate(hangout, hangoutId, inviterName) {
             .replace(/\{\{inviterName\}\}/g, inviterName)
             .replace(/\{\{inviterId\}\}/g, hangout.authorId || '')
             .replace(/\{\{currentUrl\}\}/g, `https://squad-7bc7e.web.app/hangout/${hangoutId}`)
-            .replace(/\{\{testflightUrl\}\}/g, 'https://testflight.apple.com/join/11Dg3Zh8')
+            .replace(/\{\{testflightUrl\}\}/g, 'https://apps.apple.com/us/app/linkup-bu/id6751476681?platform=iphone')
             .replace(/\{\{androidBetaUrl\}\}/g, 'https://play.google.com/store/apps/details?id=com.jordan.linkupbu');
         return html;
     }
@@ -290,7 +290,7 @@ function generateHangoutPage(hangout, hangoutId) {
         if (isIOS) {
             document.getElementById('iosBtn').classList.remove('hidden');
             // Replace with your actual TestFlight link
-            document.getElementById('iosBtn').href = 'https://testflight.apple.com/join/11Dg3Zh8';
+            document.getElementById('iosBtn').href = 'https://apps.apple.com/us/app/linkup-bu/id6751476681?platform=iphone';
         } else if (isAndroid) {
             document.getElementById('androidBtn').classList.remove('hidden');
             // Replace with your actual APK download link or Firebase App Distribution

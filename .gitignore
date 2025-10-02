@@ -46,5 +46,3 @@ app.*.map.json
 
 # Keystore credentials (keep passwords secure)
 android/key.properties
-
-pubspec.lock

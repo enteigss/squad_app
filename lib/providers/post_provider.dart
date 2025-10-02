@@ -450,7 +450,7 @@ class PostProvider with ChangeNotifier {
       final canSee =
           post.genderPreferences.contains('Men') &&
           post.genderPreferences.contains('Women') &&
-          post.genderPreferences.contains('Other');
+          post.genderPreferences.contains('Non-binary');
       debugPrint(
         '🔍 GENDER DEBUG: User has no gender specified, can see post: $canSee',
       );
@@ -467,7 +467,7 @@ class PostProvider with ChangeNotifier {
         expectedPreference = 'Men';
         break;
       case 'non_binary':
-        expectedPreference = 'Other';
+        expectedPreference = 'Non-binary';
         break;
       default:
         // For any other gender identities, map to 'Other'

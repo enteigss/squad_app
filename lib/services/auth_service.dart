@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'analytics_service.dart';
+import '../config/environment.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -131,9 +132,14 @@ class AuthService {
 
       final GoogleSignIn googleSignIn = GoogleSignIn.instance;
       debugPrint('🔧 Initializing GoogleSignIn with server client ID');
+
+      // Use environment-specific web client ID
+      final serverClientId = EnvironmentConfig.isDev
+          ? "645112342207-2eu3dchcpi7lea29ca0kanq6gp37o72b.apps.googleusercontent.com"
+          : "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com";
+
       googleSignIn.initialize(
-        serverClientId:
-            "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
+        serverClientId: serverClientId,
       );
 
       // Check if authenticate() is supported
@@ -711,9 +717,14 @@ class AuthService {
       debugPrint('🔐 Starting Google re-authentication...');
 
       final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+
+      // Use environment-specific web client ID
+      final serverClientId = EnvironmentConfig.isDev
+          ? "645112342207-2eu3dchcpi7lea29ca0kanq6gp37o72b.apps.googleusercontent.com"
+          : "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com";
+
       googleSignIn.initialize(
-        serverClientId:
-            "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com",
+        serverClientId: serverClientId,
       );
 
       // Disconnect first to force account selection

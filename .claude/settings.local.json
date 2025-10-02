@@ -4,7 +4,8 @@
       "Bash(mkdir:*)",
       "mcp__atlassian__transitionJiraIssue",
       "mcp__atlassian__getVisibleJiraProjects",
-      "mcp__atlassian__searchJiraIssuesUsingJql"
+      "mcp__atlassian__searchJiraIssuesUsingJql",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

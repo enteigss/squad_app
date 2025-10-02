@@ -27,9 +27,16 @@ import 'services/analytics_service.dart';
 import 'services/navigation_service.dart';
 import 'services/notification_service.dart';
 import 'utils/colors.dart';
+import 'config/environment.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Read environment from dart-defines
+  const envString = String.fromEnvironment('ENV', defaultValue: 'prod');
+  final environment = envString == 'dev' ? Environment.dev : Environment.prod;
+  EnvironmentConfig.setEnvironment(environment);
+  debugPrint('🌍 Running in ${EnvironmentConfig.environmentName} environment');
 
   try {
     debugPrint('🔥 Initializing Firebase...');

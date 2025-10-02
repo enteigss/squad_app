@@ -281,7 +281,7 @@ function generateAppInvitePage(inviterName: string, inviterPhoto: string | null,
         </div>
 
         <!-- Download buttons -->
-        <a href="https://testflight.apple.com/join/11Dg3Zh8" class="button primary" id="iosBtn">
+        <a href="https://apps.apple.com/us/app/linkup-bu/id6751476681?platform=iphone" class="button primary" id="iosBtn">
             📲 Download for iPhone
         </a>
         

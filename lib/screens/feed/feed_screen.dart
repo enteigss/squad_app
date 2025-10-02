@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/tab_navigation_provider.dart';
 import '../../services/analytics_service.dart';
+import '../../services/debug_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
@@ -25,6 +27,10 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   FeedTab selectedTab = FeedTab.upcoming;
+  final DebugService _debugService = DebugService();
+  bool _isCreatingDebugPosts = false;
+  bool _isDeletingDebugPosts = false;
+  bool _showDebugToolbar = true;
 
   @override
   void initState() {
@@ -99,6 +105,17 @@ class _FeedScreenState extends State<FeedScreen> {
             onPressed: _showHangoutsInfo,
             tooltip: 'How does hangouts work?',
           ),
+          if (kDebugMode)
+            IconButton(
+              icon: Icon(_showDebugToolbar ? Icons.visibility_off : Icons.visibility),
+              onPressed: () {
+                setState(() {
+                  _showDebugToolbar = !_showDebugToolbar;
+                });
+              },
+              tooltip: _showDebugToolbar ? 'Hide debug toolbar' : 'Show debug toolbar',
+              color: Colors.white,
+            ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _navigateToCreateTab,
@@ -110,6 +127,7 @@ class _FeedScreenState extends State<FeedScreen> {
         children: [
           _buildTabMenu(),
           Expanded(child: _buildPostList()),
+          // if (kDebugMode && _showDebugToolbar) _buildDebugToolbar(),
         ],
       ),
     );
@@ -1098,5 +1116,163 @@ class _FeedScreenState extends State<FeedScreen> {
 
   void _viewGroup(Post post, {required bool isParticipant}) {
     context.push('/group-members/${post.id}');
+  }
+
+  Widget _buildDebugToolbar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        border: Border(
+          top: BorderSide(
+            color: AppColors.error.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bug_report,
+                color: AppColors.error,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'DEBUG MODE',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isCreatingDebugPosts ? null : _createSamplePosts,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: _isCreatingDebugPosts
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Create Sample Posts'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isDeletingDebugPosts ? null : _deleteAllDebugPosts,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: _isDeletingDebugPosts
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Delete Debug Posts'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createSamplePosts() async {
+    setState(() {
+      _isCreatingDebugPosts = true;
+    });
+
+    try {
+      await _debugService.createSamplePosts();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Created 5 sample posts + profiles + chat messages'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        // Refresh the post provider to show new posts
+        final postProvider = Provider.of<PostProvider>(context, listen: false);
+        postProvider.initialize();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create sample posts: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreatingDebugPosts = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _deleteAllDebugPosts() async {
+    setState(() {
+      _isDeletingDebugPosts = true;
+    });
+
+    try {
+      await _debugService.deleteAllDebugPosts();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Deleted all debug posts, profiles, and chat'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        // Refresh the post provider to remove deleted posts
+        final postProvider = Provider.of<PostProvider>(context, listen: false);
+        postProvider.initialize();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete debug posts: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeletingDebugPosts = false;
+        });
+      }
+    }
   }
 }

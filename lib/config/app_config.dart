@@ -1,12 +1,12 @@
-import 'package:flutter/foundation.dart';
+import 'environment.dart';
 
 class AppConfig {
   static const String appName = 'LinkUp BU';
   static const String appVersion = '1.0.0';
   static const String buildNumber = '1';
 
-  static const bool isDevelopment = kDebugMode;
-  static const bool isProduction = kReleaseMode;
+  static bool get isDevelopment => EnvironmentConfig.isDev;
+  static bool get isProduction => EnvironmentConfig.isProd;
 
   static const String firebaseProjectId = 'your-firebase-project-id';
   static const String firebaseApiKey = 'your-firebase-api-key';
@@ -44,8 +44,8 @@ class AppConfig {
   static const bool enablePerformanceMonitoring = true;
   static const bool enableRemoteConfig = true;
 
-  static const bool enableLogging = isDevelopment;
-  static const bool enableDebugFeatures = isDevelopment;
+  static bool get enableLogging => isDevelopment;
+  static bool get enableDebugFeatures => isDevelopment;
 
   static const int maxImageUploadSizeMB = 10;
   static const int maxFileUploadSizeMB = 50;
@@ -68,7 +68,7 @@ class AppConfig {
   static const String defaultLanguage = 'en';
   static const String defaultTheme = 'system';
 
-  static const Map<String, String> apiEndpoints = {
+  static Map<String, String> get apiEndpoints => {
     'base': isDevelopment
         ? 'https://api-dev.example.com'
         : 'https://api.example.com',
