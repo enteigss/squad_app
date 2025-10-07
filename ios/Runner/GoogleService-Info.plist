@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>645112342207-88jepg1894t9sbeitaefpmmccocq5faq.apps.googleusercontent.com</string>
+	<string>555170207131-48j27qqt1f1otcb39rm1sl05qn61uone.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.645112342207-88jepg1894t9sbeitaefpmmccocq5faq</string>
+	<string>com.googleusercontent.apps.555170207131-48j27qqt1f1otcb39rm1sl05qn61uone</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>645112342207-ia0ejls9f2speb0094hukcqlu2d6c4qg.apps.googleusercontent.com</string>
+	<string>555170207131-efnou3gn8g8q01r256grtg3a98smujc9.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyAom1xiS5f49oiMkV-7p406Wdba0wfct8M</string>
+	<string>AIzaSyDsxrEgWRvH5FYr5jwwXIue7SXxEPSuIac</string>
 	<key>GCM_SENDER_ID</key>
-	<string>645112342207</string>
+	<string>555170207131</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.jordan.linkupbu.dev</string>
+	<string>com.jordan.linkupbu</string>
 	<key>PROJECT_ID</key>
-	<string>linkup-bu-test-environment</string>
+	<string>squad-7bc7e</string>
 	<key>STORAGE_BUCKET</key>
-	<string>linkup-bu-test-environment.firebasestorage.app</string>
+	<string>squad-7bc7e.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:645112342207:ios:55879d49eae57530bd080a</string>
+	<string>1:555170207131:ios:7bdfde9fa69cc98b74bd3e</string>
 </dict>
 </plist>

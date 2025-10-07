@@ -35,25 +35,160 @@ class AuthService {
     required String password,
   }) async {
     try {
+      debugPrint('📧 AuthService.signInWithEmailAndPassword: Starting email/password sign-in');
+      debugPrint('📧 Email provided: $email');
+      debugPrint('📧 Password length: ${password.length}');
+
+      // Log attempt to Crashlytics
+      await FirebaseCrashlytics.instance.log('Email/Password Sign-In attempt started');
+      await FirebaseCrashlytics.instance.setCustomKey(
+        'signin_attempt_email',
+        DateTime.now().toIso8601String(),
+      );
+
+      debugPrint('🔥 Attempting Firebase signInWithEmailAndPassword...');
       final UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
+      debugPrint('✅ Firebase authentication successful!');
+      debugPrint('👤 User UID: ${result.user?.uid}');
+      debugPrint('📧 User email from result: ${result.user?.email}');
+
       if (result.user != null) {
-        await _updateUserOnlineStatus(result.user!.uid, true);
-        return await getUserData(result.user!.uid);
+        debugPrint('📊 Fetching user data from Firestore...');
+        final userData = await getUserData(result.user!.uid);
+        debugPrint('📊 User data retrieved: ${userData?.toMap()}');
+
+        if (userData == null) {
+          debugPrint('⚠️ No Firestore user document found - creating one...');
+
+          // Create user document for email/password sign-in
+          final UserModel newUser = UserModel(
+            id: result.user!.uid,
+            email: result.user!.email ?? email,
+            username: (result.user!.email ?? email).split('@')[0],
+            displayName: null,
+            photoUrl: null,
+            createdAt: DateTime.now(),
+            isOnline: true,
+            hasCreatedProfile: false,
+            authProvider: 'email',
+            isEmailVerified: true,
+          );
+
+          final newUserData = newUser.toMap();
+          debugPrint('📝 Creating Firestore document with data: $newUserData');
+
+          try {
+            await _firestore
+                .collection('users')
+                .doc(result.user!.uid)
+                .set(newUserData);
+
+            debugPrint('✅ User document created successfully');
+
+            // Log successful sign-in to Crashlytics
+            await FirebaseCrashlytics.instance.log(
+              'Email/Password Sign-In completed successfully (new user doc created)',
+            );
+            await FirebaseCrashlytics.instance.setCustomKey(
+              'signin_success_email',
+              DateTime.now().toIso8601String(),
+            );
+
+            return newUser;
+          } catch (e) {
+            debugPrint('❌ Error creating user document: $e');
+            // Still return the user model even if Firestore write fails
+            return newUser;
+          }
+        } else {
+          debugPrint('✅ Existing user document found');
+
+          // Update online status for existing user
+          try {
+            debugPrint('🔄 Updating user online status...');
+            await _updateUserOnlineStatus(result.user!.uid, true);
+            debugPrint('✅ Online status updated');
+          } catch (e) {
+            debugPrint('⚠️ Warning: Could not update online status: $e');
+            // Don't fail the sign-in if status update fails
+          }
+
+          // Log successful sign-in to Crashlytics
+          await FirebaseCrashlytics.instance.log(
+            'Email/Password Sign-In completed successfully (existing user)',
+          );
+          await FirebaseCrashlytics.instance.setCustomKey(
+            'signin_success_email',
+            DateTime.now().toIso8601String(),
+          );
+
+          return userData;
+        }
       }
+
+      debugPrint('❌ result.user is null after authentication');
       return null;
     } on FirebaseAuthException catch (e) {
+      debugPrint('🚨 FirebaseAuthException caught!');
+      debugPrint('🚨 Error code: ${e.code}');
+      debugPrint('🚨 Error message: ${e.message}');
+      debugPrint('🚨 Full error: $e');
+
+      // Log to Crashlytics
+      await FirebaseCrashlytics.instance.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Email/Password Sign-In failed',
+        information: [
+          'Error code: ${e.code}',
+          'Error message: ${e.message}',
+          'Email: $email',
+        ],
+        fatal: false,
+      );
+
       if (e.code == 'user-not-found') {
-        print('NO user found for that email.');
+        debugPrint('❌ NO user found for that email.');
+        throw Exception('No account found with this email. Please check the email address.');
       } else if (e.code == 'wrong-password') {
-        print('Wrong password provided for that user.');
+        debugPrint('❌ Wrong password provided for that user.');
+        throw Exception('Incorrect password. Please try again.');
+      } else if (e.code == 'invalid-email') {
+        debugPrint('❌ Invalid email format.');
+        throw Exception('Invalid email format. Please enter a valid email address.');
+      } else if (e.code == 'user-disabled') {
+        debugPrint('❌ User account has been disabled.');
+        throw Exception('This account has been disabled.');
+      } else if (e.code == 'too-many-requests') {
+        debugPrint('❌ Too many failed login attempts.');
+        throw Exception('Too many failed attempts. Please try again later.');
+      } else if (e.code == 'invalid-credential') {
+        debugPrint('❌ Invalid credentials provided.');
+        throw Exception('Invalid email or password. Please check your credentials.');
       }
+
       rethrow;
     } catch (e) {
-      print(e);
+      debugPrint('🚨 Unexpected error in signInWithEmailAndPassword: $e');
+      debugPrint('🚨 Error type: ${e.runtimeType}');
+      debugPrint('🚨 Stack trace: ${StackTrace.current}');
+
+      // Log to Crashlytics
+      await FirebaseCrashlytics.instance.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Email/Password Sign-In unexpected error',
+        information: [
+          'Email: $email',
+          'Error type: ${e.runtimeType}',
+        ],
+        fatal: false,
+      );
+
       rethrow;
     }
   }

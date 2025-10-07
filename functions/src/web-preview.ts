@@ -3,7 +3,12 @@ import * as admin from "firebase-admin";
 import * as fs from 'fs';
 import * as path from 'path';
 
-export const hangoutPreview = onRequest(async (req, res) => {
+export const hangoutPreview = onRequest(
+  {
+    cors: true,
+    invoker: "public",
+  },
+  async (req, res) => {
   try {
     // Extract hangout ID from URL path: /hangout/abc123
     const pathParts = req.path.split('/');
@@ -64,13 +69,52 @@ function generateHangoutPageFromTemplate(hangout: any, hangoutId: string, invite
     const templatePath = path.join(__dirname, 'hangout_preview_template.html');
     const template = fs.readFileSync(templatePath, 'utf8');
 
+    // Format date/time
+    let dateTimeStr = "soon";
+    if (hangout.scheduledTime) {
+      const date = hangout.scheduledTime.toDate();
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      const isTomorrow = date.toDateString() ===
+        new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
+
+      if (isToday) {
+        dateTimeStr = `today at ${date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })}`;
+      } else if (isTomorrow) {
+        dateTimeStr = `tomorrow at ${date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })}`;
+      } else {
+        dateTimeStr = `${date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })} at ${date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })}`;
+      }
+    }
+
+    const participantCount = hangout.participantIds?.length || 1;
+    const location = hangout.location || "TBD";
+
     // Replace template variables with actual data
     const html = template
       .replace(/\{\{hangoutTitle\}\}/g, hangout.title || 'LinkUp BU Hangout')
       .replace(/\{\{hangoutId\}\}/g, hangoutId)
       .replace(/\{\{inviterName\}\}/g, inviterName)
       .replace(/\{\{inviterId\}\}/g, hangout.authorId || '')
-      .replace(/\{\{currentUrl\}\}/g, `https://squad-7bc7e.web.app/hangout/${hangoutId}`)
+      .replace(/\{\{dateTime\}\}/g, dateTimeStr)
+      .replace(/\{\{location\}\}/g, location)
+      .replace(/\{\{participantCount\}\}/g, participantCount.toString())
+      .replace(/\{\{currentUrl\}\}/g, `https://${process.env.GCLOUD_PROJECT}.web.app/hangout/${hangoutId}`)
       .replace(/\{\{testflightUrl\}\}/g, 'https://apps.apple.com/us/app/linkup-bu/id6751476681?platform=iphone')
       .replace(/\{\{androidBetaUrl\}\}/g, 'https://play.google.com/store/apps/details?id=com.jordan.linkupbu');
 

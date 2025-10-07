@@ -127,7 +127,7 @@ class _FeedScreenState extends State<FeedScreen> {
         children: [
           _buildTabMenu(),
           Expanded(child: _buildPostList()),
-          // if (kDebugMode && _showDebugToolbar) _buildDebugToolbar(),
+          if (kDebugMode && _showDebugToolbar) _buildDebugToolbar(),
         ],
       ),
     );
@@ -430,7 +430,7 @@ class _FeedScreenState extends State<FeedScreen> {
           ],
         ),
 
-        // Lock indicator (if locked)
+        // Close indicator (if closed)
         if (post.isLocked) ...[
           const SizedBox(width: 8),
           Container(
@@ -452,7 +452,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
                 const SizedBox(width: 2),
                 Text(
-                  'Locked',
+                  'Closed',
                   style: TextStyle(
                     color: AppColors.textSecondary.withValues(alpha: 0.7),
                     fontSize: 8,
@@ -545,7 +545,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    post.isLocked ? 'Unlock' : 'Lock',
+                    post.isLocked ? 'Open' : 'Close',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 14,
@@ -1002,7 +1002,7 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _toggleLockPost(Post post, PostProvider postProvider) async {
     final bool isLocking = !post.isLocked;
 
-    // If locking, show confirmation dialog
+    // If closing, show confirmation dialog
     if (isLocking) {
       final bool? shouldLock = await showDialog<bool>(
         context: context,
@@ -1013,7 +1013,7 @@ class _FeedScreenState extends State<FeedScreen> {
               children: [
                 Icon(Icons.lock_outline, color: AppColors.primary, size: 24),
                 const SizedBox(width: 8),
-                const Text('Lock Hangout'),
+                const Text('Close Hangout'),
               ],
             ),
             content: Column(
@@ -1021,7 +1021,7 @@ class _FeedScreenState extends State<FeedScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Locking "${post.title}" will:',
+                  'Closing "${post.title}" will:',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
@@ -1064,7 +1064,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        'Can be unlocked later to make it discoverable again',
+                        'Can be opened later to make it discoverable again',
                         style: TextStyle(fontSize: 14),
                       ),
                     ),
@@ -1083,7 +1083,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Lock Hangout'),
+                child: const Text('Close Hangout'),
               ),
             ],
           );
@@ -1093,8 +1093,8 @@ class _FeedScreenState extends State<FeedScreen> {
       if (shouldLock != true) return; // User cancelled
     }
 
-    final String action = isLocking ? 'lock' : 'unlock';
-    final String actionPast = isLocking ? 'locked' : 'unlocked';
+    final String action = isLocking ? 'close' : 'open';
+    final String actionPast = isLocking ? 'closed' : 'opened';
 
     final bool success = isLocking
         ? await postProvider.lockPost(post.id)

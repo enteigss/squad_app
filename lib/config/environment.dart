@@ -16,4 +16,14 @@
     static bool get isProd => _environment == Environment.prod;
 
     static String get environmentName => _environment.toString().split('.').last;
+
+    // Firebase project IDs
+    static String get firebaseProjectId => isProd
+        ? 'squad-7bc7e'
+        : 'linkup-bu-test-environment';
+
+    // Web app URLs for hangout invites
+    static String get webAppUrl => isProd
+        ? 'https://squad-7bc7e.web.app'
+        : 'https://linkup-bu-test-environment.web.app';
   }

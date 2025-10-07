@@ -285,7 +285,7 @@ class PostProvider with ChangeNotifier {
     required DateTime scheduledTime,
     required List<String> genderPreferences,
     String? location,
-    int maxParticipants = 10,
+    int? maxParticipants,
   }) async {
     _setLoading(true);
     _clearError();
@@ -597,7 +597,7 @@ class PostProvider with ChangeNotifier {
     if (userGender == null || userGender == 'prefer_not_to_say') {
       return post.genderPreferences.contains('Men') &&
           post.genderPreferences.contains('Women') &&
-          post.genderPreferences.contains('Other');
+          post.genderPreferences.contains('Non-binary');
     }
 
     // Map user gender to preference format
@@ -610,11 +610,11 @@ class PostProvider with ChangeNotifier {
         expectedPreference = 'Men';
         break;
       case 'non_binary':
-        expectedPreference = 'Other';
+        expectedPreference = 'Non-binary';
         break;
       default:
-        // For any other gender identities, map to 'Other'
-        expectedPreference = 'Other';
+        // For any other gender identities, map to 'Non-binary'
+        expectedPreference = 'Non-binary';
         break;
     }
 
@@ -630,7 +630,9 @@ class PostProvider with ChangeNotifier {
     }
 
     // Check if post is full
-    if (post.participantIds.length >= post.maxParticipants) {
+    // Use the set limit if available, otherwise use the hard limit of 100
+    final effectiveLimit = post.maxParticipants ?? 100;
+    if (post.participantIds.length >= effectiveLimit) {
       return false;
     }
 
@@ -650,9 +652,15 @@ class PostProvider with ChangeNotifier {
   // Get post by ID from current posts
   Post? getPostById(String postId) {
     try {
-      return _posts.firstWhere((post) => post.id == postId);
+      // First try to find in allPosts (includes locked posts that user is part of)
+      return _allPosts.firstWhere((post) => post.id == postId);
     } catch (e) {
-      return null;
+      // Fallback to regular posts if not found
+      try {
+        return _posts.firstWhere((post) => post.id == postId);
+      } catch (e) {
+        return null;
+      }
     }
   }
 

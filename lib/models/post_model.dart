@@ -13,7 +13,7 @@ class Post {
   final PostStatus status;
   final List<String> participantIds;
   final String? location;
-  final int maxParticipants;
+  final int? maxParticipants;
   final List<String> genderPreferences;
   final bool deleted;
   final bool isLocked;
@@ -33,7 +33,7 @@ class Post {
     required this.status,
     required this.participantIds,
     this.location,
-    this.maxParticipants = 10,
+    this.maxParticipants,
     this.genderPreferences = const ['Anyone'],
     this.deleted = false,
     this.isLocked = false,
@@ -60,7 +60,7 @@ class Post {
       ),
       participantIds: List<String>.from(map['participantIds'] ?? []),
       location: map['location'],
-      maxParticipants: map['maxParticipants'] ?? 10,
+      maxParticipants: map['maxParticipants'],
       genderPreferences: List<String>.from(map['genderPreferences'] ?? ['Anyone']),
       deleted: map['deleted'] ?? false,
       isLocked: map['isLocked'] ?? false,

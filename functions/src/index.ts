@@ -20,6 +20,9 @@ export {appPreview} from "./app-preview";
 // Hangout Notification Functions
 export {hangoutNotifications, sendJoinNotification, sendLeaveNotification} from "./hangout-notifications";
 
+// Chat Notification Functions
+export {chatMessageNotifications} from "./chat-notifications";
+
 // Report Submission Functions
 export {submitReport} from "./report-submissions";
 

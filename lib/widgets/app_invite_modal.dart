@@ -223,6 +223,13 @@ class _AppInviteModalState extends State<AppInviteModal> {
           'https://squad-7bc7e.web.app/invite/${widget.inviterUserId}';
       final shareText = 'Join me on LinkUp BU - the app for spontaneous hangouts! $shareUrl';
 
+      // Get the box position BEFORE closing the modal
+      print('DEBUG: Getting render box position');
+      final box = context.findRenderObject() as RenderBox?;
+      final sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+
       // Close the modal first
       print('DEBUG: Closing AppInviteModal with result "completed"');
       Navigator.of(context).pop('completed');
@@ -233,14 +240,13 @@ class _AppInviteModalState extends State<AppInviteModal> {
 
       // Try native sharing first, fallback to clipboard
       try {
-        print('DEBUG: Calling SharePlus.instance.share() for app invite');
-        await SharePlus.instance.share(
-          ShareParams(
-            text: shareText,
-            subject: '${widget.inviterName} invited you to LinkUp BU!',
-          ),
+        print('DEBUG: Calling Share.share() for app invite');
+        await Share.share(
+          shareText,
+          subject: '${widget.inviterName} invited you to LinkUp BU!',
+          sharePositionOrigin: sharePositionOrigin,
         );
-        print('DEBUG: SharePlus.instance.share() completed for app invite');
+        print('DEBUG: Share.share() completed for app invite');
       } catch (shareError) {
         print('Native share failed, using clipboard fallback: $shareError');
 

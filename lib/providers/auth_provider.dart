@@ -280,6 +280,86 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      debugPrint('📧 AuthProvider.signInWithEmailPassword: Starting email/password sign-in');
+      _setLoading(true);
+      _clearError();
+
+      debugPrint(
+        '📞 AuthProvider: About to call AuthService.signInWithEmailAndPassword()',
+      );
+      final signInResult = await _authService.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      debugPrint(
+        '📞 AuthProvider: AuthService.signInWithEmailAndPassword() completed successfully',
+      );
+      debugPrint(
+        '📝 Email/password sign-in result from AuthService: ${signInResult?.toMap()}',
+      );
+      _currentUser = signInResult;
+
+      // Reset account deletion flag on successful sign in
+      _accountDeletionCompleted = false;
+
+      if (_currentUser == null) {
+        debugPrint(
+          '❌ AuthProvider.signInWithEmailPassword: _currentUser is null after sign-in',
+        );
+        throw Exception('Failed to sign in with email and password');
+      }
+
+      debugPrint(
+        '✅ AuthProvider.signInWithEmailPassword: Sign-in successful for user ${_currentUser!.id}',
+      );
+
+      // Request notification permissions and get FCM token
+      try {
+        debugPrint('🔔 Requesting notification permissions...');
+        final notificationService = NotificationService();
+        await notificationService.requestPermission();
+        debugPrint('✅ Notification permissions requested successfully');
+
+        // Unsubscribe from hangout topics then subscribe based on gender
+        debugPrint('🔕 Unsubscribing from all hangout notification topics...');
+        await notificationService.unsubscribeFromTopics([
+          'new_hangouts_bu_men',
+          'new_hangouts_bu_women',
+          'new_hangouts_bu_anyone',
+        ]);
+        debugPrint('✅ Successfully unsubscribed from all hangout topics');
+
+        // Subscribe to appropriate topics based on user gender
+        debugPrint(
+          '🔔 Subscribing to hangout topics based on gender: ${_currentUser?.gender}',
+        );
+        await notificationService.subscribeToHangoutTopicsBasedOnGender(
+          _currentUser?.gender,
+        );
+        debugPrint('✅ Successfully subscribed to appropriate hangout topics');
+      } catch (e) {
+        debugPrint('⚠️ Warning: Failed to setup notifications: $e');
+        // Don't fail the sign-in process if notification setup fails
+      }
+
+    } catch (e) {
+      debugPrint('🚨 AuthProvider.signInWithEmailPassword: Exception caught: $e');
+      debugPrint('🚨 AuthProvider: Exception type: ${e.runtimeType}');
+      _error = _getErrorMessage(e);
+      debugPrint('🚨 AuthProvider: Processed error message: $_error');
+      debugPrint('🚨 AuthProvider: About to rethrow exception to LoginScreen');
+      rethrow;
+    } finally {
+      debugPrint('🔄 AuthProvider: Finally block - setting loading to false');
+      _setLoading(false);
+    }
+  }
+
   Future<void> signOut() async {
     try {
       _setLoading(true);

@@ -260,6 +260,7 @@ class _SquadAppState extends State<SquadApp> {
       return MaterialApp(
         title: 'LinkUp BU',
         theme: theme,
+        debugShowCheckedModeBanner: false,
         home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
@@ -269,6 +270,7 @@ class _SquadAppState extends State<SquadApp> {
       return MaterialApp(
         title: 'LinkUp BU',
         theme: theme,
+        debugShowCheckedModeBanner: false,
         home: ConsentDialogScreen(onConsentGiven: _handleConsentChoice),
       );
     }
@@ -278,6 +280,7 @@ class _SquadAppState extends State<SquadApp> {
       return MaterialApp(
         title: 'LinkUp BU',
         theme: theme,
+        debugShowCheckedModeBanner: false,
         home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
@@ -286,6 +289,7 @@ class _SquadAppState extends State<SquadApp> {
     return MaterialApp.router(
       title: 'LinkUp BU',
       theme: theme,
+      debugShowCheckedModeBanner: false,
       routerConfig: _router!,
     );
   }

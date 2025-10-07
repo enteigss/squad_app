@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../services/navigation_service.dart';
 
 class NotificationService {
@@ -365,23 +366,31 @@ class NotificationService {
       print('Data: ${message.data}');
     }
 
-    // Don't show notification if current user is the author (for new hangout notifications)
     final notificationType = message.data['type'] as String?;
     final authorId = message.data['author_id'] as String?;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-    if (notificationType == 'new_hangout' && 
-        authorId != null && 
-        currentUserId != null && 
+    // Don't show notification if current user is the author (for new hangout notifications)
+    if (notificationType == 'new_hangout' &&
+        authorId != null &&
+        currentUserId != null &&
         authorId == currentUserId) {
       if (kDebugMode) {
         print('🚫 Blocking notification - user is the author of this hangout');
       }
-      return; // Don't show notification to the author
+      return;
     }
 
-    // Show in-app notification or update UI
-    // You can customize this based on your UI framework
+    // Don't show foreground notifications for chat messages
+    // (chat screen updates in real-time via Firestore listeners)
+    if (notificationType == 'chat_message') {
+      if (kDebugMode) {
+        print('🚫 Suppressing foreground notification for chat message (real-time UI handles this)');
+      }
+      return;
+    }
+
+    // Show in-app notification for other types (hangout joins/leaves, new hangouts, etc.)
     if (message.notification != null) {
       _showInAppNotification(message);
     }
@@ -444,9 +453,10 @@ class NotificationService {
   void _navigateFromNotification(Map<String, dynamic> data) {
     final notificationType = data['type'] as String?;
     final hangoutId = data['hangoutId'] as String? ?? data['hangout_id'] as String?;
+    final postId = data['postId'] as String?;
 
     if (kDebugMode) {
-      print('🎯 Navigating from notification: type=$notificationType, hangoutId=$hangoutId');
+      print('🎯 Navigating from notification: type=$notificationType, hangoutId=$hangoutId, postId=$postId');
       print('🎯 All notification data keys: ${data.keys.toList()}');
       print('🎯 All notification data: $data');
       print('🎯 Navigation context available: ${NavigationService.isNavigationAvailable}');
@@ -476,6 +486,22 @@ class NotificationService {
         print('🎯 Navigating to hangout screen: $hangoutId');
       }
       NavigationService.goToPath('/group-members/$hangoutId?from=notification');
+    } else if (notificationType == 'chat_message' && postId != null) {
+      // Navigate to chat screen for chat message notifications
+      if (kDebugMode) {
+        print('🎯 Navigating to chat screen: $postId');
+      }
+
+      // Build stack: Feed -> Chat (so back button works naturally)
+      final context = NavigationService.navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        context.go('/feed?tab=hangouts');
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (context.mounted) {
+            context.push('/post-chat/$postId');
+          }
+        });
+      }
     }
     // Add more notification types as needed
   }
@@ -543,6 +569,76 @@ class NotificationService {
         print('Error sending leave notification: $e');
       }
       // Don't throw error - notification failure shouldn't block leave operation
+    }
+  }
+
+  // Toggle chat notifications for a specific hangout
+  Future<void> toggleHangoutChatNotifications(
+    String hangoutId,
+    bool enabled,
+  ) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (kDebugMode) {
+          print('No user logged in - cannot toggle chat notifications');
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        print('Toggling chat notifications for hangout $hangoutId: $enabled');
+      }
+
+      // Update the user's notification preferences in Firestore
+      await _firestore.collection('users').doc(user.uid).update({
+        'hangoutChatNotifications.$hangoutId': enabled,
+      });
+
+      if (kDebugMode) {
+        print('Successfully updated chat notification preference for hangout $hangoutId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error toggling chat notifications: $e');
+      }
+      rethrow;
+    }
+  }
+
+  // Get chat notification preference for a specific hangout
+  Future<bool> getHangoutChatNotificationPreference(String hangoutId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (kDebugMode) {
+          print('No user logged in - returning default notification preference');
+        }
+        return true; // Default to enabled
+      }
+
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        return true; // Default to enabled
+      }
+
+      final data = doc.data();
+      if (data == null) {
+        return true; // Default to enabled
+      }
+
+      final notificationPrefs = data['hangoutChatNotifications'] as Map<String, dynamic>?;
+      if (notificationPrefs == null) {
+        return true; // Default to enabled
+      }
+
+      // Return the preference for this specific hangout, default to true if not set
+      return notificationPrefs[hangoutId] as bool? ?? true;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting chat notification preference: $e');
+      }
+      return true; // Default to enabled on error
     }
   }
 

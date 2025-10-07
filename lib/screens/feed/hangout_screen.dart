@@ -17,6 +17,7 @@ import '../../widgets/report_dialog.dart';
 import '../../widgets/censored_profile_card.dart';
 import '../../services/block_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/notification_service.dart';
 
 class HangoutScreen extends StatefulWidget {
   final Post post;
@@ -36,6 +37,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final ReportService _reportService = ReportService();
   final BlockService _blockService = BlockService();
+  final NotificationService _notificationService = NotificationService();
   final TextEditingController _descriptionController = TextEditingController();
   List<UserModel> _members = [];
   bool _isLoading = true;
@@ -43,6 +45,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
   String _currentDescription = '';
   String? _error;
   bool _currentUserIsParticipant = false;
+  bool _chatNotificationsEnabled = true;
+  bool _loadingNotificationPref = false;
 
   @override
   void initState() {
@@ -50,6 +54,72 @@ class _HangoutScreenState extends State<HangoutScreen> {
     _currentDescription = widget.post.description;
     _descriptionController.text = widget.post.description;
     _loadGroupMembers();
+    _loadNotificationPreference();
+  }
+
+  Future<void> _loadNotificationPreference() async {
+    try {
+      final enabled = await _notificationService.getHangoutChatNotificationPreference(widget.post.id);
+      if (mounted) {
+        setState(() {
+          _chatNotificationsEnabled = enabled;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading notification preference: $e');
+    }
+  }
+
+  Future<void> _toggleChatNotifications() async {
+    if (_loadingNotificationPref) return;
+
+    // Optimistic update
+    final previousValue = _chatNotificationsEnabled;
+    setState(() {
+      _chatNotificationsEnabled = !_chatNotificationsEnabled;
+      _loadingNotificationPref = true;
+    });
+
+    try {
+      await _notificationService.toggleHangoutChatNotifications(
+        widget.post.id,
+        _chatNotificationsEnabled,
+      );
+
+      if (mounted) {
+        setState(() {
+          _loadingNotificationPref = false;
+        });
+
+        // Show confirmation
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _chatNotificationsEnabled
+                  ? 'Chat notifications enabled'
+                  : 'Chat notifications disabled',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Rollback on error
+      if (mounted) {
+        setState(() {
+          _chatNotificationsEnabled = previousValue;
+          _loadingNotificationPref = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update notification settings'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      debugPrint('Error toggling chat notifications: $e');
+    }
   }
 
   @override
@@ -106,7 +176,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
   Widget build(BuildContext context) {
     // Use local state instead of Consumer to avoid rebuilds from PostProvider timer
     final currentPost = widget.post; // Use original post data
-    final bool isGroupFull = _members.length >= (currentPost.maxParticipants);
+    final effectiveLimit = currentPost.maxParticipants ?? 100;
+    final bool isGroupFull = _members.length >= effectiveLimit;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -136,6 +207,19 @@ class _HangoutScreenState extends State<HangoutScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Chat notification toggle - show only for participants
+          if (_currentUserIsParticipant)
+            IconButton(
+              icon: Icon(
+                _chatNotificationsEnabled
+                    ? Icons.notifications
+                    : Icons.notifications_off,
+              ),
+              onPressed: _toggleChatNotifications,
+              tooltip: _chatNotificationsEnabled
+                  ? 'Disable chat notifications'
+                  : 'Enable chat notifications',
+            ),
           // Report button - show for all users who are not the host
           if (_canShowReportButton())
             IconButton(

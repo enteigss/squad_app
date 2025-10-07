@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/colors.dart';
+import '../config/environment.dart';
 
 class InviteOptionsModal extends StatefulWidget {
   final String hangoutId;
@@ -211,10 +212,17 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
   void _handleShareLink(BuildContext context) async {
     print('DEBUG: _handleShareLink() called');
     try {
-      // Generate the invite URL
+      // Generate the invite URL using environment-specific web app URL
       final shareUrl =
-          'https://squad-7bc7e.web.app/hangout/${widget.hangoutId}';
+          '${EnvironmentConfig.webAppUrl}/hangout/${widget.hangoutId}';
       final shareText = 'Join me for "${widget.hangoutTitle}"! $shareUrl';
+
+      // Get the box position BEFORE closing the modal
+      print('DEBUG: Getting render box position');
+      final box = context.findRenderObject() as RenderBox?;
+      final sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
 
       // Close the modal first
       print('DEBUG: Closing InviteOptionsModal with result "completed"');
@@ -226,14 +234,13 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
 
       // Try native sharing first, fallback to clipboard
       try {
-        print('DEBUG: Calling SharePlus.instance.share()');
-        await SharePlus.instance.share(
-          ShareParams(
-            text: shareText,
-            subject: 'You\'re invited to ${widget.hangoutTitle}',
-          ),
+        print('DEBUG: Calling Share.share()');
+        await Share.share(
+          shareText,
+          subject: 'You\'re invited to ${widget.hangoutTitle}',
+          sharePositionOrigin: sharePositionOrigin,
         );
-        print('DEBUG: SharePlus.instance.share() completed');
+        print('DEBUG: Share.share() completed');
       } catch (shareError) {
         print('Native share failed, using clipboard fallback: $shareError');
 

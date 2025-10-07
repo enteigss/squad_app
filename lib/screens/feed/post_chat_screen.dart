@@ -8,6 +8,8 @@ import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/post_chat_service.dart';
 import '../../services/block_service.dart';
+import '../../services/notification_service.dart';
+import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/blocked_message_bubble.dart';
 
@@ -26,6 +28,7 @@ class PostChatScreen extends StatefulWidget {
 class _PostChatScreenState extends State<PostChatScreen> {
   final PostChatService _chatService = PostChatService();
   final BlockService _blockService = BlockService();
+  final NotificationService _notificationService = NotificationService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -35,6 +38,8 @@ class _PostChatScreenState extends State<PostChatScreen> {
   String? _error;
   UserModel? _currentUser;
   StreamSubscription<DocumentSnapshot>? _userSubscription;
+  bool _chatNotificationsEnabled = true;
+  bool _loadingNotificationPref = false;
 
   @override
   void initState() {
@@ -59,6 +64,72 @@ class _PostChatScreenState extends State<PostChatScreen> {
     }
 
     _checkChatAccess();
+    _loadNotificationPreference();
+  }
+
+  Future<void> _loadNotificationPreference() async {
+    try {
+      final enabled = await _notificationService.getHangoutChatNotificationPreference(widget.post.id);
+      if (mounted) {
+        setState(() {
+          _chatNotificationsEnabled = enabled;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading notification preference: $e');
+    }
+  }
+
+  Future<void> _toggleChatNotifications() async {
+    if (_loadingNotificationPref) return;
+
+    // Optimistic update
+    final previousValue = _chatNotificationsEnabled;
+    setState(() {
+      _chatNotificationsEnabled = !_chatNotificationsEnabled;
+      _loadingNotificationPref = true;
+    });
+
+    try {
+      await _notificationService.toggleHangoutChatNotifications(
+        widget.post.id,
+        _chatNotificationsEnabled,
+      );
+
+      if (mounted) {
+        setState(() {
+          _loadingNotificationPref = false;
+        });
+
+        // Show confirmation
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _chatNotificationsEnabled
+                  ? 'Chat notifications enabled'
+                  : 'Chat notifications disabled',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Rollback on error
+      if (mounted) {
+        setState(() {
+          _chatNotificationsEnabled = previousValue;
+          _loadingNotificationPref = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update notification settings'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      debugPrint('Error toggling chat notifications: $e');
+    }
   }
 
   @override
@@ -146,8 +217,12 @@ class _PostChatScreenState extends State<PostChatScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Use stack navigation to pop back to previous screen
-            Navigator.of(context).pop();
+            // Try to pop naturally, otherwise navigate to hangout screen
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              NavigationService.goToPath('/group-members/${widget.post.id}');
+            }
           },
         ),
         title: Column(
@@ -170,6 +245,21 @@ class _PostChatScreenState extends State<PostChatScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // Chat notification toggle
+          if (_canAccessChat)
+            IconButton(
+              icon: Icon(
+                _chatNotificationsEnabled
+                    ? Icons.notifications
+                    : Icons.notifications_off,
+              ),
+              onPressed: _toggleChatNotifications,
+              tooltip: _chatNotificationsEnabled
+                  ? 'Disable chat notifications'
+                  : 'Enable chat notifications',
+            ),
+        ],
       ),
       body: Column(
         children: [

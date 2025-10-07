@@ -32,6 +32,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   DateTime? _selectedDateTime;
   Set<String> _selectedGenders = {'Men', 'Women', 'Non-binary'}; // All selected by default
   bool _showSuggestions = false;
+  bool _hasParticipantLimit = false;
   int _maxParticipants = 10;
   String? _selectedLocation;
   String? _customLocation;
@@ -873,97 +874,112 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             children: [
               Icon(Icons.group, color: AppColors.primary, size: 24),
               const SizedBox(width: 12),
-              Text(
-                'Maximum participants',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              // Decrease button
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: IconButton(
-                  onPressed: _maxParticipants > 2 ? _decreaseMaxParticipants : null,
-                  icon: Icon(
-                    Icons.remove,
-                    color: _maxParticipants > 2 
-                        ? AppColors.primary 
-                        : AppColors.textSecondary.withOpacity(0.5),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Number display
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    '$_maxParticipants people',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                child: Text(
+                  'Set participant limit?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              // Increase button
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: IconButton(
-                  onPressed: _maxParticipants < 20 ? _increaseMaxParticipants : null,
-                  icon: Icon(
-                    Icons.add,
-                    color: _maxParticipants < 20 
-                        ? AppColors.primary 
-                        : AppColors.textSecondary.withOpacity(0.5),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                ),
+              Switch(
+                value: _hasParticipantLimit,
+                onChanged: (value) {
+                  setState(() {
+                    _hasParticipantLimit = value;
+                  });
+                },
+                activeColor: AppColors.primary,
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose between 2-20 people. Your hangout will automatically close when this limit is reached.',
+            _hasParticipantLimit
+                ? 'Your hangout will close when the limit is reached'
+                : 'No limit - anyone can join (up to 100 people)',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),
+          if (_hasParticipantLimit) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                // Decrease button
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: _maxParticipants > 2 ? _decreaseMaxParticipants : null,
+                    icon: Icon(
+                      Icons.remove,
+                      color: _maxParticipants > 2
+                          ? AppColors.primary
+                          : AppColors.textSecondary.withOpacity(0.5),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Number display
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '$_maxParticipants people',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Increase button
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: _maxParticipants < 100 ? _increaseMaxParticipants : null,
+                    icon: Icon(
+                      Icons.add,
+                      color: _maxParticipants < 100
+                          ? AppColors.primary
+                          : AppColors.textSecondary.withOpacity(0.5),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -1105,7 +1121,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _increaseMaxParticipants() {
-    if (_maxParticipants < 20) {
+    if (_maxParticipants < 100) {
       setState(() {
         _maxParticipants++;
       });
@@ -1362,7 +1378,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         authorName: currentUser.displayName ?? 'Unknown User',
         scheduledTime: _selectedDateTime!,
         genderPreferences: _selectedGenders.toList(),
-        maxParticipants: _maxParticipants,
+        maxParticipants: _hasParticipantLimit ? _maxParticipants : null,
         location: finalLocation,
       );
 

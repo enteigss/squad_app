@@ -22,6 +22,7 @@ class UserModel {
   final bool isEmailVerified;
   final String? verifiedEmail; // BU.edu email for Apple users
   final String? appleUserId;
+  final Map<String, bool> hangoutChatNotifications; // hangoutId -> enabled/disabled
 
   UserModel({
     required this.id,
@@ -47,6 +48,7 @@ class UserModel {
     this.isEmailVerified = true,
     this.verifiedEmail,
     this.appleUserId,
+    this.hangoutChatNotifications = const {},
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -74,6 +76,7 @@ class UserModel {
       isEmailVerified: map['isEmailVerified'] ?? true,
       verifiedEmail: map['verifiedEmail'],
       appleUserId: map['appleUserId'],
+      hangoutChatNotifications: Map<String, bool>.from(map['hangoutChatNotifications'] ?? {}),
     );
   }
 
@@ -112,6 +115,7 @@ class UserModel {
       'isEmailVerified': isEmailVerified,
       'verifiedEmail': verifiedEmail,
       'appleUserId': appleUserId,
+      'hangoutChatNotifications': hangoutChatNotifications,
     };
   }
 
@@ -139,6 +143,7 @@ class UserModel {
     bool? isEmailVerified,
     String? verifiedEmail,
     String? appleUserId,
+    Map<String, bool>? hangoutChatNotifications,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -164,6 +169,7 @@ class UserModel {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       verifiedEmail: verifiedEmail ?? this.verifiedEmail,
       appleUserId: appleUserId ?? this.appleUserId,
+      hangoutChatNotifications: hangoutChatNotifications ?? this.hangoutChatNotifications,
     );
   }
 }

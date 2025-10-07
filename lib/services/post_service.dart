@@ -140,9 +140,9 @@ class PostService {
     if (userGender == null || userGender == 'prefer_not_to_say') {
       return post.genderPreferences.contains('Men') &&
              post.genderPreferences.contains('Women') &&
-             post.genderPreferences.contains('Other');
+             post.genderPreferences.contains('Non-binary');
     }
-    
+
     // Map user gender to preference format
     String expectedPreference = '';
     switch (userGender) {
@@ -153,14 +153,14 @@ class PostService {
         expectedPreference = 'Men';
         break;
       case 'non_binary':
-        expectedPreference = 'Other';
+        expectedPreference = 'Non-binary';
         break;
       default:
-        // For any other gender identities, map to 'Other'
-        expectedPreference = 'Other';
+        // For any other gender identities, map to 'Non-binary'
+        expectedPreference = 'Non-binary';
         break;
     }
-    
+
     // Check if post's gender preferences include the user's gender
     return post.genderPreferences.contains(expectedPreference);
   }
@@ -186,7 +186,9 @@ class PostService {
         }
 
         // Check if post is full
-        if (post.participantIds.length >= post.maxParticipants) {
+        // Use the set limit if available, otherwise use the hard limit of 100
+        final effectiveLimit = post.maxParticipants ?? 100;
+        if (post.participantIds.length >= effectiveLimit) {
           throw Exception('Post is full');
         }
 
@@ -211,7 +213,9 @@ class PostService {
         };
 
         // Check if post should be locked after adding this user
-        if (updatedParticipants.length >= post.maxParticipants) {
+        // Only lock if there's an explicit limit set and it's reached
+        if (post.maxParticipants != null &&
+            updatedParticipants.length >= post.maxParticipants!) {
           updates['isLocked'] = true;
         }
 
@@ -282,9 +286,10 @@ class PostService {
         // Check if post should be unlocked after removing this user
         // Only unlock if it was previously locked due to being full (not manually locked)
         if (post.isLocked &&
+            post.maxParticipants != null &&
             post.participantIds.length == post.maxParticipants) {
           // This means it was auto-locked when full, so we can auto-unlock
-          if (updatedParticipants.length < post.maxParticipants) {
+          if (updatedParticipants.length < post.maxParticipants!) {
             updates['isLocked'] = false;
           }
         }

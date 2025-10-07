@@ -78,13 +78,18 @@ class HangoutInvitationScreen extends StatelessWidget {
           
           // Determine why user can't join for better error messaging
           String? cantJoinReason;
+          String? cantJoinExplanation;
           if (currentUser != null && !isParticipant && !canJoin) {
-            if (hangout.participantIds.length >= hangout.maxParticipants) {
+            final effectiveLimit = hangout.maxParticipants ?? 100;
+            if (hangout.participantIds.length >= effectiveLimit) {
               cantJoinReason = 'Hangout Full';
+              cantJoinExplanation = 'This hangout has reached its maximum number of participants.';
             } else if (hangout.dynamicStatus == PostStatus.completed) {
               cantJoinReason = 'Already Completed';
+              cantJoinExplanation = 'This hangout has already ended.';
             } else {
-              cantJoinReason = 'Gender Restrictions';
+              cantJoinReason = 'Cannot Join';
+              cantJoinExplanation = 'This hangout has gender preferences set by the organizer that don\'t match your profile.';
             }
           }
 
@@ -144,7 +149,9 @@ class HangoutInvitationScreen extends StatelessWidget {
                 _buildDetailCard(
                   icon: Icons.people,
                   title: 'Participants',
-                  content: '${hangout.participantIds.length}/${hangout.maxParticipants} people',
+                  content: hangout.maxParticipants != null
+                      ? '${hangout.participantIds.length}/${hangout.maxParticipants} people'
+                      : '${hangout.participantIds.length} people',
                 ),
                 
                 const SizedBox(height: 16),
@@ -219,6 +226,40 @@ class HangoutInvitationScreen extends StatelessWidget {
                         width: double.infinity,
                         backgroundColor: AppColors.textSecondary,
                       ),
+                      if (cantJoinExplanation != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  cantJoinExplanation,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       CustomButton(
                         text: 'Go Back to Hangouts',

@@ -278,16 +278,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Future<void> _completeProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_interests.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add at least one interest'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
     if (_selectedGender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

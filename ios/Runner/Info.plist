@@ -61,8 +61,12 @@
 			<string>google.sign.in</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.555170207131-48j27qqt1f1otcb39rm1sl05qn61uone</string>
+				<!-- Test environment REVERSED_CLIENT_ID -->
+				<string>com.googleusercontent.apps.645112342207-2o3kug7172mlmromnc4g3tulufnbkf52</string>
+				<!-- Prod environment REVERSED_CLIENT_ID -->
 				<string>com.googleusercontent.apps.645112342207-88jepg1894t9sbeitaefpmmccocq5faq</string>
+				<!-- Legacy OAuth clients (keeping for backward compatibility) -->
+				<string>com.googleusercontent.apps.555170207131-48j27qqt1f1otcb39rm1sl05qn61uone</string>
 			</array>
 		</dict>
 	</array>
