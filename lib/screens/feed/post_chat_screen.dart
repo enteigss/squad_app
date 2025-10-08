@@ -428,7 +428,9 @@ class _PostChatScreenState extends State<PostChatScreen> {
   }
 
   Widget _buildMessageBubble(PostChatMessage message) {
-    final currentUserId = Provider.of<AuthProvider>(context, listen: false).currentUser?.id;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = authProvider.currentUser?.id;
+    final currentUserPhotoUrl = authProvider.currentUser?.photoUrl;
     final isOwnMessage = message.senderId == currentUserId;
     final isSystemMessage = message.type == PostChatMessageType.system;
     final isCensoredMessage = message.content == 'CENSORED_MESSAGE';
@@ -525,7 +527,19 @@ class _PostChatScreenState extends State<PostChatScreen> {
               ),
             ),
           ),
-          if (isOwnMessage) const SizedBox(width: 40),
+          if (isOwnMessage) ...[
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              backgroundImage: currentUserPhotoUrl != null
+                  ? NetworkImage(currentUserPhotoUrl)
+                  : null,
+              child: currentUserPhotoUrl == null
+                  ? Icon(Icons.person, color: AppColors.primary, size: 16)
+                  : null,
+            ),
+          ],
         ],
       ),
     );

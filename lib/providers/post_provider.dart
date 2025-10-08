@@ -571,17 +571,13 @@ class PostProvider with ChangeNotifier {
     }
   }
 
-  // Start refresh timer to update UI every 30 seconds
+  // Start refresh timer to update database statuses every 5 minutes
   void _startRefreshTimer() {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      // Just notify listeners to refresh the UI with dynamic status calculations
-      notifyListeners();
-
-      // Optionally update database statuses every 5 minutes (10 timer cycles)
-      if (timer.tick % 10 == 0) {
-        updatePostStatuses();
-      }
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      // Update database statuses (triggers Firestore stream updates)
+      // UI will update via Firestore stream listeners, not manual notifyListeners()
+      updatePostStatuses();
     });
   }
 
@@ -908,8 +904,9 @@ class PostProvider with ChangeNotifier {
     }
   }
 
-  @override
-  void dispose() {
+  // Clean up when user logs out (without disposing the provider)
+  void cleanup() {
+    debugPrint('🧹 PostProvider: Cleaning up subscriptions for logout');
     _postsSubscription?.cancel();
     _allPostsSubscription?.cancel();
     _upcomingSubscription?.cancel();
@@ -917,6 +914,25 @@ class PostProvider with ChangeNotifier {
     _userPostsSubscription?.cancel();
     _userSubscription?.cancel();
     _stopRefreshTimer();
+
+    // Clear cached data
+    _posts = [];
+    _allPosts = [];
+    _upcomingPosts = [];
+    _ongoingPosts = [];
+    _userPosts = [];
+    _filteredPosts = [];
+    _filteredAllPosts = [];
+    _filteredUpcomingPosts = [];
+    _filteredOngoingPosts = [];
+    _currentUser = null;
+    _isLoading = false;
+    _error = null;
+  }
+
+  @override
+  void dispose() {
+    cleanup();
     super.dispose();
   }
 }

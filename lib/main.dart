@@ -512,48 +512,43 @@ class _SquadAppState extends State<SquadApp> {
             final postId = state.pathParameters['postId']!;
             debugPrint('🎯 POST CHAT ROUTE - Route hit with postId: $postId');
 
-            return Consumer<PostProvider>(
-              builder: (context, postProvider, child) {
-                debugPrint('🔍 POST CHAT ROUTE - Consumer builder called');
-                debugPrint('🔍 Getting post by ID: $postId');
+            // Use listen: false to avoid rebuilds from PostProvider updates
+            final postProvider = Provider.of<PostProvider>(context, listen: false);
+            debugPrint('🔍 POST CHAT ROUTE - Getting post by ID: $postId');
 
-                final post = postProvider.getPostById(postId);
-                debugPrint('📋 Post found: ${post != null}');
+            final post = postProvider.getPostById(postId);
+            debugPrint('📋 Post found: ${post != null}');
 
-                if (post != null) {
-                  debugPrint(
-                    '✅ Post details - ID: ${post.id}, Title: ${post.title}',
-                  );
-                }
+            if (post != null) {
+              debugPrint(
+                '✅ Post details - ID: ${post.id}, Title: ${post.title}',
+              );
+            }
 
-                if (post == null) {
-                  debugPrint('❌ Post not found! Showing error screen');
-                  return const Scaffold(
-                    body: Center(child: Text('Post not found')),
-                  );
-                }
+            if (post == null) {
+              debugPrint('❌ Post not found! Showing error screen');
+              return const Scaffold(
+                body: Center(child: Text('Post not found')),
+              );
+            }
 
-                debugPrint('🎉 Returning PostChatScreen with post');
-                return PostChatScreen(post: post);
-              },
-            );
+            debugPrint('🎉 Returning PostChatScreen with post');
+            return PostChatScreen(post: post);
           },
         ),
         GoRoute(
           path: '/group-members/:postId',
           builder: (context, state) {
             final postId = state.pathParameters['postId']!;
-            return Consumer<PostProvider>(
-              builder: (context, postProvider, child) {
-                final post = postProvider.getPostById(postId);
-                if (post == null) {
-                  return const Scaffold(
-                    body: Center(child: Text('Post not found')),
-                  );
-                }
-                return HangoutScreen(post: post);
-              },
-            );
+            // Use listen: false to avoid rebuilds from PostProvider updates
+            final postProvider = Provider.of<PostProvider>(context, listen: false);
+            final post = postProvider.getPostById(postId);
+            if (post == null) {
+              return const Scaffold(
+                body: Center(child: Text('Post not found')),
+              );
+            }
+            return HangoutScreen(post: post);
           },
         ),
       ],

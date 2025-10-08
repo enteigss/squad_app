@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/post_provider.dart';
 import '../../utils/colors.dart';
 import '../../utils/url_launcher_helper.dart';
 import '../../services/block_service.dart';
@@ -743,6 +744,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _signOut() async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final postProvider = Provider.of<PostProvider>(context, listen: false);
+
+      // Clean up PostProvider subscriptions before signing out
+      postProvider.cleanup();
+
       await authProvider.signOut();
 
       if (mounted) {
