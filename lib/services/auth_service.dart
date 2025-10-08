@@ -680,7 +680,34 @@ class AuthService {
         if (classYear != null) updates['classYear'] = classYear;
         if (location != null) updates['location'] = location;
         if (interests != null) updates['interests'] = interests;
-        if (gender != null) updates['gender'] = gender;
+
+        // Handle gender changes with validation
+        if (gender != null && userData != null) {
+          final isGenderChanging = userData.gender != null && userData.gender != gender;
+
+          if (isGenderChanging) {
+            // Whitelist emails that can change gender unlimited times
+            const whitelistedEmails = ['jordangr@bu.edu', 'enteigss@gmail.com'];
+            final userEmail = userData.email.toLowerCase();
+            final isWhitelisted = whitelistedEmails.contains(userEmail);
+
+            // Check if user has already used their one gender change
+            if (!isWhitelisted && userData.genderChangeCount >= 1) {
+              throw Exception(
+                'You have already changed your gender once. To change it again, please contact jordan@linkupbu.com',
+              );
+            }
+
+            // Increment gender change count and set timestamp
+            updates['genderChangeCount'] = userData.genderChangeCount + 1;
+            updates['genderChangedAt'] = FieldValue.serverTimestamp();
+          }
+
+          updates['gender'] = gender;
+        } else if (gender != null) {
+          // First time setting gender (during profile setup)
+          updates['gender'] = gender;
+        }
 
         // Basic profile created, but not preferences yet
         updates['hasCreatedProfile'] = true;

@@ -23,6 +23,8 @@ class UserModel {
   final String? verifiedEmail; // BU.edu email for Apple users
   final String? appleUserId;
   final Map<String, bool> hangoutChatNotifications; // hangoutId -> enabled/disabled
+  final int genderChangeCount; // Number of times gender has been changed
+  final DateTime? genderChangedAt; // Last time gender was changed
 
   UserModel({
     required this.id,
@@ -49,6 +51,8 @@ class UserModel {
     this.verifiedEmail,
     this.appleUserId,
     this.hangoutChatNotifications = const {},
+    this.genderChangeCount = 0,
+    this.genderChangedAt,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -77,6 +81,8 @@ class UserModel {
       verifiedEmail: map['verifiedEmail'],
       appleUserId: map['appleUserId'],
       hangoutChatNotifications: Map<String, bool>.from(map['hangoutChatNotifications'] ?? {}),
+      genderChangeCount: map['genderChangeCount'] ?? 0,
+      genderChangedAt: _parseDateTime(map['genderChangedAt']),
     );
   }
 
@@ -116,6 +122,8 @@ class UserModel {
       'verifiedEmail': verifiedEmail,
       'appleUserId': appleUserId,
       'hangoutChatNotifications': hangoutChatNotifications,
+      'genderChangeCount': genderChangeCount,
+      'genderChangedAt': genderChangedAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -144,6 +152,8 @@ class UserModel {
     String? verifiedEmail,
     String? appleUserId,
     Map<String, bool>? hangoutChatNotifications,
+    int? genderChangeCount,
+    DateTime? genderChangedAt,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -170,6 +180,8 @@ class UserModel {
       verifiedEmail: verifiedEmail ?? this.verifiedEmail,
       appleUserId: appleUserId ?? this.appleUserId,
       hangoutChatNotifications: hangoutChatNotifications ?? this.hangoutChatNotifications,
+      genderChangeCount: genderChangeCount ?? this.genderChangeCount,
+      genderChangedAt: genderChangedAt ?? this.genderChangedAt,
     );
   }
 }

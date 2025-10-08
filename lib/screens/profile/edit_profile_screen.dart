@@ -438,6 +438,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildGenderSelector() {
+    final canChange = _canChangeGender();
+    final hasUsedChange = widget.user.genderChangeCount >= 1;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -484,54 +487,132 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
+          // One-time change policy notice
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: hasUsedChange
+                  ? AppColors.error.withValues(alpha: 0.1)
+                  : Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: hasUsedChange
+                    ? AppColors.error.withValues(alpha: 0.3)
+                    : Colors.orange.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  hasUsedChange ? Icons.lock_outline : Icons.warning_amber_rounded,
+                  size: 16,
+                  color: hasUsedChange ? AppColors.error : Colors.orange,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        hasUsedChange
+                            ? 'Gender change limit reached'
+                            : 'Safety Notice: Gender can only be changed once',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: hasUsedChange ? AppColors.error : Colors.orange.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        hasUsedChange
+                            ? 'You have already changed your gender once. To change it again, please contact jordan@linkupbu.com'
+                            : 'For safety reasons, you can only change your gender selection once. Choose carefully.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           // Gender options
           Column(
             children: _genderOptions.map((option) {
               final isSelected = _selectedGender == option['value'];
+              final isCurrentGender = widget.user.gender == option['value'];
+              final isDisabled = !canChange && !isCurrentGender;
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: isDisabled ? null : () {
                     setState(() {
                       _selectedGender = option['value'];
                     });
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isSelected 
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : AppColors.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelected 
-                            ? AppColors.primary 
-                            : AppColors.divider.withValues(alpha: 0.3),
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                          color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                          size: 20,
+                  child: Opacity(
+                    opacity: isDisabled ? 0.5 : 1.0,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.divider.withValues(alpha: 0.3),
+                          width: isSelected ? 2 : 1,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            option['label']!,
-                            style: TextStyle(
-                              color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                              fontSize: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              option['label']!,
+                              style: TextStyle(
+                                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          if (isCurrentGender)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Current',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -687,6 +768,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() {
       _selectedInterests.remove(interest);
     });
+  }
+
+  bool _canChangeGender() {
+    // Whitelist emails that can change gender unlimited times
+    const whitelistedEmails = ['jordangr@bu.edu', 'enteigss@gmail.com'];
+
+    if (whitelistedEmails.contains(widget.user.email.toLowerCase())) {
+      return true;
+    }
+
+    // Other users can change gender once
+    return widget.user.genderChangeCount < 1;
+  }
+
+  bool _isGenderChanging() {
+    return _selectedGender != null &&
+           _selectedGender != widget.user.gender;
   }
 
   void _changeProfilePhoto() {
@@ -879,6 +977,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Validate gender change
+    if (_isGenderChanging() && !_canChangeGender()) {
+      setState(() {
+        _error = 'You have already changed your gender once. To change it again, please contact jordan@linkupbu.com';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -887,7 +993,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = authProvider.currentUser;
-      
+
       if (currentUser == null) {
         throw Exception('User not found');
       }
@@ -896,11 +1002,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       // Update profile using AuthProvider
       await authProvider.updateProfile(
-        displayName: _displayNameController.text.trim().isEmpty 
-            ? null 
+        displayName: _displayNameController.text.trim().isEmpty
+            ? null
             : _displayNameController.text.trim(),
-        bio: _bioController.text.trim().isEmpty 
-            ? null 
+        bio: _bioController.text.trim().isEmpty
+            ? null
             : _bioController.text.trim(),
         location: _selectedLocation == null
             ? null
