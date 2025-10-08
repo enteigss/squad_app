@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendLeaveNotification = exports.sendJoinNotification = exports.hangoutNotifications = void 0;
+exports.sendHangoutUpdateNotification = exports.sendLeaveNotification = exports.sendJoinNotification = exports.hangoutNotifications = void 0;
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const firebase_functions_1 = require("firebase-functions");
@@ -383,6 +383,152 @@ exports.sendLeaveNotification = (0, https_1.onCall)(async (request) => {
     }
     catch (error) {
         firebase_functions_1.logger.error("Error sending leave notification:", error);
+        throw error;
+    }
+});
+/**
+ * Cloud Function to send notification when a hangout is updated
+ * (title, description, time, or location changed)
+ */
+exports.sendHangoutUpdateNotification = (0, https_1.onCall)(async (request) => {
+    var _a;
+    try {
+        const { hangoutId, hangoutTitle, ownerId, participantIds, changes, oldTitle, oldDescription, oldTime, oldLocation, newTitle, newDescription, newTime, newLocation, } = request.data;
+        // Validate required parameters
+        if (!hangoutId || !hangoutTitle || !ownerId || !participantIds || !changes) {
+            firebase_functions_1.logger.error("Missing required parameters for hangout update notification", {
+                hangoutId,
+                hangoutTitle,
+                ownerId,
+                participantIds,
+                changes,
+            });
+            throw new Error("Missing required parameters");
+        }
+        firebase_functions_1.logger.info("Processing hangout update notification", {
+            hangoutId,
+            hangoutTitle,
+            ownerId,
+            changes,
+            participantCount: participantIds.length,
+        });
+        // Filter out the owner from participants
+        const recipientIds = participantIds.filter((id) => id !== ownerId);
+        if (recipientIds.length === 0) {
+            firebase_functions_1.logger.info("No recipients to notify (only owner in hangout)", {
+                hangoutId,
+            });
+            return { success: true, message: "No recipients to notify" };
+        }
+        // Fetch FCM tokens for all recipients
+        const tokens = [];
+        for (const userId of recipientIds) {
+            try {
+                const userDoc = await admin.firestore().collection("users").doc(userId).get();
+                if (userDoc.exists) {
+                    const fcmToken = (_a = userDoc.data()) === null || _a === void 0 ? void 0 : _a.fcmToken;
+                    if (fcmToken) {
+                        tokens.push(fcmToken);
+                    }
+                }
+            }
+            catch (error) {
+                firebase_functions_1.logger.warn(`Failed to get FCM token for user ${userId}:`, error);
+                // Continue processing other users
+            }
+        }
+        if (tokens.length === 0) {
+            firebase_functions_1.logger.warn("No valid FCM tokens found for recipients", {
+                hangoutId,
+                recipientCount: recipientIds.length,
+            });
+            return { success: true, message: "No valid FCM tokens found" };
+        }
+        // Build notification body based on changes
+        let bodyText;
+        if (changes.length === 1) {
+            const change = changes[0];
+            bodyText = `"${hangoutTitle}" ${change} has been updated`;
+        }
+        else if (changes.length === 2) {
+            bodyText = `"${hangoutTitle}" ${changes[0]} and ${changes[1]} have been updated`;
+        }
+        else if (changes.length > 2) {
+            bodyText = `"${hangoutTitle}" details have been updated`;
+        }
+        else {
+            bodyText = `"${hangoutTitle}" has been updated`;
+        }
+        firebase_functions_1.logger.info("Sending hangout update notifications", {
+            hangoutId,
+            tokenCount: tokens.length,
+            changes,
+            bodyText,
+        });
+        // Create notification message
+        const message = {
+            notification: {
+                title: "Hangout Updated",
+                body: bodyText,
+            },
+            data: {
+                type: "hangout_update",
+                hangoutId: hangoutId,
+                hangout_id: hangoutId,
+                hangoutTitle: hangoutTitle,
+                changes: JSON.stringify(changes),
+                click_action: "FLUTTER_NOTIFICATION_CLICK",
+            },
+            android: {
+                notification: {
+                    icon: "ic_notification",
+                    color: "#FF6B35",
+                    sound: "default",
+                    channelId: "hangout_notifications",
+                },
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: "default",
+                        badge: 1,
+                        category: "hangout_notification",
+                    },
+                },
+            },
+        };
+        // Send multicast notification to all tokens
+        const response = await admin.messaging().sendEachForMulticast({
+            tokens: tokens,
+            ...message,
+        });
+        firebase_functions_1.logger.info("Successfully sent hangout update notifications", {
+            hangoutId,
+            successCount: response.successCount,
+            failureCount: response.failureCount,
+            totalTokens: tokens.length,
+        });
+        // Log any failures
+        if (response.failureCount > 0) {
+            response.responses.forEach((resp, idx) => {
+                var _a, _b;
+                if (!resp.success) {
+                    firebase_functions_1.logger.warn(`Failed to send notification to token ${idx}`, {
+                        error: (_a = resp.error) === null || _a === void 0 ? void 0 : _a.message,
+                        errorCode: (_b = resp.error) === null || _b === void 0 ? void 0 : _b.code,
+                    });
+                }
+            });
+        }
+        return {
+            success: true,
+            successCount: response.successCount,
+            failureCount: response.failureCount,
+            totalTokens: tokens.length,
+        };
+    }
+    catch (error) {
+        firebase_functions_1.logger.error("Error sending hangout update notification:", error);
         throw error;
     }
 });

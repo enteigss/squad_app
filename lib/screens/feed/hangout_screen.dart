@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../models/post_model.dart';
 import '../../models/user_model.dart';
 import '../../models/report_model.dart';
@@ -10,11 +11,11 @@ import '../../services/firestore_service.dart';
 import '../../services/report_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/profile_avatar.dart';
-import 'post_chat_screen.dart';
 import '../profile/profile_detail_screen.dart';
 import '../../widgets/invite_options_modal.dart';
 import '../../widgets/report_dialog.dart';
 import '../../widgets/censored_profile_card.dart';
+import '../../widgets/edit_hangout_dialog.dart';
 import '../../services/block_service.dart';
 import '../../services/analytics_service.dart';
 import '../../services/notification_service.dart';
@@ -38,21 +39,25 @@ class _HangoutScreenState extends State<HangoutScreen> {
   final ReportService _reportService = ReportService();
   final BlockService _blockService = BlockService();
   final NotificationService _notificationService = NotificationService();
-  final TextEditingController _descriptionController = TextEditingController();
   List<UserModel> _members = [];
   bool _isLoading = true;
-  bool _isEditingDescription = false;
+  String _currentTitle = '';
   String _currentDescription = '';
+  DateTime? _currentScheduledTime;
+  String? _currentLocation;
   String? _error;
   bool _currentUserIsParticipant = false;
   bool _chatNotificationsEnabled = true;
   bool _loadingNotificationPref = false;
+  bool _isJoiningOrLeaving = false;
 
   @override
   void initState() {
     super.initState();
+    _currentTitle = widget.post.title;
     _currentDescription = widget.post.description;
-    _descriptionController.text = widget.post.description;
+    _currentScheduledTime = widget.post.scheduledTime;
+    _currentLocation = widget.post.location;
     _loadGroupMembers();
     _loadNotificationPreference();
   }
@@ -122,11 +127,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _descriptionController.dispose();
-    super.dispose();
-  }
 
   Future<void> _loadGroupMembers([Post? post]) async {
     try {
@@ -207,6 +207,13 @@ class _HangoutScreenState extends State<HangoutScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Edit button - show only for owner
+          if (_isOwner())
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: _showEditHangoutDialog,
+              tooltip: 'Edit Hangout',
+            ),
           // Chat notification toggle - show only for participants
           if (_currentUserIsParticipant)
             IconButton(
@@ -240,31 +247,30 @@ class _HangoutScreenState extends State<HangoutScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  currentPost.title,
+                  _currentTitle,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
-                _buildDescriptionSection(),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  Icons.schedule,
+                  _formatTimeDisplay(_currentScheduledTime),
+                  isBold: _isOngoing(_currentScheduledTime),
+                ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.people,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${currentPost.participantIds.length} members',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                if (_currentLocation != null && _currentLocation!.isNotEmpty)
+                  _buildInfoRow(Icons.location_on, _currentLocation!),
+                if (_currentLocation != null && _currentLocation!.isNotEmpty)
+                  const SizedBox(height: 8),
+                if (_currentDescription.isNotEmpty)
+                  _buildInfoRow(Icons.description, _currentDescription),
+                if (_currentDescription.isNotEmpty)
+                  const SizedBox(height: 8),
+                _buildInfoRow(
+                  Icons.people,
+                  '${_members.length} members',
                 ),
               ],
             ),
@@ -403,14 +409,24 @@ class _HangoutScreenState extends State<HangoutScreen> {
 
     // Leave button (only for non-authors)
     if (showLeave) {
-      if (bottomRowButtons.isNotEmpty)
+      if (bottomRowButtons.isNotEmpty) {
         bottomRowButtons.add(const SizedBox(width: 12));
+      }
       bottomRowButtons.add(
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => _leavePost(currentUserId),
-            icon: const Icon(Icons.exit_to_app, size: 18),
-            label: const Text('Leave Group'),
+            onPressed: _isJoiningOrLeaving ? null : () => _leavePost(currentUserId),
+            icon: _isJoiningOrLeaving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.exit_to_app, size: 18),
+            label: Text(_isJoiningOrLeaving ? 'Leaving...' : 'Leave Group'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
@@ -457,9 +473,18 @@ class _HangoutScreenState extends State<HangoutScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       color: AppColors.background,
       child: ElevatedButton.icon(
-        onPressed: () => _joinPost(currentUserId, postProvider),
-        icon: const Icon(Icons.group_add, size: 18),
-        label: const Text('Join Hangout'),
+        onPressed: _isJoiningOrLeaving ? null : () => _joinPost(currentUserId, postProvider),
+        icon: _isJoiningOrLeaving
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : const Icon(Icons.login, size: 18),
+        label: Text(_isJoiningOrLeaving ? 'Joining...' : 'Join Hangout'),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -1020,190 +1045,157 @@ class _HangoutScreenState extends State<HangoutScreen> {
     }
   }
 
-  Widget _buildDescriptionSection() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = authProvider.currentUser?.id;
-    final isAuthor = currentUserId == widget.post.authorId;
-
-    if (_isEditingDescription && isAuthor) {
-      return _buildDescriptionEditor();
-    }
-
-    return _buildDescriptionDisplay(isAuthor);
-  }
-
-  Widget _buildDescriptionDisplay(bool isAuthor) {
-    final hasDescription = _currentDescription.isNotEmpty;
-
+  // Helper method to build info row
+  Widget _buildInfoRow(IconData icon, String text, {bool isBold = false}) {
     return Row(
-      children: [
-        Expanded(
-          child: hasDescription
-              ? Text(
-                  _currentDescription,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                )
-              : isAuthor
-              ? Text(
-                  'Add description',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    fontStyle: FontStyle.italic,
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-        if (isAuthor) ...[
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _startEditingDescription,
-            child: Icon(Icons.edit, size: 16, color: AppColors.textSecondary),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildDescriptionEditor() {
-    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: _descriptionController,
-          maxLines: null,
-          style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Enter description...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: AppColors.textSecondary.withValues(alpha: 0.3),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppColors.primary),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
+        Icon(
+          icon,
+          size: 16,
+          color: AppColors.textSecondary,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-          autofocus: true,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            GestureDetector(
-              onTap: _cancelEditing,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.close, size: 14, color: AppColors.textSecondary),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _saveDescription,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check, size: 14, color: Colors.white),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Save',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );
   }
 
-  void _startEditingDescription() {
-    setState(() {
-      _isEditingDescription = true;
-    });
+  bool _isOwner() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = authProvider.currentUser?.id;
+    return currentUserId == widget.post.authorId;
   }
 
-  void _cancelEditing() {
-    setState(() {
-      _descriptionController.text = _currentDescription;
-      _isEditingDescription = false;
-    });
+  Future<void> _showEditHangoutDialog() async {
+    // Create a post object with current state values for the dialog
+    final currentPost = widget.post.copyWith(
+      title: _currentTitle,
+      description: _currentDescription,
+      scheduledTime: _currentScheduledTime,
+      location: _currentLocation,
+    );
+
+    await EditHangoutDialog.show(
+      context,
+      post: currentPost,
+      onSave: _handleHangoutUpdate,
+    );
   }
 
-  Future<void> _saveDescription() async {
-    final newDescription = _descriptionController.text.trim();
+  Future<void> _handleHangoutUpdate(
+    String newTitle,
+    String newDescription,
+    DateTime? newScheduledTime,
+    String? newLocation,
+  ) async {
     final postProvider = Provider.of<PostProvider>(context, listen: false);
 
+    // Track what changed
+    final titleChanged = newTitle != _currentTitle;
+    final descriptionChanged = newDescription != _currentDescription;
+    final timeChanged = newScheduledTime != _currentScheduledTime;
+    final locationChanged = newLocation != _currentLocation;
+
+    if (!titleChanged && !descriptionChanged && !timeChanged && !locationChanged) {
+      // Nothing changed
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+
     try {
-      final updatedPost = widget.post.copyWith(description: newDescription);
+      // Update the post
+      final updatedPost = widget.post.copyWith(
+        title: newTitle,
+        description: newDescription,
+        scheduledTime: newScheduledTime,
+        location: newLocation,
+      );
+
       final success = await postProvider.updatePost(updatedPost);
 
+      // Dismiss loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
       if (success && mounted) {
+        // Update local state
         setState(() {
+          _currentTitle = newTitle;
           _currentDescription = newDescription;
-          _isEditingDescription = false;
+          _currentScheduledTime = newScheduledTime;
+          _currentLocation = newLocation;
         });
 
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              newDescription.isEmpty
-                  ? 'Description removed'
-                  : 'Description updated',
-            ),
+          const SnackBar(
+            content: Text('Hangout updated successfully'),
             backgroundColor: AppColors.success,
           ),
+        );
+
+        // Build notification message based on what changed
+        final changes = <String>[];
+        if (titleChanged) {
+          changes.add('title');
+        }
+        if (descriptionChanged) {
+          changes.add('description');
+        }
+        if (timeChanged) {
+          changes.add('time');
+        }
+        if (locationChanged) {
+          changes.add('location');
+        }
+
+        // Notify members about the changes
+        await _notificationService.notifyHangoutUpdated(
+          hangoutId: widget.post.id,
+          hangoutTitle: newTitle,
+          ownerId: widget.post.authorId,
+          participantIds: widget.post.participantIds,
+          changes: changes,
+          oldTitle: titleChanged ? _currentTitle : null,
+          oldDescription: descriptionChanged ? _currentDescription : null,
+          oldTime: timeChanged ? _currentScheduledTime : null,
+          oldLocation: locationChanged ? _currentLocation : null,
+          newTitle: titleChanged ? newTitle : null,
+          newDescription: descriptionChanged ? newDescription : null,
+          newTime: timeChanged ? newScheduledTime : null,
+          newLocation: locationChanged ? newLocation : null,
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(postProvider.error ?? 'Failed to update description'),
+            content: Text(postProvider.error ?? 'Failed to update hangout'),
             backgroundColor: AppColors.error,
           ),
         );
       }
     } catch (e) {
+      // Dismiss loading dialog
       if (mounted) {
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
@@ -1214,88 +1206,136 @@ class _HangoutScreenState extends State<HangoutScreen> {
     }
   }
 
+  String _formatTimeDisplay(DateTime? scheduledTime) {
+    if (scheduledTime == null) {
+      return 'No scheduled time';
+    }
+
+    if (_isOngoing(scheduledTime)) {
+      return 'Ongoing';
+    }
+
+    final formatter = DateFormat('MMM d, y \'at\' h:mm a');
+    return formatter.format(scheduledTime);
+  }
+
+  bool _isOngoing(DateTime? scheduledTime) {
+    if (scheduledTime == null) return false;
+
+    final now = DateTime.now();
+    final timeDifference = scheduledTime.difference(now);
+
+    // Ongoing if scheduled time was within the last 4 hours
+    return timeDifference.inMinutes <= 0 && timeDifference.inMinutes >= -240;
+  }
+
   Future<void> _joinPost(String userId, PostProvider postProvider) async {
-    final success = await postProvider.joinPost(widget.post.id, userId);
+    setState(() {
+      _isJoiningOrLeaving = true;
+    });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'Joined "${widget.post.title}"!'
-                : postProvider.error ?? 'Failed to join hangout',
+    try {
+      final success = await postProvider.joinPost(widget.post.id, userId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Joined "${widget.post.title}"!'
+                  : postProvider.error ?? 'Failed to join hangout',
+            ),
+            backgroundColor: success ? AppColors.success : AppColors.error,
           ),
-          backgroundColor: success ? AppColors.success : AppColors.error,
-        ),
-      );
-
-      // Track hangout join if successful
-      if (success) {
-        debugPrint('📊 HANGOUT SCREEN - Tracking hangout join analytics');
-        debugPrint('📋 User ID: $userId');
-        debugPrint('📋 Hangout ID: ${widget.post.id}');
-        debugPrint('📋 Hangout Title: ${widget.post.title}');
-        
-        await AnalyticsService().trackHangoutJoined(
-          userId: userId,
-          hangoutId: widget.post.id,
         );
-        
-        debugPrint('✅ HANGOUT SCREEN - Analytics tracking completed');
-      }
 
-      // If successfully joined, manually add user to members list
-      if (success) {
-        final user = await _firestoreService.getUser(userId);
-        if (user != null && mounted) {
-          setState(() {
-            _members.add(user);
-            final authProvider = Provider.of<AuthProvider>(
-              context,
-              listen: false,
-            );
-            final currentUserId = authProvider.currentUser?.id;
-            if (userId == currentUserId) {
-              _currentUserIsParticipant = true;
-            }
-          });
+        // Track hangout join if successful
+        if (success) {
+          debugPrint('📊 HANGOUT SCREEN - Tracking hangout join analytics');
+          debugPrint('📋 User ID: $userId');
+          debugPrint('📋 Hangout ID: ${widget.post.id}');
+          debugPrint('📋 Hangout Title: ${widget.post.title}');
+
+          await AnalyticsService().trackHangoutJoined(
+            userId: userId,
+            hangoutId: widget.post.id,
+          );
+
+          debugPrint('✅ HANGOUT SCREEN - Analytics tracking completed');
         }
+
+        // If successfully joined, manually add user to members list
+        if (success) {
+          final user = await _firestoreService.getUser(userId);
+          if (user != null && mounted) {
+            setState(() {
+              _members.add(user);
+              final authProvider = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
+              final currentUserId = authProvider.currentUser?.id;
+              if (userId == currentUserId) {
+                _currentUserIsParticipant = true;
+              }
+            });
+          }
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isJoiningOrLeaving = false;
+        });
       }
     }
   }
 
   Future<void> _leavePost(String userId) async {
-    final postProvider = Provider.of<PostProvider>(context, listen: false);
-    final success = await postProvider.leavePost(widget.post.id, userId);
+    setState(() {
+      _isJoiningOrLeaving = true;
+    });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'Left "${widget.post.title}"'
-                : postProvider.error ?? 'Failed to leave hangout',
+    try {
+      final postProvider = Provider.of<PostProvider>(context, listen: false);
+      final success = await postProvider.leavePost(widget.post.id, userId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Left "${widget.post.title}"'
+                  : postProvider.error ?? 'Failed to leave hangout',
+            ),
+            backgroundColor: success ? AppColors.success : AppColors.error,
           ),
-          backgroundColor: success ? AppColors.success : AppColors.error,
-        ),
-      );
+        );
 
-      // If successfully left, update local state and navigate back if current user left
-      if (success) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final currentUserId = authProvider.currentUser?.id;
+        // If successfully left, update local state and navigate back if current user left
+        if (success) {
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final currentUserId = authProvider.currentUser?.id;
 
-        setState(() {
-          _members.removeWhere((member) => member.id == userId);
+          setState(() {
+            _members.removeWhere((member) => member.id == userId);
+            if (userId == currentUserId) {
+              _currentUserIsParticipant = false;
+            }
+            _isJoiningOrLeaving = false;
+          });
+
+          // If current user left, navigate back to feed
           if (userId == currentUserId) {
-            _currentUserIsParticipant = false;
+            Navigator.of(context).pop();
           }
-        });
-
-        // If current user left, navigate back to feed
-        if (userId == currentUserId) {
-          Navigator.of(context).pop();
         }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isJoiningOrLeaving = false;
+        });
       }
     }
   }

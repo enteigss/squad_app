@@ -480,10 +480,10 @@ class NotificationService {
         print('🎯 Navigating to hangout invitation: $hangoutId');
       }
       NavigationService.goToPath('/hangout/$hangoutId?from=notification');
-    } else if ((notificationType == 'hangout_join' || notificationType == 'hangout_leave') && hangoutId != null) {
-      // Navigate to hangout screen (group members) for join/leave notifications
+    } else if ((notificationType == 'hangout_join' || notificationType == 'hangout_leave' || notificationType == 'hangout_update') && hangoutId != null) {
+      // Navigate to hangout screen (group members) for join/leave/update notifications
       if (kDebugMode) {
-        print('🎯 Navigating to hangout screen: $hangoutId');
+        print('🎯 Navigating to hangout screen: $hangoutId (type: $notificationType)');
       }
       NavigationService.goToPath('/group-members/$hangoutId?from=notification');
     } else if (notificationType == 'chat_message' && postId != null) {
@@ -569,6 +569,56 @@ class NotificationService {
         print('Error sending leave notification: $e');
       }
       // Don't throw error - notification failure shouldn't block leave operation
+    }
+  }
+
+  // Send notification when hangout is updated (title, description, time, or location)
+  Future<void> notifyHangoutUpdated({
+    required String hangoutId,
+    required String hangoutTitle,
+    required String ownerId,
+    required List<String> participantIds,
+    required List<String> changes,
+    String? oldTitle,
+    String? oldDescription,
+    DateTime? oldTime,
+    String? oldLocation,
+    String? newTitle,
+    String? newDescription,
+    DateTime? newTime,
+    String? newLocation,
+  }) async {
+    try {
+      if (kDebugMode) {
+        print('Sending hangout update notification for hangout: $hangoutId');
+        print('Changes: ${changes.join(", ")}');
+      }
+
+      final callable = _functions.httpsCallable('sendHangoutUpdateNotification');
+      await callable.call({
+        'hangoutId': hangoutId,
+        'hangoutTitle': hangoutTitle,
+        'ownerId': ownerId,
+        'participantIds': participantIds,
+        'changes': changes,
+        'oldTitle': oldTitle,
+        'oldDescription': oldDescription,
+        'oldTime': oldTime?.toIso8601String(),
+        'oldLocation': oldLocation,
+        'newTitle': newTitle,
+        'newDescription': newDescription,
+        'newTime': newTime?.toIso8601String(),
+        'newLocation': newLocation,
+      });
+
+      if (kDebugMode) {
+        print('Hangout update notification sent successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sending hangout update notification: $e');
+      }
+      // Don't throw error - notification failure shouldn't block update operation
     }
   }
 

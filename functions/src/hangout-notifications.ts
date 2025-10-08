@@ -423,3 +423,171 @@ export const sendLeaveNotification = onCall(async (request) => {
     throw error;
   }
 });
+
+/**
+ * Cloud Function to send notification when a hangout is updated
+ * (title, description, time, or location changed)
+ */
+export const sendHangoutUpdateNotification = onCall(async (request) => {
+  try {
+    const {
+      hangoutId,
+      hangoutTitle,
+      ownerId,
+      participantIds,
+      changes,
+      oldTitle,
+      oldDescription,
+      oldTime,
+      oldLocation,
+      newTitle,
+      newDescription,
+      newTime,
+      newLocation,
+    } = request.data;
+
+    // Validate required parameters
+    if (!hangoutId || !hangoutTitle || !ownerId || !participantIds || !changes) {
+      logger.error("Missing required parameters for hangout update notification", {
+        hangoutId,
+        hangoutTitle,
+        ownerId,
+        participantIds,
+        changes,
+      });
+      throw new Error("Missing required parameters");
+    }
+
+    logger.info("Processing hangout update notification", {
+      hangoutId,
+      hangoutTitle,
+      ownerId,
+      changes,
+      participantCount: participantIds.length,
+    });
+
+    // Filter out the owner from participants
+    const recipientIds = participantIds.filter((id: string) => id !== ownerId);
+
+    if (recipientIds.length === 0) {
+      logger.info("No recipients to notify (only owner in hangout)", {
+        hangoutId,
+      });
+      return {success: true, message: "No recipients to notify"};
+    }
+
+    // Fetch FCM tokens for all recipients
+    const tokens: string[] = [];
+    for (const userId of recipientIds) {
+      try {
+        const userDoc = await admin.firestore().collection("users").doc(userId).get();
+
+        if (userDoc.exists) {
+          const fcmToken = userDoc.data()?.fcmToken;
+          if (fcmToken) {
+            tokens.push(fcmToken);
+          }
+        }
+      } catch (error) {
+        logger.warn(`Failed to get FCM token for user ${userId}:`, error);
+        // Continue processing other users
+      }
+    }
+
+    if (tokens.length === 0) {
+      logger.warn("No valid FCM tokens found for recipients", {
+        hangoutId,
+        recipientCount: recipientIds.length,
+      });
+      return {success: true, message: "No valid FCM tokens found"};
+    }
+
+    // Build notification body based on changes
+    let bodyText: string;
+    if (changes.length === 1) {
+      const change = changes[0];
+      bodyText = `"${hangoutTitle}" ${change} has been updated`;
+    } else if (changes.length === 2) {
+      bodyText = `"${hangoutTitle}" ${changes[0]} and ${changes[1]} have been updated`;
+    } else if (changes.length > 2) {
+      bodyText = `"${hangoutTitle}" details have been updated`;
+    } else {
+      bodyText = `"${hangoutTitle}" has been updated`;
+    }
+
+    logger.info("Sending hangout update notifications", {
+      hangoutId,
+      tokenCount: tokens.length,
+      changes,
+      bodyText,
+    });
+
+    // Create notification message
+    const message = {
+      notification: {
+        title: "Hangout Updated",
+        body: bodyText,
+      },
+      data: {
+        type: "hangout_update",
+        hangoutId: hangoutId,
+        hangout_id: hangoutId,
+        hangoutTitle: hangoutTitle,
+        changes: JSON.stringify(changes),
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+      },
+      android: {
+        notification: {
+          icon: "ic_notification",
+          color: "#FF6B35",
+          sound: "default",
+          channelId: "hangout_notifications",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+            category: "hangout_notification",
+          },
+        },
+      },
+    };
+
+    // Send multicast notification to all tokens
+    const response = await admin.messaging().sendEachForMulticast({
+      tokens: tokens,
+      ...message,
+    });
+
+    logger.info("Successfully sent hangout update notifications", {
+      hangoutId,
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+      totalTokens: tokens.length,
+    });
+
+    // Log any failures
+    if (response.failureCount > 0) {
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          logger.warn(`Failed to send notification to token ${idx}`, {
+            error: resp.error?.message,
+            errorCode: resp.error?.code,
+          });
+        }
+      });
+    }
+
+    return {
+      success: true,
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+      totalTokens: tokens.length,
+    };
+  } catch (error) {
+    logger.error("Error sending hangout update notification:", error);
+    throw error;
+  }
+});
