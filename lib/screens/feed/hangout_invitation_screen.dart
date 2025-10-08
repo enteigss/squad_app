@@ -193,11 +193,23 @@ class HangoutInvitationScreen extends StatelessWidget {
                 
                 // Action buttons
                 if (isParticipant)
-                  CustomButton(
-                    text: 'Already Joined ✓',
-                    onPressed: null,
-                    width: double.infinity,
-                    backgroundColor: AppColors.success,
+                  Column(
+                    children: [
+                      CustomButton(
+                        text: 'Already Joined ✓',
+                        onPressed: null,
+                        width: double.infinity,
+                        backgroundColor: AppColors.success,
+                      ),
+                      const SizedBox(height: 12),
+                      CustomButton(
+                        text: 'Go Back to Hangouts',
+                        onPressed: () => NavigationService.goToPath('/feed?tab=hangouts'),
+                        width: double.infinity,
+                        backgroundColor: AppColors.surface,
+                        textColor: AppColors.textPrimary,
+                      ),
+                    ],
                   )
                 else if (canJoin)
                   Column(
