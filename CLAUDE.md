@@ -25,9 +25,17 @@ flutter run --release         # Run in release mode
 
 ### Testing
 ```bash
-flutter test                   # Run all tests
+# Unit and Widget Tests
+flutter test                   # Run all unit and widget tests
 flutter test test/widget_test.dart  # Run specific test file
 flutter test --coverage       # Run tests with coverage report
+
+# Integration Tests
+flutter test integration_test  # Run all integration tests
+flutter test integration_test/app_test.dart  # Run specific integration test
+
+# Integration Tests with Driver (for performance profiling, screenshots, etc.)
+flutter drive --driver=integration_test_driver.dart --target=integration_test/app_test.dart
 ```
 
 ### Code Quality and Analysis
@@ -60,6 +68,8 @@ flutter pub cache repair     # Repair pub cache if corrupted
 - `lib/` - Main Dart application code
   - `main.dart` - Application entry point with MaterialApp setup
 - `test/` - Widget and unit tests
+- `integration_test/` - Integration tests for full app testing
+- `integration_test_driver.dart` - Test driver for advanced integration test features
 - `android/`, `ios/`, `web/`, `windows/`, `macos/`, `linux/` - Platform-specific code and configurations
 - `pubspec.yaml` - Project dependencies and configuration
 - `analysis_options.yaml` - Dart analyzer configuration using flutter_lints
@@ -73,7 +83,8 @@ flutter pub cache repair     # Repair pub cache if corrupted
 ### Key Dependencies
 - `flutter` - Core Flutter framework
 - `cupertino_icons` - iOS-style icons
-- `flutter_test` - Testing framework
+- `flutter_test` - Testing framework (unit and widget tests)
+- `integration_test` - Integration testing framework
 - `flutter_lints` - Lint rules for code quality
 
 ## Development Notes
