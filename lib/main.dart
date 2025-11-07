@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/auth_provider.dart';
-import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/tab_navigation_provider.dart';
@@ -79,7 +78,6 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => TabNavigationProvider()),
