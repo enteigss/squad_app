@@ -5,6 +5,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:facebook_app_events/facebook_app_events.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
@@ -41,6 +42,10 @@ void main() async {
     debugPrint('🔥 Initializing Firebase...');
     await Firebase.initializeApp();
     debugPrint('✅ Firebase initialized successfully');
+
+    // Initialize Facebook App Events for ad attribution
+    final facebookAppEvents = FacebookAppEvents();
+    debugPrint('📱 Facebook App Events initialized for ad tracking');
 
     // Initialize Firebase Crashlytics
     debugPrint('💥 Initializing Firebase Crashlytics...');
@@ -511,7 +516,10 @@ class _SquadAppState extends State<SquadApp> {
             debugPrint('🎯 POST CHAT ROUTE - Route hit with postId: $postId');
 
             // Use listen: false to avoid rebuilds from PostProvider updates
-            final postProvider = Provider.of<PostProvider>(context, listen: false);
+            final postProvider = Provider.of<PostProvider>(
+              context,
+              listen: false,
+            );
             debugPrint('🔍 POST CHAT ROUTE - Getting post by ID: $postId');
 
             final post = postProvider.getPostById(postId);
@@ -539,7 +547,10 @@ class _SquadAppState extends State<SquadApp> {
           builder: (context, state) {
             final postId = state.pathParameters['postId']!;
             // Use listen: false to avoid rebuilds from PostProvider updates
-            final postProvider = Provider.of<PostProvider>(context, listen: false);
+            final postProvider = Provider.of<PostProvider>(
+              context,
+              listen: false,
+            );
             final post = postProvider.getPostById(postId);
             if (post == null) {
               return const Scaffold(
