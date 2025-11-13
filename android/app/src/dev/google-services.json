@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "645112342207-ecobjcq2nbplf90du3paasjt9alvl83p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jordan.linkupbu.dev",
+            "certificate_hash": "d705c1286c3b70cdbf51331f06a49d2ddb4cb61f"
+          }
+        },
+        {
           "client_id": "645112342207-ia0ejls9f2speb0094hukcqlu2d6c4qg.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -37,6 +45,13 @@
             {
               "client_id": "645112342207-2eu3dchcpi7lea29ca0kanq6gp37o72b.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "645112342207-2o3kug7172mlmromnc4g3tulufnbkf52.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jordan.linkupbu"
+              }
             }
           ]
         }
