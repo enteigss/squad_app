@@ -35,12 +35,16 @@ class AuthService {
     required String password,
   }) async {
     try {
-      debugPrint('📧 AuthService.signInWithEmailAndPassword: Starting email/password sign-in');
+      debugPrint(
+        '📧 AuthService.signInWithEmailAndPassword: Starting email/password sign-in',
+      );
       debugPrint('📧 Email provided: $email');
       debugPrint('📧 Password length: ${password.length}');
 
       // Log attempt to Crashlytics
-      await FirebaseCrashlytics.instance.log('Email/Password Sign-In attempt started');
+      await FirebaseCrashlytics.instance.log(
+        'Email/Password Sign-In attempt started',
+      );
       await FirebaseCrashlytics.instance.setCustomKey(
         'signin_attempt_email',
         DateTime.now().toIso8601String(),
@@ -153,13 +157,17 @@ class AuthService {
 
       if (e.code == 'user-not-found') {
         debugPrint('❌ NO user found for that email.');
-        throw Exception('No account found with this email. Please check the email address.');
+        throw Exception(
+          'No account found with this email. Please check the email address.',
+        );
       } else if (e.code == 'wrong-password') {
         debugPrint('❌ Wrong password provided for that user.');
         throw Exception('Incorrect password. Please try again.');
       } else if (e.code == 'invalid-email') {
         debugPrint('❌ Invalid email format.');
-        throw Exception('Invalid email format. Please enter a valid email address.');
+        throw Exception(
+          'Invalid email format. Please enter a valid email address.',
+        );
       } else if (e.code == 'user-disabled') {
         debugPrint('❌ User account has been disabled.');
         throw Exception('This account has been disabled.');
@@ -168,7 +176,9 @@ class AuthService {
         throw Exception('Too many failed attempts. Please try again later.');
       } else if (e.code == 'invalid-credential') {
         debugPrint('❌ Invalid credentials provided.');
-        throw Exception('Invalid email or password. Please check your credentials.');
+        throw Exception(
+          'Invalid email or password. Please check your credentials.',
+        );
       }
 
       rethrow;
@@ -182,10 +192,7 @@ class AuthService {
         e,
         StackTrace.current,
         reason: 'Email/Password Sign-In unexpected error',
-        information: [
-          'Email: $email',
-          'Error type: ${e.runtimeType}',
-        ],
+        information: ['Email: $email', 'Error type: ${e.runtimeType}'],
         fatal: false,
       );
 
@@ -273,9 +280,7 @@ class AuthService {
           ? "645112342207-2eu3dchcpi7lea29ca0kanq6gp37o72b.apps.googleusercontent.com"
           : "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com";
 
-      googleSignIn.initialize(
-        serverClientId: serverClientId,
-      );
+      googleSignIn.initialize(serverClientId: serverClientId);
 
       // Check if authenticate() is supported
       debugPrint(
@@ -321,6 +326,7 @@ class AuthService {
           idToken: googleAuth.idToken,
         );
 
+        // This will change the auth state and trigger the listener in auth provider
         debugPrint('🔥 Signing in to Firebase with Google credential...');
         final UserCredential result = await _auth.signInWithCredential(
           credential,
@@ -502,6 +508,7 @@ class AuthService {
       bool needsEmailVerification = false;
       bool isBUEmail = false;
 
+      // If user logs in with email hidden setting
       if (emailToValidate == null || emailToValidate.isEmpty) {
         debugPrint(
           '⚠️ No email provided by Apple - will need email verification flow',
@@ -510,10 +517,11 @@ class AuthService {
         emailToValidate = 'hidden-email@apple.privaterelay.com';
         needsEmailVerification = true;
       } else {
+        // If user did not hide email
         // Check if this is a BU email or test account
         isBUEmail = await _isBUEmail(emailToValidate);
 
-        if (!isBUEmail &&
+        if (!isBUEmail && // If email given was not BU email
             appleUserIdentifier !=
                 '001440.0375fb781c4c4e45ad0c305c709a2e7e.1927') {
           debugPrint(
@@ -523,6 +531,7 @@ class AuthService {
         }
       }
 
+      // If email not hidden and email is BU email, needsEmailVerification remains false
       debugPrint(
         '🎓 Email validation result - isBUEmail: $isBUEmail, needsVerification: $needsEmailVerification',
       );
@@ -535,6 +544,7 @@ class AuthService {
       debugPrint('🔍 Checking for existing user document in Firestore...');
       final existingUser = await getUserData(result.user!.uid);
 
+      // Create new user if user doesn't exist
       if (existingUser == null) {
         debugPrint('➕ Creating new user document for Apple Sign-In');
 
@@ -683,7 +693,8 @@ class AuthService {
 
         // Handle gender changes with validation
         if (gender != null && userData != null) {
-          final isGenderChanging = userData.gender != null && userData.gender != gender;
+          final isGenderChanging =
+              userData.gender != null && userData.gender != gender;
 
           if (isGenderChanging) {
             // Whitelist emails that can change gender unlimited times
@@ -885,9 +896,7 @@ class AuthService {
           ? "645112342207-2eu3dchcpi7lea29ca0kanq6gp37o72b.apps.googleusercontent.com"
           : "555170207131-7svrdoua7njct4p8pebdrlfibshdbkih.apps.googleusercontent.com";
 
-      googleSignIn.initialize(
-        serverClientId: serverClientId,
-      );
+      googleSignIn.initialize(serverClientId: serverClientId);
 
       // Disconnect first to force account selection
       await googleSignIn.disconnect();

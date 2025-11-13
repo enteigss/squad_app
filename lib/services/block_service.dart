@@ -47,12 +47,12 @@ class BlockService {
 
       // Update blocker's blockedUserIds
       batch.update(_firestore.collection('users').doc(currentUserId), {
-        'blockedUserIds': FieldValue.arrayUnion([targetUserId])
+        'blockedUserIds': FieldValue.arrayUnion([targetUserId]),
       });
 
       // Update blocked user's blockedByUserIds
       batch.update(_firestore.collection('users').doc(targetUserId), {
-        'blockedByUserIds': FieldValue.arrayUnion([currentUserId])
+        'blockedByUserIds': FieldValue.arrayUnion([currentUserId]),
       });
 
       await batch.commit();
@@ -90,12 +90,12 @@ class BlockService {
 
       // Update blocker's blockedUserIds
       batch.update(_firestore.collection('users').doc(currentUserId), {
-        'blockedUserIds': FieldValue.arrayRemove([targetUserId])
+        'blockedUserIds': FieldValue.arrayRemove([targetUserId]),
       });
 
       // Update blocked user's blockedByUserIds
       batch.update(_firestore.collection('users').doc(targetUserId), {
-        'blockedByUserIds': FieldValue.arrayRemove([currentUserId])
+        'blockedByUserIds': FieldValue.arrayRemove([currentUserId]),
       });
 
       await batch.commit();
@@ -150,8 +150,13 @@ class BlockService {
       if (currentUserId == null) return [];
 
       // Get user's blocked list
-      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
-      final blockedIds = List<String>.from(userDoc.data()?['blockedUserIds'] ?? []);
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .get();
+      final blockedIds = List<String>.from(
+        userDoc.data()?['blockedUserIds'] ?? [],
+      );
 
       if (blockedIds.isEmpty) return [];
 
@@ -159,7 +164,10 @@ class BlockService {
       final List<UserModel> blockedUsers = [];
       for (String blockedId in blockedIds) {
         try {
-          final blockedUserDoc = await _firestore.collection('users').doc(blockedId).get();
+          final blockedUserDoc = await _firestore
+              .collection('users')
+              .doc(blockedId)
+              .get();
           if (blockedUserDoc.exists) {
             blockedUsers.add(UserModel.fromMap(blockedUserDoc.data()!));
           }
@@ -187,31 +195,50 @@ class BlockService {
         .collection('blocks')
         .where('blockerId', isEqualTo: currentUserId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BlockModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => BlockModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   /// Helper method to filter out blocked users from a list
-  List<UserModel> filterBlockedUsers(List<UserModel> users, List<String> blockedUserIds, List<String> blockedByUserIds) {
+  List<UserModel> filterBlockedUsers(
+    List<UserModel> users,
+    List<String> blockedUserIds,
+    List<String> blockedByUserIds,
+  ) {
     return users.where((user) {
-      return !blockedUserIds.contains(user.id) && !blockedByUserIds.contains(user.id);
+      return !blockedUserIds.contains(user.id) &&
+          !blockedByUserIds.contains(user.id);
     }).toList();
   }
 
   /// Helper method to check if content should be filtered (from blocked user)
   /// Only filters if current user has blocked the author (asymmetric filtering)
-  bool shouldFilterContent(String authorId, List<String> blockedUserIds, List<String> blockedByUserIds) {
+  bool shouldFilterContent(
+    String authorId,
+    List<String> blockedUserIds,
+    List<String> blockedByUserIds,
+  ) {
     return blockedUserIds.contains(authorId);
   }
 
   /// Helper method to check if content should be censored (for messages)
-  bool shouldCensorContent(String authorId, List<String> blockedUserIds, List<String> blockedByUserIds) {
+  bool shouldCensorContent(
+    String authorId,
+    List<String> blockedUserIds,
+    List<String> blockedByUserIds,
+  ) {
     return blockedUserIds.contains(authorId);
   }
 
   /// Helper method to check if hangout should be hidden from current user because they are blocked by host
-  bool shouldHideHangoutFromBlocked(String hangoutHostId, List<String> blockedUserIds, List<String> blockedByUserIds) {
+  bool shouldHideHangoutFromBlocked(
+    String hangoutHostId,
+    List<String> blockedUserIds,
+    List<String> blockedByUserIds,
+  ) {
     return blockedByUserIds.contains(hangoutHostId);
   }
 
@@ -228,7 +255,10 @@ class BlockService {
   }
 
   /// Remove blocked user from all hangouts hosted by the blocker
-  Future<void> _removeFromHostedHangouts(String hostId, String blockedUserId) async {
+  Future<void> _removeFromHostedHangouts(
+    String hostId,
+    String blockedUserId,
+  ) async {
     try {
       // Get all posts/hangouts hosted by the current user
       final postsQuery = await _firestore
@@ -247,13 +277,15 @@ class BlockService {
 
       for (final doc in postsQuery.docs) {
         batch.update(doc.reference, {
-          'participantIds': FieldValue.arrayRemove([blockedUserId])
+          'participantIds': FieldValue.arrayRemove([blockedUserId]),
         });
         debugPrint('Removing $blockedUserId from hangout: ${doc.id}');
       }
 
       await batch.commit();
-      debugPrint('Successfully removed blocked user from ${postsQuery.docs.length} hangouts');
+      debugPrint(
+        'Successfully removed blocked user from ${postsQuery.docs.length} hangouts',
+      );
     } catch (e) {
       debugPrint('Error removing blocked user from hangouts: $e');
       // Don't rethrow to prevent blocking operation from failing

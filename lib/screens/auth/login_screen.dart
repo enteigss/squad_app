@@ -36,7 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final now = DateTime.now();
 
     // Reset counter if more than 2 seconds since last tap
-    if (_lastTapTime == null || now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
+    if (_lastTapTime == null ||
+        now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
       _logoTapCount = 1;
     } else {
       _logoTapCount++;
@@ -182,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -292,7 +292,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Divider with text
                 Row(
                   children: [
-                    const Expanded(child: Divider(color: AppColors.textSecondary)),
+                    const Expanded(
+                      child: Divider(color: AppColors.textSecondary),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
@@ -303,7 +305,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const Expanded(child: Divider(color: AppColors.textSecondary)),
+                    const Expanded(
+                      child: Divider(color: AppColors.textSecondary),
+                    ),
                   ],
                 ),
 
@@ -367,7 +371,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Sign in button
                       ElevatedButton(
-                        onPressed: _isEmailLoading ? null : _signInWithEmailPassword,
+                        onPressed: _isEmailLoading
+                            ? null
+                            : _signInWithEmailPassword,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -382,7 +388,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Text(

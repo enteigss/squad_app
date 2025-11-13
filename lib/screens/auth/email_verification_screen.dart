@@ -6,19 +6,14 @@ import '../../services/email_verification_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
 
-enum VerificationState {
-  initial,
-  emailSent,
-  verifying,
-  verified,
-  error,
-}
+enum VerificationState { initial, emailSent, verifying, verified, error }
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
 
   @override
-  State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
@@ -28,13 +23,15 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   final _codeFocusNode = FocusNode();
   final _formKey = GlobalKey<FormState>();
 
-  final EmailVerificationService _verificationService = EmailVerificationService();
+  final EmailVerificationService _verificationService =
+      EmailVerificationService();
 
   VerificationState _state = VerificationState.initial;
   String? _errorMessage;
   Timer? _resendTimer;
   int _resendCountdown = 0;
   bool _isLoading = false;
+  int _attemptCount = 0;
 
   @override
   void initState() {
@@ -110,7 +107,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = _verificationService.getDisplayErrorMessage(e.toString());
+        _errorMessage = _verificationService.getDisplayErrorMessage(
+          e.toString(),
+        );
         _state = VerificationState.error;
         _isLoading = false;
       });
@@ -133,7 +132,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     });
 
     try {
-      final result = await _verificationService.validateCode(_codeController.text.trim());
+      final result = await _verificationService.validateCode(
+        _codeController.text.trim(),
+      );
 
       setState(() {
         _state = VerificationState.verified;
@@ -154,8 +155,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = _verificationService.getDisplayErrorMessage(e.toString());
+        _errorMessage = _verificationService.getDisplayErrorMessage(
+          e.toString(),
+        );
         _state = VerificationState.error;
+        _attemptCount++;
         _isLoading = false;
       });
     }
@@ -260,7 +264,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 const SizedBox(height: 40),
 
                 // Email Input Section
-                if (_state == VerificationState.initial || _state == VerificationState.error) ...[
+                if (_state == VerificationState.initial ||
+                    _state == VerificationState.error) ...[
                   TextFormField(
                     controller: _emailController,
                     focusNode: _emailFocusNode,
@@ -297,12 +302,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Text(
                             'Send Verification Code',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                   ),
                 ],
@@ -311,7 +321,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 if (_state == VerificationState.emailSent ||
                     _state == VerificationState.verifying ||
                     _state == VerificationState.verified) ...[
-
                   // Success message
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -322,7 +331,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle_outline, color: Colors.green[700]),
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.green[700],
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -385,12 +397,19 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : Text(
-                            _state == VerificationState.verified ? 'Verified!' : 'Verify Code',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            _state == VerificationState.verified
+                                ? 'Verified!'
+                                : 'Verify Code',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                   ),
                   const SizedBox(height: 16),
@@ -410,7 +429,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           ? 'Resend code in ${_resendCountdown}s'
                           : 'Resend code',
                       style: TextStyle(
-                        color: _resendCountdown > 0 ? Colors.grey : AppColors.primary,
+                        color: _resendCountdown > 0
+                            ? Colors.grey
+                            : AppColors.primary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
