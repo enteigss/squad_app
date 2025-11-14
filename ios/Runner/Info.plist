@@ -7,13 +7,13 @@
   		<dict>
     		<key>CFBundleURLSchemes</key>
     		<array>
-      			<string>fbYOUR_APP_ID</string>
+      			<string>fb2035235833962108</string>
     		</array>
   		</dict>
 		</array>
 
 	<key>FacebookAppID</key>
-	<string>YOUR_APP_ID</string>
+	<string>2035235833962108</string>
 
 	<key>FacebookDisplayName</key>
 	<string>LinkUp BU</string>
@@ -26,7 +26,7 @@
 
 <!-- For iOS 14+ App Tracking Transparency -->
 	<key>NSUserTrackingUsageDescription</key>
-	<string>We use this to show you relevant content and measure ad performance</string>
+	<string>We use this to track ad conversion.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

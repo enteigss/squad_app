@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -43,9 +44,13 @@ void main() async {
     await Firebase.initializeApp();
     debugPrint('✅ Firebase initialized successfully');
 
-    // Initialize Facebook App Events for ad attribution
-    final facebookAppEvents = FacebookAppEvents();
-    debugPrint('📱 Facebook App Events initialized for ad tracking');
+    // Initialize Facebook App Events for ad attribution (release mode only)
+    if (kReleaseMode) {
+      final facebookAppEvents = FacebookAppEvents();
+      debugPrint('📱 Facebook App Events initialized for ad tracking');
+    } else {
+      debugPrint('📱 Facebook App Events disabled in debug mode');
+    }
 
     // Initialize Firebase Crashlytics
     debugPrint('💥 Initializing Firebase Crashlytics...');
