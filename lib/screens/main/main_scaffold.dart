@@ -11,6 +11,7 @@ import '../../services/analytics_service.dart';
 import '../../widgets/meetup_outcome_dialog.dart';
 import '../feed/feed_screen.dart';
 import '../feed/create_post_screen.dart';
+import '../plans/plans_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -32,8 +33,8 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final List<Widget> _screens = [
     const FeedScreen(),
-    const CreatePostScreen(),
     const ProfileScreen(),
+    const PlansScreen(),
   ];
 
   @override
@@ -269,28 +270,73 @@ class _MainScaffoldState extends State<MainScaffold> {
       ),
       bottomNavigationBar: Consumer<TabNavigationProvider>(
         builder: (context, tabProvider, child) {
-          return BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: tabProvider.selectedIndex,
-            onTap: _onItemTapped,
-            backgroundColor: AppColors.surface,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textSecondary,
-            selectedFontSize: 12,
-            unselectedFontSize: 12,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.feed),
-                label: 'Hangouts',
+          return BottomAppBar(
+            color: AppColors.surface,
+            child: Container(
+              height: 60.0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  // TAB 0: HOME
+                  _buildTabItem(
+                    context: context,
+                    tabProvider: tabProvider,
+                    index: 0,
+                    icon: Icons.home,
+                    label: 'Home',
+                  ),
+                  // TAB 1: PROFILE
+                  _buildTabItem(
+                    context: context,
+                    tabProvider: tabProvider,
+                    index: 1,
+                    icon: Icons.person,
+                    label: 'Profile',
+                  ),
+                  // TAB 2: PLANS
+                  _buildTabItem(
+                    context: context,
+                    tabProvider: tabProvider,
+                    index: 2,
+                    icon: Icons.event_note,
+                    label: 'Plans',
+                  ),
+                ],
               ),
-              BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
+            ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTabItem({
+    required BuildContext context,
+    required TabNavigationProvider tabProvider,
+    required int index,
+    required IconData icon,
+    required String label,
+  }) {
+    final bool isSelected = tabProvider.selectedIndex == index;
+    final Color color = isSelected
+        ? AppColors.primary
+        : AppColors.textSecondary;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onItemTapped(index),
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          height: 60.0,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(height: 4.0),
+              Text(label, style: TextStyle(color: color, fontSize: 12)),
+            ],
+          ),
+        ),
       ),
     );
   }

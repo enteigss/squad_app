@@ -138,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

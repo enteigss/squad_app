@@ -15,6 +15,7 @@ import 'providers/tab_navigation_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/auth/email_verification_screen.dart';
+import 'screens/profile/profile_screen.dart';
 import 'screens/profile/delete_account_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/feed/create_post_screen.dart';
@@ -490,13 +491,14 @@ class _SquadAppState extends State<SquadApp> {
           path: '/home',
           builder: (context, state) => const MainScaffold(initialIndex: 0),
         ),
+        // /feed route removed - Create is no longer in PageView
         GoRoute(
-          path: '/feed',
+          path: '/plans',
           builder: (context, state) => const MainScaffold(initialIndex: 1),
         ),
         GoRoute(
           path: '/profile',
-          builder: (context, state) => const MainScaffold(initialIndex: 2),
+          builder: (context, state) => const ProfileScreen(),
         ),
         GoRoute(
           path: '/profile/delete-account',

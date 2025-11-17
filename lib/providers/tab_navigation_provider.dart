@@ -22,10 +22,15 @@ class TabNavigationProvider extends ChangeNotifier {
   }
   
   void navigateToCreate() {
+    // TODO: Navigate to create post screen (route or modal)
+    // No longer tied to PageView index
+  }
+
+  void navigateToProfile() {
     setSelectedIndex(1);
   }
-  
-  void navigateToProfile() {
+
+  void navigateToPlans() {
     setSelectedIndex(2);
   }
 }
