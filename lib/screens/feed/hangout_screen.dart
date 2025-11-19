@@ -41,7 +41,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
   final NotificationService _notificationService = NotificationService();
   List<UserModel> _members = [];
   bool _isLoading = true;
-  String _currentTitle = '';
   String _currentDescription = '';
   DateTime? _currentScheduledTime;
   String? _currentLocation;
@@ -54,7 +53,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
   @override
   void initState() {
     super.initState();
-    _currentTitle = widget.post.title;
     _currentDescription = widget.post.description;
     _currentScheduledTime = widget.post.scheduledTime;
     _currentLocation = widget.post.location;
@@ -246,14 +244,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _currentTitle,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
                 _buildInfoRow(
                   Icons.schedule,
                   _formatTimeDisplay(_currentScheduledTime),
@@ -509,7 +499,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
     InviteOptionsModal.show(
       context,
       hangoutId: currentPost.id,
-      hangoutTitle: currentPost.title,
       inviterName: inviterName,
     );
   }
@@ -978,10 +967,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
         context,
         contentType: 'hangout',
         contentId: widget.post.id,
-        contentTitle: widget.post.title,
         authorId: widget.post.authorId,
         contentSnippet: ReportService.createHangoutContentSnippet(
-          title: widget.post.title,
           description: widget.post.description,
           location: widget.post.location,
           participantCount: widget.post.participantIds.length,
@@ -1007,10 +994,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
       await _reportService.submitReport(
         contentType: 'hangout',
         contentId: widget.post.id,
-        contentTitle: widget.post.title,
         authorId: widget.post.authorId,
         contentSnippet: ReportService.createHangoutContentSnippet(
-          title: widget.post.title,
           description: widget.post.description,
           location: widget.post.location,
           participantCount: widget.post.participantIds.length,
@@ -1079,7 +1064,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
   Future<void> _showEditHangoutDialog() async {
     // Create a post object with current state values for the dialog
     final currentPost = widget.post.copyWith(
-      title: _currentTitle,
       description: _currentDescription,
       scheduledTime: _currentScheduledTime,
       location: _currentLocation,
@@ -1093,7 +1077,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
   }
 
   Future<void> _handleHangoutUpdate(
-    String newTitle,
     String newDescription,
     DateTime? newScheduledTime,
     String? newLocation,
@@ -1101,12 +1084,11 @@ class _HangoutScreenState extends State<HangoutScreen> {
     final postProvider = Provider.of<PostProvider>(context, listen: false);
 
     // Track what changed
-    final titleChanged = newTitle != _currentTitle;
     final descriptionChanged = newDescription != _currentDescription;
     final timeChanged = newScheduledTime != _currentScheduledTime;
     final locationChanged = newLocation != _currentLocation;
 
-    if (!titleChanged && !descriptionChanged && !timeChanged && !locationChanged) {
+    if (!descriptionChanged && !timeChanged && !locationChanged) {
       // Nothing changed
       return;
     }
@@ -1123,7 +1105,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
     try {
       // Update the post
       final updatedPost = widget.post.copyWith(
-        title: newTitle,
         description: newDescription,
         scheduledTime: newScheduledTime,
         location: newLocation,
@@ -1139,7 +1120,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
       if (success && mounted) {
         // Update local state
         setState(() {
-          _currentTitle = newTitle;
           _currentDescription = newDescription;
           _currentScheduledTime = newScheduledTime;
           _currentLocation = newLocation;
@@ -1155,9 +1135,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
 
         // Build notification message based on what changed
         final changes = <String>[];
-        if (titleChanged) {
-          changes.add('title');
-        }
         if (descriptionChanged) {
           changes.add('description');
         }
@@ -1171,15 +1148,12 @@ class _HangoutScreenState extends State<HangoutScreen> {
         // Notify members about the changes
         await _notificationService.notifyHangoutUpdated(
           hangoutId: widget.post.id,
-          hangoutTitle: newTitle,
           ownerId: widget.post.authorId,
           participantIds: widget.post.participantIds,
           changes: changes,
-          oldTitle: titleChanged ? _currentTitle : null,
           oldDescription: descriptionChanged ? _currentDescription : null,
           oldTime: timeChanged ? _currentScheduledTime : null,
           oldLocation: locationChanged ? _currentLocation : null,
-          newTitle: titleChanged ? newTitle : null,
           newDescription: descriptionChanged ? newDescription : null,
           newTime: timeChanged ? newScheduledTime : null,
           newLocation: locationChanged ? newLocation : null,
@@ -1242,7 +1216,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
           SnackBar(
             content: Text(
               success
-                  ? 'Joined "${widget.post.title}"!'
+                  ? 'Joined hangout!'
                   : postProvider.error ?? 'Failed to join hangout',
             ),
             backgroundColor: success ? AppColors.success : AppColors.error,
@@ -1254,7 +1228,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
           debugPrint('📊 HANGOUT SCREEN - Tracking hangout join analytics');
           debugPrint('📋 User ID: $userId');
           debugPrint('📋 Hangout ID: ${widget.post.id}');
-          debugPrint('📋 Hangout Title: ${widget.post.title}');
 
           await AnalyticsService().trackHangoutJoined(
             userId: userId,
@@ -1305,7 +1278,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
           SnackBar(
             content: Text(
               success
-                  ? 'Left "${widget.post.title}"'
+                  ? 'Left hangout'
                   : postProvider.error ?? 'Failed to leave hangout',
             ),
             backgroundColor: success ? AppColors.success : AppColors.error,

@@ -6,13 +6,11 @@ import '../config/environment.dart';
 
 class InviteOptionsModal extends StatefulWidget {
   final String hangoutId;
-  final String hangoutTitle;
   final String inviterName;
 
   const InviteOptionsModal({
     super.key,
     required this.hangoutId,
-    required this.hangoutTitle,
     required this.inviterName,
   });
 
@@ -22,7 +20,6 @@ class InviteOptionsModal extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required String hangoutId,
-    required String hangoutTitle,
     required String inviterName,
   }) {
     return showModalBottomSheet(
@@ -31,7 +28,6 @@ class InviteOptionsModal extends StatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => InviteOptionsModal(
         hangoutId: hangoutId,
-        hangoutTitle: hangoutTitle,
         inviterName: inviterName,
       ),
     );
@@ -75,7 +71,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'to "${widget.hangoutTitle}"',
+                  'to this hangout',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -215,7 +211,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
       // Generate the invite URL using environment-specific web app URL
       final shareUrl =
           '${EnvironmentConfig.webAppUrl}/hangout/${widget.hangoutId}';
-      final shareText = 'Join me for "${widget.hangoutTitle}"! $shareUrl';
+      final shareText = 'Join me for this hangout! $shareUrl';
 
       // Get the box position BEFORE closing the modal
       print('DEBUG: Getting render box position');
@@ -237,7 +233,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
         print('DEBUG: Calling Share.share()');
         await Share.share(
           shareText,
-          subject: 'You\'re invited to ${widget.hangoutTitle}',
+          subject: 'You\'re invited to a hangout',
           sharePositionOrigin: sharePositionOrigin,
         );
         print('DEBUG: Share.share() completed');

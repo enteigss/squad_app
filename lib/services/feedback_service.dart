@@ -36,15 +36,14 @@ class FeedbackService {
         id: promptId,
         hangoutId: completedPost.id,
         userId: authorId,
-        hangoutTitle: completedPost.title,
         hangoutCompletedAt: now,
         createdAt: now,
       );
 
       await promptRef.set(prompt.toMap());
-      
+
       debugPrint(
-        'Created feedback prompt for author of hangout: ${completedPost.title}',
+        'Created feedback prompt for author of hangout: ${completedPost.id}',
       );
     } catch (e) {
       debugPrint('Failed to create feedback prompt for author: $e');
@@ -132,21 +131,19 @@ class FeedbackService {
   Future<void> submitFeedback({
     required String hangoutId,
     required String userId,
-    required String hangoutTitle,
     required bool didMeetup,
     String? additionalFeedback,
   }) async {
     try {
       // Ensure user is authenticated before proceeding
       await FirebaseAuth.instance.currentUser?.getIdToken(true); // Force token refresh
-      
+
       // Create the feedback document
       final feedbackRef = _firestore.collection(_feedbackCollection).doc();
       final feedback = MeetupFeedback(
         id: feedbackRef.id,
         hangoutId: hangoutId,
         userId: userId,
-        hangoutTitle: hangoutTitle,
         didMeetup: didMeetup,
         additionalFeedback: additionalFeedback,
         submittedAt: DateTime.now(),

@@ -4,7 +4,6 @@ class MeetupFeedback {
   final String id;
   final String hangoutId;
   final String userId;
-  final String hangoutTitle;
   final bool didMeetup;
   final String? additionalFeedback;
   final DateTime submittedAt;
@@ -13,7 +12,6 @@ class MeetupFeedback {
     required this.id,
     required this.hangoutId,
     required this.userId,
-    required this.hangoutTitle,
     required this.didMeetup,
     this.additionalFeedback,
     required this.submittedAt,
@@ -24,7 +22,6 @@ class MeetupFeedback {
       id: map['id'] ?? '',
       hangoutId: map['hangoutId'] ?? '',
       userId: map['userId'] ?? '',
-      hangoutTitle: map['hangoutTitle'] ?? '',
       didMeetup: map['didMeetup'] ?? false,
       additionalFeedback: map['additionalFeedback'],
       submittedAt: (map['submittedAt'] as Timestamp).toDate(),
@@ -36,7 +33,6 @@ class MeetupFeedback {
       'id': id,
       'hangoutId': hangoutId,
       'userId': userId,
-      'hangoutTitle': hangoutTitle,
       'didMeetup': didMeetup,
       'additionalFeedback': additionalFeedback,
       'submittedAt': Timestamp.fromDate(submittedAt),
@@ -47,7 +43,6 @@ class MeetupFeedback {
     String? id,
     String? hangoutId,
     String? userId,
-    String? hangoutTitle,
     bool? didMeetup,
     String? additionalFeedback,
     DateTime? submittedAt,
@@ -56,7 +51,6 @@ class MeetupFeedback {
       id: id ?? this.id,
       hangoutId: hangoutId ?? this.hangoutId,
       userId: userId ?? this.userId,
-      hangoutTitle: hangoutTitle ?? this.hangoutTitle,
       didMeetup: didMeetup ?? this.didMeetup,
       additionalFeedback: additionalFeedback ?? this.additionalFeedback,
       submittedAt: submittedAt ?? this.submittedAt,
@@ -68,7 +62,6 @@ class PendingFeedbackPrompt {
   final String id;
   final String hangoutId;
   final String userId;
-  final String hangoutTitle;
   final DateTime hangoutCompletedAt;
   final DateTime createdAt;
   final bool isShown;
@@ -78,7 +71,6 @@ class PendingFeedbackPrompt {
     required this.id,
     required this.hangoutId,
     required this.userId,
-    required this.hangoutTitle,
     required this.hangoutCompletedAt,
     required this.createdAt,
     this.isShown = false,
@@ -90,12 +82,11 @@ class PendingFeedbackPrompt {
       id: map['id'] ?? '',
       hangoutId: map['hangoutId'] ?? '',
       userId: map['userId'] ?? '',
-      hangoutTitle: map['hangoutTitle'] ?? '',
       hangoutCompletedAt: (map['hangoutCompletedAt'] as Timestamp).toDate(),
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       isShown: map['isShown'] ?? false,
-      shownAt: map['shownAt'] != null 
-          ? (map['shownAt'] as Timestamp).toDate() 
+      shownAt: map['shownAt'] != null
+          ? (map['shownAt'] as Timestamp).toDate()
           : null,
     );
   }
@@ -105,7 +96,6 @@ class PendingFeedbackPrompt {
       'id': id,
       'hangoutId': hangoutId,
       'userId': userId,
-      'hangoutTitle': hangoutTitle,
       'hangoutCompletedAt': Timestamp.fromDate(hangoutCompletedAt),
       'createdAt': Timestamp.fromDate(createdAt),
       'isShown': isShown,
@@ -117,7 +107,6 @@ class PendingFeedbackPrompt {
     String? id,
     String? hangoutId,
     String? userId,
-    String? hangoutTitle,
     DateTime? hangoutCompletedAt,
     DateTime? createdAt,
     bool? isShown,
@@ -127,7 +116,6 @@ class PendingFeedbackPrompt {
       id: id ?? this.id,
       hangoutId: hangoutId ?? this.hangoutId,
       userId: userId ?? this.userId,
-      hangoutTitle: hangoutTitle ?? this.hangoutTitle,
       hangoutCompletedAt: hangoutCompletedAt ?? this.hangoutCompletedAt,
       createdAt: createdAt ?? this.createdAt,
       isShown: isShown ?? this.isShown,

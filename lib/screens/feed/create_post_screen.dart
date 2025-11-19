@@ -1372,7 +1372,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       // Create the hangout
       final success = await postProvider.createPost(
-        title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         authorId: currentUser.id,
         authorName: currentUser.displayName ?? 'Unknown User',
@@ -1404,7 +1403,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
           // Then show success message with invite option on hangouts page
           _showSuccessWithInviteOption(
-            hangoutTitle: _titleController.text.trim(),
             hangoutId: hangoutId,
             inviterName: currentUser.displayName ?? 'Unknown User',
           );
@@ -1437,7 +1435,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _showSuccessWithInviteOption({
-    required String hangoutTitle,
     required String hangoutId,
     required String inviterName,
   }) {
@@ -1465,7 +1462,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"$hangoutTitle" has been created successfully!',
+              'Your hangout has been created successfully!',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
@@ -1497,7 +1494,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               InviteOptionsModal.show(
                 context,
                 hangoutId: hangoutId,
-                hangoutTitle: hangoutTitle,
                 inviterName: inviterName,
               );
               // No .then() callback needed - user is already on hangouts page

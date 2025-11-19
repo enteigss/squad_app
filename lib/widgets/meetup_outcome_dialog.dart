@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../utils/colors.dart';
 
 class MeetupOutcomeDialog extends StatefulWidget {
-  final String hangoutTitle;
   final VoidCallback? onCancel;
   final Function(bool didMeetup) onConfirmDelete;
   final String? contextText;
@@ -13,7 +12,6 @@ class MeetupOutcomeDialog extends StatefulWidget {
 
   const MeetupOutcomeDialog({
     super.key,
-    required this.hangoutTitle,
     this.onCancel,
     required this.onConfirmDelete,
     this.contextText,
@@ -25,7 +23,6 @@ class MeetupOutcomeDialog extends StatefulWidget {
 
   static Future<void> show(
     BuildContext context, {
-    required String hangoutTitle,
     VoidCallback? onCancel,
     required Function(bool didMeetup) onConfirmDelete,
     String? contextText,
@@ -40,7 +37,6 @@ class MeetupOutcomeDialog extends StatefulWidget {
       builder: (context) => PopScope(
         canPop: !isRequired, // Required dialogs can't be dismissed with back button
         child: MeetupOutcomeDialog(
-          hangoutTitle: hangoutTitle,
           onCancel: onCancel,
           onConfirmDelete: onConfirmDelete,
           contextText: contextText,
@@ -146,7 +142,7 @@ class _MeetupOutcomeDialogState extends State<MeetupOutcomeDialog> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    widget.hangoutTitle,
+                    'Hangout',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,

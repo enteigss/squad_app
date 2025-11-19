@@ -240,7 +240,6 @@ class PostService {
           
           await _notificationService.notifyHangoutOwnerOfJoin(
             hangoutId: postId,
-            hangoutTitle: postForNotification!.title,
             ownerId: postForNotification!.authorId,
             joinerName: userName,
             joinerId: userId,
@@ -315,7 +314,6 @@ class PostService {
           
           await _notificationService.notifyHangoutOwnerOfLeave(
             hangoutId: postId,
-            hangoutTitle: postForNotification!.title,
             ownerId: postForNotification!.authorId,
             leaverName: userName,
             leaverId: userId,
@@ -385,7 +383,6 @@ class PostService {
         await _feedbackService.submitFeedback(
           hangoutId: postId,
           userId: authorId,
-          hangoutTitle: post.title,
           didMeetup: authorDidMeetup,
           additionalFeedback: null,
         );
@@ -446,8 +443,7 @@ class PostService {
         final searchQuery = query.toLowerCase();
         return !post.deleted &&
             !post.isLocked &&
-            (post.title.toLowerCase().contains(searchQuery) ||
-                post.description.toLowerCase().contains(searchQuery));
+            post.description.toLowerCase().contains(searchQuery);
       }).toList();
     });
   }

@@ -274,16 +274,6 @@ class HangoutCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title
-        Text(
-          post.title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            height: 1.2,
-          ),
-        ),
-
         const SizedBox(height: 4),
 
         // Location below title
@@ -509,7 +499,7 @@ class HangoutCard extends StatelessWidget {
         SnackBar(
           content: Text(
             success
-                ? 'Hangout "${post.title}" has been $actionPast'
+                ? 'Hangout has been $actionPast'
                 : postProvider.error ?? 'Failed to $action hangout',
           ),
           backgroundColor: success ? AppColors.success : AppColors.error,
@@ -550,7 +540,7 @@ class HangoutCard extends StatelessWidget {
           SnackBar(
             content: Text(
               success
-                  ? 'Deleted "${post.title}"'
+                  ? 'Deleted hangout'
                   : postProvider.error ?? 'Failed to delete hangout',
             ),
             backgroundColor: success ? AppColors.success : AppColors.error,
@@ -566,7 +556,6 @@ class HangoutCard extends StatelessWidget {
     // Show feedback dialog for immediate author feedback
     await MeetupOutcomeDialog.show(
       context,
-      hangoutTitle: post.title,
       onCancel: () {
         // User cancelled deletion - do nothing
       },
@@ -589,7 +578,7 @@ class HangoutCard extends StatelessWidget {
             SnackBar(
               content: Text(
                 success
-                    ? 'Deleted "${post.title}" and saved feedback'
+                    ? 'Deleted hangout and saved feedback'
                     : postProvider.error ?? 'Failed to delete hangout',
               ),
               backgroundColor: success ? AppColors.success : AppColors.error,

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../utils/colors.dart';
-
-enum PostType { walking, raising, waving }
-
-enum Activity { diningHall, studying, walking, fitRec, chilling, other }
+import '../models/post_model.dart';
+import '../providers/auth_provider.dart';
 
 enum FoodLocation {
   marcianoCommons,
@@ -11,7 +10,7 @@ enum FoodLocation {
   gsu,
   raisingCanes,
   westCampus,
-  other
+  other,
 }
 
 class CreatePostBottomSheet extends StatefulWidget {
@@ -36,11 +35,28 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   PostType? _selectedType;
   Activity? _selectedActivity;
   FoodLocation? _selectedFoodLocation;
+  String? _customActivityText;
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  bool _isTodaySelected = false;
+  String? _timeErrorMessage;
+  Set<String> _selectedGenderPreferences = {'Men', 'Women', 'Non-binary'};
+  String? _genderPreferenceError;
+  int? _maxGroupSize;
+  bool _isMaxGroupSizeSelected = false;
+  String? _maxGroupSizeError;
+  String? _additionalDetails;
   final PageController _pageController = PageController();
+  final TextEditingController _customActivityController = TextEditingController();
+  final TextEditingController _maxGroupSizeController = TextEditingController();
+  final TextEditingController _detailsController = TextEditingController();
 
   @override
   void dispose() {
     _pageController.dispose();
+    _customActivityController.dispose();
+    _maxGroupSizeController.dispose();
+    _detailsController.dispose();
     super.dispose();
   }
 
@@ -51,6 +67,19 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  void _goToPreviousPage() {
+    if (_pageController.hasClients) {
+      final currentPage = _pageController.page?.round() ?? 0;
+      if (currentPage > 0) {
+        _pageController.animateToPage(
+          currentPage - 1,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
   }
 
   void _selectActivity(Activity activity) {
@@ -69,6 +98,110 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  Future<void> _selectWhen({required bool isToday}) async {
+    setState(() {
+      _isTodaySelected = isToday;
+      _timeErrorMessage = null; // Clear any previous error
+    });
+
+    if (isToday) {
+      // Today: Just show time picker
+      setState(() => _selectedDate = DateTime.now());
+
+      final TimeOfDay? time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (time != null) {
+        // Validate that the selected time is in the future
+        final now = DateTime.now();
+        final selectedDateTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          time.hour,
+          time.minute,
+        );
+
+        if (selectedDateTime.isBefore(now)) {
+          // Show error - time is in the past
+          setState(() {
+            _timeErrorMessage = 'Please select a time in the future';
+          });
+          return; // Don't proceed
+        }
+
+        // Valid time selected
+        setState(() {
+          _selectedTime = time;
+          _timeErrorMessage = null;
+        });
+        _pageController.animateToPage(
+          4, // Navigate to gender preference screen
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else {
+      // Another day: Show date picker, then time picker
+      final DateTime? date = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(), // Prevents selecting past dates
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+      );
+
+      if (date != null) {
+        setState(() => _selectedDate = date);
+
+        // Now show time picker
+        final TimeOfDay? time = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+        );
+
+        if (time != null) {
+          // Only validate if selected date is today
+          final now = DateTime.now();
+          final isSelectedDateToday = date.year == now.year &&
+              date.month == now.month &&
+              date.day == now.day;
+
+          if (isSelectedDateToday) {
+            // Check if time is in the past
+            final selectedDateTime = DateTime(
+              date.year,
+              date.month,
+              date.day,
+              time.hour,
+              time.minute,
+            );
+
+            if (selectedDateTime.isBefore(now)) {
+              // Show error - time is in the past
+              setState(() {
+                _timeErrorMessage = 'Please select a time in the future';
+              });
+              return; // Don't proceed
+            }
+          }
+
+          // Valid selection
+          setState(() {
+            _selectedTime = time;
+            _timeErrorMessage = null;
+          });
+          _pageController.animateToPage(
+            4, // Navigate to gender preference screen
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -93,10 +226,63 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             _buildTypeSelection(),
             _buildActivitySelection(),
             _buildLocationOrNextStep(),
+            _buildWhenSelection(),
+            _buildGenderPreferenceSelection(),
+            _buildMaxGroupSizeSelection(),
+            _buildDetailsSelection(),
             _buildFinalStep(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBackButton() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0),
+      child: IconButton(
+        icon: Icon(
+          Icons.arrow_back,
+          color: AppColors.textPrimary,
+          size: 24,
+        ),
+        onPressed: _goToPreviousPage,
+      ),
+    );
+  }
+
+  Widget _buildHeaderWithBackButton(String title) {
+    return Stack(
+      children: [
+        // Back button on the left
+        Positioned(
+          left: 0,
+          top: 0,
+          child: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: AppColors.textPrimary,
+              size: 24,
+            ),
+            onPressed: _goToPreviousPage,
+          ),
+        ),
+        // Centered title
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 48.0),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -197,15 +383,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
               ),
             ),
 
-            // Header question
-            Text(
-              'What are you doing?',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            // Header with back button
+            _buildHeaderWithBackButton('What are you doing?'),
 
             const SizedBox(height: 24),
 
@@ -220,7 +399,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             const SizedBox(height: 12),
             _buildActivityButton('😎', 'Just chilling', Activity.chilling),
             const SizedBox(height: 12),
-            _buildActivityButton('✨', 'Other', Activity.other),
+            _buildOtherActivityButton(),
 
             const SizedBox(height: 24),
           ],
@@ -259,20 +438,16 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
               ),
             ),
 
-            // Header question
-            Text(
-              'Where?',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            // Header with back button
+            _buildHeaderWithBackButton('Where?'),
 
             const SizedBox(height: 24),
 
             // Location buttons
-            _buildLocationButton('Marciano Commons', FoodLocation.marcianoCommons),
+            _buildLocationButton(
+              'Marciano Commons',
+              FoodLocation.marcianoCommons,
+            ),
             const SizedBox(height: 12),
             _buildLocationButton('Warren Towers', FoodLocation.warrenTowers),
             const SizedBox(height: 12),
@@ -283,6 +458,744 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             _buildLocationButton('West Campus', FoodLocation.westCampus),
             const SizedBox(height: 12),
             _buildLocationButton('Other', FoodLocation.other),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWhenSelection() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('When?'),
+
+            const SizedBox(height: 24),
+
+            // Today button
+            GestureDetector(
+              onTap: () => _selectWhen(isToday: true),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  'Today',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Another day button
+            GestureDetector(
+              onTap: () => _selectWhen(isToday: false),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  'Another day',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
+            // Error message display
+            if (_timeErrorMessage != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _timeErrorMessage!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _toggleGenderPreference(String gender) {
+    setState(() {
+      _genderPreferenceError = null; // Clear any previous error
+
+      if (_selectedGenderPreferences.contains(gender)) {
+        // Trying to deselect
+        if (_selectedGenderPreferences.length == 1) {
+          // Can't deselect the last one
+          _genderPreferenceError = 'At least one option must be selected';
+          return;
+        }
+        _selectedGenderPreferences.remove(gender);
+      } else {
+        // Selecting
+        _selectedGenderPreferences.add(gender);
+      }
+    });
+  }
+
+  String? _validateGenderSelection() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+
+    if (currentUser == null) return 'Authentication error';
+
+    final userGender = currentUser.gender;
+
+    // If user has no gender or prefers not to say, they must select all genders
+    if (userGender == null || userGender == 'prefer_not_to_say') {
+      if (_selectedGenderPreferences.length != 3 ||
+          !_selectedGenderPreferences.contains('Men') ||
+          !_selectedGenderPreferences.contains('Women') ||
+          !_selectedGenderPreferences.contains('Non-binary')) {
+        return 'Since you haven\'t specified a gender, you must include all gender options to create a hangout';
+      }
+      return null;
+    }
+
+    // Map user gender to required preference
+    String requiredPreference;
+    switch (userGender) {
+      case 'woman':
+        requiredPreference = 'Women';
+        break;
+      case 'man':
+        requiredPreference = 'Men';
+        break;
+      case 'non_binary':
+        requiredPreference = 'Non-binary';
+        break;
+      default:
+        requiredPreference = 'Non-binary'; // Default for other gender identities
+        break;
+    }
+
+    // Check if user's gender is included in selection
+    if (!_selectedGenderPreferences.contains(requiredPreference)) {
+      return 'You must include your own gender ($requiredPreference) to create this hangout';
+    }
+
+    return null;
+  }
+
+  void _advanceFromGenderPreference() {
+    // Validate gender selection before advancing
+    final validationError = _validateGenderSelection();
+    if (validationError != null) {
+      setState(() {
+        _genderPreferenceError = validationError;
+      });
+      return;
+    }
+
+    // Clear any previous error and navigate
+    setState(() {
+      _genderPreferenceError = null;
+    });
+
+    _pageController.animateToPage(
+      5, // Navigate to max group size screen
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildGenderPreferenceSelection() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('Who are you looking to hangout with?'),
+
+            const SizedBox(height: 24),
+
+            // Men button
+            _buildGenderPreferenceButton('Men'),
+            const SizedBox(height: 12),
+
+            // Women button
+            _buildGenderPreferenceButton('Women'),
+            const SizedBox(height: 12),
+
+            // Non-binary button
+            _buildGenderPreferenceButton('Non-binary'),
+
+            // Error message display
+            if (_genderPreferenceError != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _genderPreferenceError!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            // Continue button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _advanceFromGenderPreference,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenderPreferenceButton(String gender) {
+    final isSelected = _selectedGenderPreferences.contains(gender);
+
+    return GestureDetector(
+      onTap: () => _toggleGenderPreference(gender),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textSecondary.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Checkbox indicator
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textSecondary.withValues(alpha: 0.4),
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 16,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              gender == 'Men' ? '👨' : gender == 'Women' ? '👩' : '🏳️‍🌈',
+              style: const TextStyle(fontSize: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                gender,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _selectMaxGroupSize(bool hasLimit) {
+    setState(() {
+      _isMaxGroupSizeSelected = hasLimit;
+      _maxGroupSizeError = null; // Clear any previous error
+
+      if (!hasLimit) {
+        // User selected "No" - clear the input and navigate immediately
+        _maxGroupSize = null;
+        _maxGroupSizeController.clear();
+        _pageController.animateToPage(
+          6, // Navigate to final step
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _validateAndAdvanceFromMaxGroupSize() {
+    final text = _maxGroupSizeController.text.trim();
+
+    if (text.isEmpty) {
+      setState(() {
+        _maxGroupSizeError = 'Please enter a valid number';
+      });
+      return;
+    }
+
+    final number = int.tryParse(text);
+
+    if (number == null) {
+      setState(() {
+        _maxGroupSizeError = 'Please enter a valid number';
+      });
+      return;
+    }
+
+    if (number < 2 || number > 100) {
+      setState(() {
+        _maxGroupSizeError = 'Group size must be between 2 and 100';
+      });
+      return;
+    }
+
+    // Valid number
+    setState(() {
+      _maxGroupSize = number;
+      _maxGroupSizeError = null;
+    });
+
+    _pageController.animateToPage(
+      6, // Navigate to final step
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildMaxGroupSizeSelection() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('Do you want a maximum group size?'),
+
+            const SizedBox(height: 24),
+
+            // No button
+            GestureDetector(
+              onTap: () => _selectMaxGroupSize(false),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  'No',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Yes button
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                GestureDetector(
+                  onTap: () => _selectMaxGroupSize(true),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _isMaxGroupSizeSelected
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _isMaxGroupSizeSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary.withValues(alpha: 0.2),
+                        width: _isMaxGroupSizeSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      'Yes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _isMaxGroupSizeSelected
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
+                        fontWeight: _isMaxGroupSizeSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Show number input when "Yes" is selected
+                if (_isMaxGroupSizeSelected) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _maxGroupSizeController,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Enter maximum group size (2-100)',
+                      hintStyle: TextStyle(
+                          color: AppColors.textSecondary.withValues(alpha: 0.6)),
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.textSecondary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.textSecondary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _maxGroupSizeError = null; // Clear error when typing
+                      });
+                    },
+                  ),
+
+                  // Show Continue button when text is entered
+                  if (_maxGroupSizeController.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _validateAndAdvanceFromMaxGroupSize,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+
+            // Error message display
+            if (_maxGroupSizeError != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _maxGroupSizeError!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailsSelection() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('Any details you want to share? (Optional)'),
+
+            const SizedBox(height: 24),
+
+            // Multi-line text field for details
+            TextField(
+              controller: _detailsController,
+              maxLines: 6,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Add any additional details here...',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _additionalDetails = value.trim().isEmpty ? null : value;
+                });
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Post button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // TODO: Implement post creation logic
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Post',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
 
             const SizedBox(height: 24),
           ],
@@ -311,15 +1224,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
               ),
             ),
 
-            // Placeholder for final step
-            Text(
-              'Final Step',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            // Header with back button
+            _buildHeaderWithBackButton('Final Step'),
 
             const SizedBox(height: 16),
 
@@ -331,7 +1237,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             const SizedBox(height: 8),
 
             Text(
-              'Selected activity: ${_selectedActivity?.name ?? "None"}',
+              'Selected activity: ${_selectedActivity == Activity.other && _customActivityText != null ? _customActivityText : _selectedActivity?.name ?? "None"}',
               style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
             ),
 
@@ -339,6 +1245,34 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
 
             Text(
               'Selected location: ${_selectedFoodLocation?.name ?? "None"}',
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Selected date: ${_selectedDate != null ? "${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}" : "None"}',
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Selected time: ${_selectedTime != null ? _selectedTime!.format(context) : "None"}',
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Gender preferences: ${_selectedGenderPreferences.isNotEmpty ? _selectedGenderPreferences.join(", ") : "None"}',
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Maximum group size: ${_maxGroupSize != null ? _maxGroupSize.toString() : "No limit"}',
               style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
             ),
 
@@ -393,6 +1327,140 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildOtherActivityButton() {
+    final isOtherSelected = _selectedActivity == Activity.other;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              if (_selectedActivity == Activity.other) {
+                // Deselect if already selected
+                _selectedActivity = null;
+                _customActivityText = null;
+                _customActivityController.clear();
+              } else {
+                // Select "Other" but don't advance yet
+                _selectedActivity = Activity.other;
+              }
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isOtherSelected
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isOtherSelected
+                    ? AppColors.primary
+                    : AppColors.textSecondary.withValues(alpha: 0.2),
+                width: isOtherSelected ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Text('✨', style: const TextStyle(fontSize: 28)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'Other',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isOtherSelected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                      fontWeight: isOtherSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Show text field when "Other" is selected
+        if (isOtherSelected) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _customActivityController,
+            autofocus: true,
+            style: TextStyle(color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'What are you doing?',
+              hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6)),
+              filled: true,
+              fillColor: AppColors.background,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.textSecondary.withValues(alpha: 0.2),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.textSecondary.withValues(alpha: 0.2),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _customActivityText = value.trim().isEmpty ? null : value;
+              });
+            },
+          ),
+
+          // Show Continue button when text is entered
+          if (_customActivityText != null && _customActivityText!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  _pageController.animateToPage(
+                    2,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ],
     );
   }
 

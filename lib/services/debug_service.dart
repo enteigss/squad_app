@@ -157,7 +157,6 @@ class DebugService {
         
         final post = Post(
           id: docRef.id,
-          title: sample['title']!,
           description: sample['description']!,
           authorId: '${_debugAuthorId}_$i',
           authorName: sample['authorName']!,

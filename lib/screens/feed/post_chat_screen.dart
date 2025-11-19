@@ -229,10 +229,6 @@ class _PostChatScreenState extends State<PostChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.post.title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
               'Group Chat',
               style: TextStyle(
                 fontSize: 12,

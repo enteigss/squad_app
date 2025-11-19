@@ -6,7 +6,7 @@ import '../constants/bu_locations.dart';
 
 class EditHangoutDialog extends StatefulWidget {
   final Post post;
-  final Function(String title, String description, DateTime? scheduledTime, String? location) onSave;
+  final Function(String description, DateTime? scheduledTime, String? location) onSave;
 
   const EditHangoutDialog({
     super.key,
@@ -20,7 +20,7 @@ class EditHangoutDialog extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required Post post,
-    required Function(String title, String description, DateTime? scheduledTime, String? location) onSave,
+    required Function(String description, DateTime? scheduledTime, String? location) onSave,
   }) {
     return showDialog(
       context: context,
@@ -46,7 +46,7 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.post.title);
+    _titleController = TextEditingController();
     _descriptionController = TextEditingController(text: widget.post.description);
     _customLocationController = TextEditingController();
     _selectedDateTime = widget.post.scheduledTime;
@@ -222,7 +222,6 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
 
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
-      final title = _titleController.text.trim();
       final description = _descriptionController.text.trim();
 
       // Get final location value
@@ -235,7 +234,7 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
         }
       }
 
-      widget.onSave(title, description, _selectedDateTime, finalLocation);
+      widget.onSave(description, _selectedDateTime, finalLocation);
       Navigator.of(context).pop();
     }
   }

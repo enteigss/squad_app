@@ -2,10 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum PostStatus { upcoming, ongoing, completed }
 
+enum PostType { walking, raising, waving }
+
+enum Activity { diningHall, studying, walking, fitRec, chilling, other }
+
 class Post {
   final String id;
-  final String title;
-  final String description;
+  final PostType type;
+  final Activity? activity;
+  final String? customActivity;
+  final String? description;
   final String authorId;
   final String authorName;
   final DateTime createdAt;
@@ -13,6 +19,7 @@ class Post {
   final PostStatus status;
   final List<String> participantIds;
   final String? location;
+  final String? locationTo;
   final int? maxParticipants;
   final List<String> genderPreferences;
   final bool deleted;
@@ -24,8 +31,10 @@ class Post {
 
   Post({
     required this.id,
-    required this.title,
-    required this.description,
+    required this.type,
+    this.activity,
+    this.customActivity,
+    this.description,
     required this.authorId,
     required this.authorName,
     required this.createdAt,
@@ -33,6 +42,7 @@ class Post {
     required this.status,
     required this.participantIds,
     this.location,
+    this.locationTo,
     this.maxParticipants,
     this.genderPreferences = const ['Anyone'],
     this.deleted = false,
@@ -46,8 +56,18 @@ class Post {
   factory Post.fromMap(Map<String, dynamic> map) {
     return Post(
       id: map['id'] ?? '',
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
+      type: PostType.values.firstWhere(
+        (type) => type.name == map['type'],
+        orElse: () => PostType.waving,
+      ),
+      activity: map['activity'] != null
+          ? Activity.values.firstWhere(
+              (activity) => activity.name == map['activity'],
+              orElse: () => Activity.other,
+            )
+          : null,
+      customActivity: map['customActivity'],
+      description: map['description'],
       authorId: map['authorId'] ?? '',
       authorName: map['authorName'] ?? '',
       createdAt: (map['createdAt'] as Timestamp).toDate(),
@@ -60,6 +80,7 @@ class Post {
       ),
       participantIds: List<String>.from(map['participantIds'] ?? []),
       location: map['location'],
+      locationTo: map['locationTo'],
       maxParticipants: map['maxParticipants'],
       genderPreferences: List<String>.from(map['genderPreferences'] ?? ['Anyone']),
       deleted: map['deleted'] ?? false,
@@ -76,7 +97,9 @@ class Post {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'title': title,
+      'type': type.name,
+      'activity': activity?.name,
+      'customActivity': customActivity,
       'description': description,
       'authorId': authorId,
       'authorName': authorName,
@@ -87,6 +110,7 @@ class Post {
       'status': status.name,
       'participantIds': participantIds,
       'location': location,
+      'locationTo': locationTo,
       'maxParticipants': maxParticipants,
       'genderPreferences': genderPreferences,
       'deleted': deleted,
@@ -102,7 +126,9 @@ class Post {
 
   Post copyWith({
     String? id,
-    String? title,
+    PostType? type,
+    Activity? activity,
+    String? customActivity,
     String? description,
     String? authorId,
     String? authorName,
@@ -111,6 +137,7 @@ class Post {
     PostStatus? status,
     List<String>? participantIds,
     String? location,
+    String? locationTo,
     int? maxParticipants,
     List<String>? genderPreferences,
     bool? deleted,
@@ -122,7 +149,9 @@ class Post {
   }) {
     return Post(
       id: id ?? this.id,
-      title: title ?? this.title,
+      type: type ?? this.type,
+      activity: activity ?? this.activity,
+      customActivity: customActivity ?? this.customActivity,
       description: description ?? this.description,
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
@@ -131,6 +160,7 @@ class Post {
       status: status ?? this.status,
       participantIds: participantIds ?? this.participantIds,
       location: location ?? this.location,
+      locationTo: locationTo ?? this.locationTo,
       maxParticipants: maxParticipants ?? this.maxParticipants,
       genderPreferences: genderPreferences ?? this.genderPreferences,
       deleted: deleted ?? this.deleted,

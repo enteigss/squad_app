@@ -534,7 +534,7 @@ class _SquadAppState extends State<SquadApp> {
 
             if (post != null) {
               debugPrint(
-                '✅ Post details - ID: ${post.id}, Title: ${post.title}',
+                '✅ Post details - ID: ${post.id}',
               );
             }
 

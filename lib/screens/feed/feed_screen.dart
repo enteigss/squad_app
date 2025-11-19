@@ -296,7 +296,7 @@ class _FeedScreenState extends State<FeedScreen> {
       for (int i = 0; i < filteredPosts.length && i < 3; i++) {
         final post = filteredPosts[i];
         debugPrint(
-          '🔍 FEED DEBUG: Post $i: "${post.title}" (${post.id}) - Status: ${post.dynamicStatus} - Participants: ${post.participantIds.length}',
+          '🔍 FEED DEBUG: Post $i: (${post.id}) - Status: ${post.dynamicStatus} - Participants: ${post.participantIds.length}',
         );
       }
     }

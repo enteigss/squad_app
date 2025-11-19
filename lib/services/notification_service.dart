@@ -509,7 +509,6 @@ class NotificationService {
   // Send notification when someone joins a hangout
   Future<void> notifyHangoutOwnerOfJoin({
     required String hangoutId,
-    required String hangoutTitle,
     required String ownerId,
     required String joinerName,
     required String joinerId,
@@ -522,7 +521,6 @@ class NotificationService {
       final callable = _functions.httpsCallable('sendJoinNotification');
       await callable.call({
         'hangoutId': hangoutId,
-        'hangoutTitle': hangoutTitle,
         'ownerId': ownerId,
         'joinerName': joinerName,
         'joinerId': joinerId,
@@ -542,7 +540,6 @@ class NotificationService {
   // Send notification when someone leaves a hangout
   Future<void> notifyHangoutOwnerOfLeave({
     required String hangoutId,
-    required String hangoutTitle,
     required String ownerId,
     required String leaverName,
     required String leaverId,
@@ -555,7 +552,6 @@ class NotificationService {
       final callable = _functions.httpsCallable('sendLeaveNotification');
       await callable.call({
         'hangoutId': hangoutId,
-        'hangoutTitle': hangoutTitle,
         'ownerId': ownerId,
         'leaverName': leaverName,
         'leaverId': leaverId,
@@ -572,18 +568,15 @@ class NotificationService {
     }
   }
 
-  // Send notification when hangout is updated (title, description, time, or location)
+  // Send notification when hangout is updated (description, time, or location)
   Future<void> notifyHangoutUpdated({
     required String hangoutId,
-    required String hangoutTitle,
     required String ownerId,
     required List<String> participantIds,
     required List<String> changes,
-    String? oldTitle,
     String? oldDescription,
     DateTime? oldTime,
     String? oldLocation,
-    String? newTitle,
     String? newDescription,
     DateTime? newTime,
     String? newLocation,
@@ -597,15 +590,12 @@ class NotificationService {
       final callable = _functions.httpsCallable('sendHangoutUpdateNotification');
       await callable.call({
         'hangoutId': hangoutId,
-        'hangoutTitle': hangoutTitle,
         'ownerId': ownerId,
         'participantIds': participantIds,
         'changes': changes,
-        'oldTitle': oldTitle,
         'oldDescription': oldDescription,
         'oldTime': oldTime?.toIso8601String(),
         'oldLocation': oldLocation,
-        'newTitle': newTitle,
         'newDescription': newDescription,
         'newTime': newTime?.toIso8601String(),
         'newLocation': newLocation,

@@ -43,7 +43,7 @@ class PostProvider with ChangeNotifier {
     );
     if (_filteredPosts.isNotEmpty) {
       debugPrint(
-        '📱 UI ACCESS DEBUG: Posts being shown: ${_filteredPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+        '📱 UI ACCESS DEBUG: Posts being shown: ${_filteredPosts.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
       );
     }
     return _filteredPosts;
@@ -55,7 +55,7 @@ class PostProvider with ChangeNotifier {
     );
     if (_filteredAllPosts.isNotEmpty) {
       debugPrint(
-        '📱 UI ACCESS DEBUG: All posts being shown: ${_filteredAllPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+        '📱 UI ACCESS DEBUG: All posts being shown: ${_filteredAllPosts.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
       );
     }
     return _filteredAllPosts;
@@ -67,7 +67,7 @@ class PostProvider with ChangeNotifier {
     );
     if (_filteredUpcomingPosts.isNotEmpty) {
       debugPrint(
-        '📱 UI ACCESS DEBUG: Upcoming posts being shown: ${_filteredUpcomingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+        '📱 UI ACCESS DEBUG: Upcoming posts being shown: ${_filteredUpcomingPosts.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
       );
     }
     return _filteredUpcomingPosts;
@@ -79,7 +79,7 @@ class PostProvider with ChangeNotifier {
     );
     if (_filteredOngoingPosts.isNotEmpty) {
       debugPrint(
-        '📱 UI ACCESS DEBUG: Ongoing posts being shown: ${_filteredOngoingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+        '📱 UI ACCESS DEBUG: Ongoing posts being shown: ${_filteredOngoingPosts.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
       );
     }
     return _filteredOngoingPosts;
@@ -278,7 +278,6 @@ class PostProvider with ChangeNotifier {
 
   // Create a new post
   Future<bool> createPost({
-    required String title,
     required String description,
     required String authorId,
     required String authorName,
@@ -296,7 +295,6 @@ class PostProvider with ChangeNotifier {
 
       final post = Post(
         id: '', // Will be set by Firestore
-        title: title,
         description: description,
         authorId: authorId,
         authorName: authorName,
@@ -437,9 +435,7 @@ class PostProvider with ChangeNotifier {
 
   // Helper method to check if user can see a post based on gender
   bool _canUserSeePost(Post post, String? userGender) {
-    debugPrint(
-      '🔍 GENDER DEBUG: Checking if user can see post "${post.title}"',
-    );
+    debugPrint('🔍 GENDER DEBUG: Checking if user can see post "${post.id}"');
     debugPrint('🔍 GENDER DEBUG: User gender: $userGender');
     debugPrint(
       '🔍 GENDER DEBUG: Post gender preferences: ${post.genderPreferences}',
@@ -496,7 +492,7 @@ class PostProvider with ChangeNotifier {
         .where((post) => _canUserSeePost(post, userGender))
         .toList();
     debugPrint(
-      '✅ FIXED DEBUG: Posts after gender filter: ${result.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+      '✅ FIXED DEBUG: Posts after gender filter: ${result.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
     );
     return result;
   }
@@ -514,7 +510,7 @@ class PostProvider with ChangeNotifier {
         .where((post) => _canUserSeePost(post, userGender))
         .toList();
     debugPrint(
-      '✅ FIXED DEBUG: Posts after gender filter: ${filtered.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+      '✅ FIXED DEBUG: Posts after gender filter: ${filtered.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
     );
 
     if (filtered.isEmpty && _filteredUpcomingPosts.isNotEmpty) {
@@ -542,7 +538,7 @@ class PostProvider with ChangeNotifier {
         .where((post) => _canUserSeePost(post, userGender))
         .toList();
     debugPrint(
-      '✅ FIXED DEBUG: Posts after gender filter: ${filtered.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+      '✅ FIXED DEBUG: Posts after gender filter: ${filtered.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
     );
 
     if (filtered.isEmpty && _filteredOngoingPosts.isNotEmpty) {
@@ -747,7 +743,7 @@ class PostProvider with ChangeNotifier {
 
       if (shouldFilter) {
         debugPrint(
-          '🚫 BLOCK FILTER DEBUG: Filtering out post "${post.title}" by ${post.authorName} (${post.authorId})',
+          '🚫 BLOCK FILTER DEBUG: Filtering out post "${post.id}" by ${post.authorName} (${post.authorId})',
         );
       }
       return !shouldFilter;
@@ -779,7 +775,7 @@ class PostProvider with ChangeNotifier {
 
       if (shouldFilter) {
         debugPrint(
-          '🚫 BLOCK FILTER DEBUG: Filtering out all post "${post.title}" by ${post.authorName} (${post.authorId})',
+          '🚫 BLOCK FILTER DEBUG: Filtering out all post "${post.id}" by ${post.authorName} (${post.authorId})',
         );
       }
       return !shouldFilter;
@@ -811,7 +807,7 @@ class PostProvider with ChangeNotifier {
 
       if (shouldFilter) {
         debugPrint(
-          '🚫 BLOCK FILTER DEBUG: Filtering out upcoming post "${post.title}" by ${post.authorName} (${post.authorId})',
+          '🚫 BLOCK FILTER DEBUG: Filtering out upcoming post "${post.id}" by ${post.authorName} (${post.authorId})',
         );
       }
       return !shouldFilter;
@@ -824,7 +820,7 @@ class PostProvider with ChangeNotifier {
     final originalOngoingCount = _ongoingPosts.length;
     debugPrint('🔍 DETAILED DEBUG: Starting ongoing posts filtering...');
     debugPrint(
-      '🔍 DETAILED DEBUG: Original ongoing posts: ${_ongoingPosts.map((p) => '${p.title} by ${p.authorName} (${p.authorId})').join(', ')}',
+      '🔍 DETAILED DEBUG: Original ongoing posts: ${_ongoingPosts.map((p) => '${p.id} by ${p.authorName} (${p.authorId})').join(', ')}',
     );
 
     _filteredOngoingPosts = _ongoingPosts.where((post) {
@@ -847,7 +843,7 @@ class PostProvider with ChangeNotifier {
           shouldHideFromUserIBlocked || shouldHideFromBlockedUser;
 
       debugPrint(
-        '🔍 DETAILED DEBUG: Post "${post.title}" by ${post.authorName} (${post.authorId}) - shouldFilter: $shouldFilter',
+        '🔍 DETAILED DEBUG: Post "${post.id}" by ${post.authorName} (${post.authorId}) - shouldFilter: $shouldFilter',
       );
       debugPrint(
         '🔍 DETAILED DEBUG: - shouldHideFromUserIBlocked: $shouldHideFromUserIBlocked',
@@ -864,11 +860,11 @@ class PostProvider with ChangeNotifier {
 
       if (shouldFilter) {
         debugPrint(
-          '🚫 BLOCK FILTER DEBUG: Filtering out ongoing post "${post.title}" by ${post.authorName} (${post.authorId})',
+          '🚫 BLOCK FILTER DEBUG: Filtering out ongoing post "${post.id}" by ${post.authorName} (${post.authorId})',
         );
       } else {
         debugPrint(
-          '✅ BLOCK FILTER DEBUG: Keeping ongoing post "${post.title}" by ${post.authorName} (${post.authorId})',
+          '✅ BLOCK FILTER DEBUG: Keeping ongoing post "${post.id}" by ${post.authorName} (${post.authorId})',
         );
       }
       return !shouldFilter;
@@ -884,17 +880,17 @@ class PostProvider with ChangeNotifier {
       debugPrint('🚫 BLOCK FILTER DEBUG: === FINAL VISIBLE POSTS IN FEED ===');
       if (_filteredPosts.isNotEmpty) {
         debugPrint(
-          '🚫 BLOCK FILTER DEBUG: Regular posts visible: ${_filteredPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+          '🚫 BLOCK FILTER DEBUG: Regular posts visible: ${_filteredPosts.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
         );
       }
       if (_filteredUpcomingPosts.isNotEmpty) {
         debugPrint(
-          '🚫 BLOCK FILTER DEBUG: Upcoming posts visible: ${_filteredUpcomingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+          '🚫 BLOCK FILTER DEBUG: Upcoming posts visible: ${_filteredUpcomingPosts.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
         );
       }
       if (_filteredOngoingPosts.isNotEmpty) {
         debugPrint(
-          '🚫 BLOCK FILTER DEBUG: Ongoing posts visible: ${_filteredOngoingPosts.map((p) => '${p.title} by ${p.authorName}').join(', ')}',
+          '🚫 BLOCK FILTER DEBUG: Ongoing posts visible: ${_filteredOngoingPosts.map((p) => '${p.id} by ${p.authorName}').join(', ')}',
         );
       }
     } else {
