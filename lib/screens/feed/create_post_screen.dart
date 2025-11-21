@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/post_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/tab_navigation_provider.dart';
@@ -1372,6 +1373,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       // Create the hangout
       final success = await postProvider.createPost(
+        type: PostType.waving,
         description: _descriptionController.text.trim(),
         authorId: currentUser.id,
         authorName: currentUser.displayName ?? 'Unknown User',

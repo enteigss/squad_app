@@ -6,7 +6,8 @@ import '../constants/bu_locations.dart';
 
 class EditHangoutDialog extends StatefulWidget {
   final Post post;
-  final Function(String description, DateTime? scheduledTime, String? location) onSave;
+  final Function(String description, DateTime? scheduledTime, String? location)
+  onSave;
 
   const EditHangoutDialog({
     super.key,
@@ -20,14 +21,16 @@ class EditHangoutDialog extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required Post post,
-    required Function(String description, DateTime? scheduledTime, String? location) onSave,
+    required Function(
+      String description,
+      DateTime? scheduledTime,
+      String? location,
+    )
+    onSave,
   }) {
     return showDialog(
       context: context,
-      builder: (context) => EditHangoutDialog(
-        post: post,
-        onSave: onSave,
-      ),
+      builder: (context) => EditHangoutDialog(post: post, onSave: onSave),
     );
   }
 }
@@ -47,7 +50,9 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
   void initState() {
     super.initState();
     _titleController = TextEditingController();
-    _descriptionController = TextEditingController(text: widget.post.description);
+    _descriptionController = TextEditingController(
+      text: widget.post.description,
+    );
     _customLocationController = TextEditingController();
     _selectedDateTime = widget.post.scheduledTime;
     _selectedLocation = widget.post.location;
@@ -76,7 +81,10 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
         _filteredLocations = BULocations.allLocations;
       } else {
         _filteredLocations = BULocations.allLocations
-            .where((location) => location.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (location) =>
+                  location.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
@@ -131,7 +139,9 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop(_customLocationController.text.trim());
+                Navigator.of(
+                  context,
+                ).pop(_customLocationController.text.trim());
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -162,7 +172,9 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
     // Show date picker
     final selectedDate = await showDatePicker(
       context: context,
-      initialDate: currentTime.isAfter(DateTime.now()) ? currentTime : DateTime.now(),
+      initialDate: currentTime.isAfter(DateTime.now())
+          ? currentTime
+          : DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
@@ -244,7 +256,9 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: [
@@ -267,7 +281,10 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      BULocations.getDisplayText(_selectedLocation, _customLocation),
+                      BULocations.getDisplayText(
+                        _selectedLocation,
+                        _customLocation,
+                      ),
                       style: TextStyle(
                         fontSize: 14,
                         color: _selectedLocation == null
@@ -295,7 +312,9 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
                         ),
                       const SizedBox(width: 8),
                       Icon(
-                        _showLocationSearch ? Icons.expand_less : Icons.expand_more,
+                        _showLocationSearch
+                            ? Icons.expand_less
+                            : Icons.expand_more,
                         color: AppColors.primary,
                         size: 20,
                       ),
@@ -368,7 +387,10 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
                       return const SizedBox.shrink();
                     }
 
-                    return _buildLocationCategory(category.key, categoryLocations);
+                    return _buildLocationCategory(
+                      category.key,
+                      categoryLocations,
+                    );
                   }).toList(),
                 ],
               ),
@@ -412,10 +434,7 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
               ),
               child: Text(
                 location,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
               ),
             ),
           );
@@ -429,9 +448,7 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.background,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
         padding: const EdgeInsets.all(24),
@@ -535,11 +552,19 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
                           decoration: BoxDecoration(
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.calendar_today, size: 20, color: AppColors.textSecondary),
+                              Icon(
+                                Icons.calendar_today,
+                                size: 20,
+                                color: AppColors.textSecondary,
+                              ),
                               const SizedBox(width: 12),
                               Text(
                                 _formatDateTime(_selectedDateTime),

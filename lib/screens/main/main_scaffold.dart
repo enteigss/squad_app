@@ -164,7 +164,6 @@ class _MainScaffoldState extends State<MainScaffold> {
 
     MeetupOutcomeDialog.show(
       context,
-      hangoutTitle: prompt.hangoutTitle,
       contextText: 'Please let us know how your hangout went',
       actionButtonText: 'Submit Feedback',
       headerIcon: Icons.feedback_outlined,
@@ -183,7 +182,6 @@ class _MainScaffoldState extends State<MainScaffold> {
           await _feedbackService.submitFeedback(
             hangoutId: prompt.hangoutId,
             userId: prompt.userId,
-            hangoutTitle: prompt.hangoutTitle,
             didMeetup: didMeetup,
             additionalFeedback: null,
           );

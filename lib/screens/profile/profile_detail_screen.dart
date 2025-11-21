@@ -62,7 +62,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     // Block Button
                     IconButton(
                       icon: Icon(_isBlocked ? Icons.person_add : Icons.block),
-                      onPressed: _isLoading ? null : () => _toggleBlockUser(authProvider),
+                      onPressed: _isLoading
+                          ? null
+                          : () => _toggleBlockUser(authProvider),
                       tooltip: _isBlocked ? 'Unblock User' : 'Block User',
                     ),
                     // Report Button
@@ -81,7 +83,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       ),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
-          final UserModel? currentUser = widget.user ?? authProvider.currentUser;
+          final UserModel? currentUser =
+              widget.user ?? authProvider.currentUser;
 
           if (currentUser == null) {
             return const Center(
@@ -511,24 +514,27 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   // Check if current user can see the report button
   bool _canShowReportButton(BuildContext context, AuthProvider authProvider) {
     final currentUser = authProvider.currentUser;
-    
+
     // Don't show report button if not authenticated
     if (currentUser == null) return false;
-    
+
     // Don't show report button if viewing own profile (widget.user is null = own profile)
     if (widget.user == null) return false;
 
     // Don't show report button if viewing own profile (widget.user matches current user)
     if (widget.user!.id == currentUser.id) return false;
-    
+
     // Show report button when viewing another user's profile
     return true;
   }
 
   // Show report dialog
-  Future<void> _showReportDialog(BuildContext context, AuthProvider authProvider) async {
+  Future<void> _showReportDialog(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) async {
     final currentUser = authProvider.currentUser;
-    
+
     if (currentUser == null || widget.user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -544,7 +550,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         context,
         contentType: 'user',
         contentId: widget.user!.id,
-        contentTitle: widget.user!.displayName ?? widget.user!.username,
         authorId: widget.user!.id, // Same as contentId for user reports
         contentSnippet: ReportService.createUserContentSnippet(
           displayName: widget.user!.displayName ?? widget.user!.username,
@@ -552,7 +557,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           location: widget.user!.location,
           interests: widget.user!.interests,
         ),
-        onSubmit: (ReportReason reason) => _submitReport(context, reason, currentUser),
+        onSubmit: (ReportReason reason) =>
+            _submitReport(context, reason, currentUser),
       );
     } catch (e) {
       if (context.mounted) {
@@ -567,7 +573,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   }
 
   // Submit report
-  Future<void> _submitReport(BuildContext context, ReportReason reason, UserModel currentUser) async {
+  Future<void> _submitReport(
+    BuildContext context,
+    ReportReason reason,
+    UserModel currentUser,
+  ) async {
     if (widget.user == null) return;
 
     final reportService = ReportService();
@@ -592,7 +602,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Report submitted successfully. Thank you for helping keep our community safe.'),
+            content: Text(
+              'Report submitted successfully. Thank you for helping keep our community safe.',
+            ),
             backgroundColor: AppColors.success,
             duration: Duration(seconds: 4),
           ),
@@ -628,12 +640,21 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         if (mounted) {
           final currentUser = authProvider.currentUser;
           if (currentUser != null) {
-            final updatedBlockedIds = List<String>.from(currentUser.blockedUserIds)
-              ..remove(widget.user!.id);
-            final updatedUser = currentUser.copyWith(blockedUserIds: updatedBlockedIds);
+            final updatedBlockedIds = List<String>.from(
+              currentUser.blockedUserIds,
+            )..remove(widget.user!.id);
+            final updatedUser = currentUser.copyWith(
+              blockedUserIds: updatedBlockedIds,
+            );
 
-            Provider.of<PostProvider>(context, listen: false).setCurrentUser(updatedUser);
-            Provider.of<ChatProvider>(context, listen: false).setCurrentUser(updatedUser);
+            Provider.of<PostProvider>(
+              context,
+              listen: false,
+            ).setCurrentUser(updatedUser);
+            Provider.of<ChatProvider>(
+              context,
+              listen: false,
+            ).setCurrentUser(updatedUser);
           }
         }
 
@@ -643,7 +664,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Unblocked ${widget.user!.displayName ?? widget.user!.username}'),
+              content: Text(
+                'Unblocked ${widget.user!.displayName ?? widget.user!.username}',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
@@ -683,12 +706,21 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         if (mounted) {
           final currentUser = authProvider.currentUser;
           if (currentUser != null) {
-            final updatedBlockedIds = List<String>.from(currentUser.blockedUserIds)
-              ..add(widget.user!.id);
-            final updatedUser = currentUser.copyWith(blockedUserIds: updatedBlockedIds);
+            final updatedBlockedIds = List<String>.from(
+              currentUser.blockedUserIds,
+            )..add(widget.user!.id);
+            final updatedUser = currentUser.copyWith(
+              blockedUserIds: updatedBlockedIds,
+            );
 
-            Provider.of<PostProvider>(context, listen: false).setCurrentUser(updatedUser);
-            Provider.of<ChatProvider>(context, listen: false).setCurrentUser(updatedUser);
+            Provider.of<PostProvider>(
+              context,
+              listen: false,
+            ).setCurrentUser(updatedUser);
+            Provider.of<ChatProvider>(
+              context,
+              listen: false,
+            ).setCurrentUser(updatedUser);
           }
         }
 
@@ -698,7 +730,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Blocked ${widget.user!.displayName ?? widget.user!.username}'),
+              content: Text(
+                'Blocked ${widget.user!.displayName ?? widget.user!.username}',
+              ),
               backgroundColor: AppColors.success,
             ),
           );

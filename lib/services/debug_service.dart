@@ -18,14 +18,16 @@ class DebugService {
   static const List<Map<String, dynamic>> _samplePosts = [
     {
       'title': 'Study Session at Mugar Library',
-      'description': 'Looking for focused study partners for finals prep. Quiet group studying with occasional discussion breaks.',
+      'description':
+          'Looking for focused study partners for finals prep. Quiet group studying with occasional discussion breaks.',
       'authorName': 'Sarah Chen',
       'location': 'Mugar Memorial Library',
       'profile': {
         'username': 'sarahc_bu',
         'email': 'sarahc@bu.edu',
         'displayName': 'Sarah Chen',
-        'bio': 'Pre-med student who loves quiet study sessions and good coffee ☕',
+        'bio':
+            'Pre-med student who loves quiet study sessions and good coffee ☕',
         'classYear': 'Sophomore',
         'location': 'Bay State Road Brownstones',
         'interests': ['Reading', 'Science', 'Coffee', 'Art', 'Study'],
@@ -35,31 +37,41 @@ class DebugService {
     },
     {
       'title': 'Basketball Pickup at FitRec',
-      'description': 'Need players for a casual basketball game. All skill levels welcome, just looking to have fun and get some exercise.',
+      'description':
+          'Need players for a casual basketball game. All skill levels welcome, just looking to have fun and get some exercise.',
       'authorName': 'Marcus Johnson',
       'location': 'FitRec',
       'profile': {
         'username': 'marcusj_ball',
         'email': 'marcusj@bu.edu',
         'displayName': 'Marcus Johnson',
-        'bio': 'Basketball enthusiast looking for pickup games. Always down for a good match! 🏀',
+        'bio':
+            'Basketball enthusiast looking for pickup games. Always down for a good match! 🏀',
         'classYear': 'Junior',
         'location': 'Warren Towers',
-        'interests': ['Sports', 'Basketball', 'Fitness', 'Music', 'Competition'],
+        'interests': [
+          'Sports',
+          'Basketball',
+          'Fitness',
+          'Music',
+          'Competition',
+        ],
         'gender': 'man',
         'photoUrl': null,
       },
     },
     {
       'title': 'Late Night Snacks at Warren',
-      'description': 'Anyone hungry after studying? Let\'s grab some late night food and chat about life.',
+      'description':
+          'Anyone hungry after studying? Let\'s grab some late night food and chat about life.',
       'authorName': 'Alex Rivera',
       'location': 'Warren Towers Dining Hall',
       'profile': {
         'username': 'alexr_foodie',
         'email': 'alexr@bu.edu',
         'displayName': 'Alex Rivera',
-        'bio': 'Night owl who\'s always hungry after studying. Love trying new foods! 🌙🍕',
+        'bio':
+            'Night owl who\'s always hungry after studying. Love trying new foods! 🌙🍕',
         'classYear': 'Senior',
         'location': 'Student Village (StuVi) I',
         'interests': ['Food', 'Movies', 'Gaming', 'Technology', 'Cooking'],
@@ -69,14 +81,16 @@ class DebugService {
     },
     {
       'title': 'Frisbee at BU Beach',
-      'description': 'Chill ultimate frisbee session on the beach. Great way to de-stress and meet new people.',
+      'description':
+          'Chill ultimate frisbee session on the beach. Great way to de-stress and meet new people.',
       'authorName': 'Emma Thompson',
       'location': 'BU Beach',
       'profile': {
         'username': 'emmat_frisbee',
         'email': 'emmat@bu.edu',
         'displayName': 'Emma Thompson',
-        'bio': 'Ultimate frisbee player and outdoor enthusiast. Love meeting new people! 🥏🌊',
+        'bio':
+            'Ultimate frisbee player and outdoor enthusiast. Love meeting new people! 🥏🌊',
         'classYear': 'Sophomore',
         'location': 'Sleeper Hall',
         'interests': ['Sports', 'Nature', 'Photography', 'Animals', 'Fitness'],
@@ -86,17 +100,25 @@ class DebugService {
     },
     {
       'title': 'Pool Tournament at GSU',
-      'description': 'Competitive but friendly pool games. Prizes for winners and good vibes for everyone.',
+      'description':
+          'Competitive but friendly pool games. Prizes for winners and good vibes for everyone.',
       'authorName': 'Jordan Kim',
       'location': 'GSU',
       'profile': {
         'username': 'jordank_pool',
         'email': 'jordank@bu.edu',
         'displayName': 'Jordan Kim',
-        'bio': 'Competitive gamer who loves a good challenge. Pool shark in training! 🎱',
+        'bio':
+            'Competitive gamer who loves a good challenge. Pool shark in training! 🎱',
         'classYear': 'Junior',
         'location': 'Myles Standish Hall',
-        'interests': ['Gaming', 'Competition', 'Technology', 'Movies', 'Strategy'],
+        'interests': [
+          'Gaming',
+          'Competition',
+          'Technology',
+          'Movies',
+          'Strategy',
+        ],
         'gender': 'man',
         'photoUrl': null,
       },
@@ -110,18 +132,18 @@ class DebugService {
 
     try {
       final now = DateTime.now();
-      
+
       // First create user profiles
       await _createSampleUserProfiles();
-      
+
       // Then create posts
       for (int i = 0; i < _samplePosts.length; i++) {
         final sample = _samplePosts[i];
-        
+
         // Create posts with varying scheduled times
         DateTime scheduledTime;
         PostStatus status;
-        
+
         switch (i) {
           case 0:
             // Upcoming in 2 hours
@@ -154,32 +176,39 @@ class DebugService {
         }
 
         final docRef = _firestore.collection(_collection).doc();
-        
+
         final post = Post(
+          type: PostType.walking,
           id: docRef.id,
           description: sample['description']!,
           authorId: '${_debugAuthorId}_$i',
           authorName: sample['authorName']!,
-          createdAt: now.subtract(Duration(minutes: i * 5)), // Stagger creation times
+          createdAt: now.subtract(
+            Duration(minutes: i * 5),
+          ), // Stagger creation times
           scheduledTime: scheduledTime,
           status: status,
           participantIds: _generateParticipants(i),
           location: sample['location']!,
           maxParticipants: _generateMaxParticipants(i),
-          genderPreferences: const ['Men'], // Set to Men only to prevent notifications
+          genderPreferences: const [
+            'Men',
+          ], // Set to Men only to prevent notifications
           deleted: false,
           isLocked: false,
         );
 
         await docRef.set(post.toMap());
-        
+
         // Create sample chat for basketball post (index 1)
         if (i.toString() == _chatPostIndex) {
           await _createSampleChatMessages(docRef.id);
         }
       }
 
-      debugPrint('Created ${_samplePosts.length} sample debug posts with profiles and chat');
+      debugPrint(
+        'Created ${_samplePosts.length} sample debug posts with profiles and chat',
+      );
     } catch (e) {
       throw Exception('Failed to create sample posts: $e');
     }
@@ -194,14 +223,18 @@ class DebugService {
       // Query for all posts created by debug authors
       final QuerySnapshot postsSnapshot = await _firestore
           .collection(_collection)
-          .where('authorId', whereIn: [
-            for (int i = 0; i < _samplePosts.length; i++) '${_debugAuthorId}_$i'
-          ])
+          .where(
+            'authorId',
+            whereIn: [
+              for (int i = 0; i < _samplePosts.length; i++)
+                '${_debugAuthorId}_$i',
+            ],
+          )
           .get();
 
       final batch = _firestore.batch();
       int deletedChats = 0;
-      
+
       // Delete posts and their chat subcollections
       for (final doc in postsSnapshot.docs) {
         // Delete chat messages for this post
@@ -210,24 +243,28 @@ class DebugService {
             .doc(doc.id)
             .collection('chat')
             .get();
-        
+
         for (final chatDoc in chatSnapshot.docs) {
           batch.delete(chatDoc.reference);
           deletedChats++;
         }
-        
+
         // Delete the post
         batch.delete(doc.reference);
       }
-      
+
       // Delete debug user profiles
       for (int i = 0; i < _samplePosts.length; i++) {
-        final userRef = _firestore.collection('users').doc('${_debugAuthorId}_$i');
+        final userRef = _firestore
+            .collection('users')
+            .doc('${_debugAuthorId}_$i');
         batch.delete(userRef);
       }
 
       await batch.commit();
-      debugPrint('Deleted ${postsSnapshot.docs.length} debug posts, $deletedChats chat messages, and ${_samplePosts.length} user profiles');
+      debugPrint(
+        'Deleted ${postsSnapshot.docs.length} debug posts, $deletedChats chat messages, and ${_samplePosts.length} user profiles',
+      );
     } catch (e) {
       throw Exception('Failed to delete debug posts: $e');
     }
@@ -238,11 +275,20 @@ class DebugService {
       case 0:
         return ['${_debugAuthorId}_$index']; // Just author
       case 1:
-        return ['${_debugAuthorId}_$index', 'participant_1', 'participant_2']; // 3 people
+        return [
+          '${_debugAuthorId}_$index',
+          'participant_1',
+          'participant_2',
+        ]; // 3 people
       case 2:
         return ['${_debugAuthorId}_$index', 'participant_3']; // 2 people
       case 3:
-        return ['${_debugAuthorId}_$index', 'participant_4', 'participant_5', 'participant_6']; // 4 people
+        return [
+          '${_debugAuthorId}_$index',
+          'participant_4',
+          'participant_5',
+          'participant_6',
+        ]; // 4 people
       case 4:
         return ['${_debugAuthorId}_$index']; // Just author
       default:
@@ -269,11 +315,11 @@ class DebugService {
 
   Future<void> _createSampleUserProfiles() async {
     final now = DateTime.now();
-    
+
     for (int i = 0; i < _samplePosts.length; i++) {
       final sample = _samplePosts[i];
       final profileData = sample['profile'] as Map<String, dynamic>;
-      
+
       final user = UserModel(
         id: '${_debugAuthorId}_$i',
         email: profileData['email'] as String,
@@ -285,26 +331,30 @@ class DebugService {
         location: profileData['location'] as String,
         interests: List<String>.from(profileData['interests']),
         gender: profileData['gender'] as String,
-        createdAt: now.subtract(Duration(days: 30 + i * 5)), // Created 30+ days ago
-        lastSeen: now.subtract(Duration(minutes: 10 + i * 2)), // Recently active
+        createdAt: now.subtract(
+          Duration(days: 30 + i * 5),
+        ), // Created 30+ days ago
+        lastSeen: now.subtract(
+          Duration(minutes: 10 + i * 2),
+        ), // Recently active
         isOnline: i % 2 == 0, // Some online, some offline
         hasCreatedProfile: true,
         authProvider: 'google',
         isEmailVerified: true,
       );
-      
+
       await _firestore
           .collection('users')
           .doc('${_debugAuthorId}_$i')
           .set(user.toMap());
     }
-    
+
     debugPrint('Created ${_samplePosts.length} sample user profiles');
   }
 
   Future<void> _createSampleChatMessages(String postId) async {
     final now = DateTime.now();
-    
+
     final chatMessages = [
       {
         'senderId': '${_debugAuthorId}_1', // Marcus (author)
@@ -367,9 +417,9 @@ class DebugService {
         'timestamp': now.subtract(const Duration(minutes: 30)),
       },
     ];
-    
+
     final batch = _firestore.batch();
-    
+
     for (int i = 0; i < chatMessages.length; i++) {
       final messageData = chatMessages[i];
       final messageRef = _firestore
@@ -377,7 +427,7 @@ class DebugService {
           .doc(postId)
           .collection('chat')
           .doc();
-      
+
       final message = PostChatMessage(
         id: messageRef.id,
         postId: postId,
@@ -388,11 +438,13 @@ class DebugService {
         timestamp: messageData['timestamp'] as DateTime,
         readBy: [], // No read receipts for simplicity
       );
-      
+
       batch.set(messageRef, message.toMap());
     }
-    
+
     await batch.commit();
-    debugPrint('Created ${chatMessages.length} sample chat messages for post $postId');
+    debugPrint(
+      'Created ${chatMessages.length} sample chat messages for post $postId',
+    );
   }
 }

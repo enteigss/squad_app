@@ -14,9 +14,7 @@ class FeedbackService {
   final String _pendingPromptsCollection = 'pending_feedback_prompts';
 
   // Create pending feedback prompt for author when a hangout completes
-  Future<void> createFeedbackPromptForAuthor(
-    Post completedPost,
-  ) async {
+  Future<void> createFeedbackPromptForAuthor(Post completedPost) async {
     debugPrint(
       'FeedbackService: createFeedbackPromptForAuthor called for ${completedPost.id}',
     );
@@ -27,7 +25,7 @@ class FeedbackService {
       debugPrint('FeedbackService: Creating prompt for author: $authorId');
       final promptId = '${completedPost.id}_$authorId';
       debugPrint('FeedbackService: Generated promptId: $promptId');
-      
+
       final promptRef = _firestore
           .collection(_pendingPromptsCollection)
           .doc(promptId);
@@ -54,11 +52,15 @@ class FeedbackService {
   // Get pending feedback prompts for a specific user
   Stream<List<PendingFeedbackPrompt>> getPendingFeedbackPrompts(String userId) {
     debugPrint('FeedbackService: getPendingFeedbackPrompts for user $userId');
-    debugPrint('FeedbackService: Query requires compound index on: userId + isShown + createdAt');
-    
+    debugPrint(
+      'FeedbackService: Query requires compound index on: userId + isShown + createdAt',
+    );
+
     final queryStartTime = DateTime.now();
-    debugPrint('FeedbackService: Starting query at: ${queryStartTime.toIso8601String()}');
-    
+    debugPrint(
+      'FeedbackService: Starting query at: ${queryStartTime.toIso8601String()}',
+    );
+
     return _firestore
         .collection(_pendingPromptsCollection)
         .where('userId', isEqualTo: userId)
@@ -68,22 +70,28 @@ class FeedbackService {
         .snapshots()
         .map((snapshot) {
           final detectionTime = DateTime.now();
-          debugPrint('FeedbackService: Query detected changes at: ${detectionTime.toIso8601String()}');
+          debugPrint(
+            'FeedbackService: Query detected changes at: ${detectionTime.toIso8601String()}',
+          );
           debugPrint(
             'FeedbackService: Query returned ${snapshot.docs.length} documents',
           );
-          
+
           // Log each document timestamp to measure freshness
           for (final doc in snapshot.docs) {
             final data = doc.data();
             final createdAt = data['createdAt'];
             if (createdAt != null) {
               final docCreatedTime = (createdAt as Timestamp).toDate();
-              final delay = detectionTime.difference(docCreatedTime).inMilliseconds;
-              debugPrint('FeedbackService: Document ${doc.id} created at ${docCreatedTime.toIso8601String()}, detected after ${delay}ms');
+              final delay = detectionTime
+                  .difference(docCreatedTime)
+                  .inMilliseconds;
+              debugPrint(
+                'FeedbackService: Document ${doc.id} created at ${docCreatedTime.toIso8601String()}, detected after ${delay}ms',
+              );
             }
           }
-          
+
           return snapshot.docs
               .map((doc) => PendingFeedbackPrompt.fromMap(doc.data()))
               .toList();
@@ -111,7 +119,10 @@ class FeedbackService {
   }
 
   // Check if author has already provided feedback for a hangout
-  Future<bool> hasAuthorProvidedFeedback(String hangoutId, String authorId) async {
+  Future<bool> hasAuthorProvidedFeedback(
+    String hangoutId,
+    String authorId,
+  ) async {
     try {
       final snapshot = await _firestore
           .collection(_feedbackCollection)
@@ -119,7 +130,7 @@ class FeedbackService {
           .where('userId', isEqualTo: authorId)
           .limit(1)
           .get();
-      
+
       return snapshot.docs.isNotEmpty;
     } catch (e) {
       debugPrint('Failed to check if author provided feedback: $e');
@@ -136,7 +147,9 @@ class FeedbackService {
   }) async {
     try {
       // Ensure user is authenticated before proceeding
-      await FirebaseAuth.instance.currentUser?.getIdToken(true); // Force token refresh
+      await FirebaseAuth.instance.currentUser?.getIdToken(
+        true,
+      ); // Force token refresh
 
       // Create the feedback document
       final feedbackRef = _firestore.collection(_feedbackCollection).doc();
@@ -151,9 +164,15 @@ class FeedbackService {
 
       // Debug: Check feedback data
       debugPrint('FeedbackService: Submitting feedback for userId: $userId');
-      debugPrint('FeedbackService: Feedback document userId: ${feedback.userId}');
-      debugPrint('FeedbackService: Current Firebase user: ${FirebaseAuth.instance.currentUser?.uid}');
-      debugPrint('FeedbackService: User authenticated: ${FirebaseAuth.instance.currentUser != null}');
+      debugPrint(
+        'FeedbackService: Feedback document userId: ${feedback.userId}',
+      );
+      debugPrint(
+        'FeedbackService: Current Firebase user: ${FirebaseAuth.instance.currentUser?.uid}',
+      );
+      debugPrint(
+        'FeedbackService: User authenticated: ${FirebaseAuth.instance.currentUser != null}',
+      );
       debugPrint('FeedbackService: Feedback data: ${feedback.toMap()}');
 
       // First, save the feedback separately
@@ -167,12 +186,14 @@ class FeedbackService {
       final promptRef = _firestore
           .collection(_pendingPromptsCollection)
           .doc(promptId);
-      
+
       try {
         await promptRef.delete();
         debugPrint('FeedbackService: Prompt deleted successfully!');
       } catch (e) {
-        debugPrint('FeedbackService: Failed to delete prompt (this is OK if it doesn\'t exist): $e');
+        debugPrint(
+          'FeedbackService: Failed to delete prompt (this is OK if it doesn\'t exist): $e',
+        );
         // Don't throw - feedback was saved successfully
       }
 
@@ -274,7 +295,9 @@ class FeedbackService {
   // DEBUG ONLY: Create test prompts for development/testing
   Future<void> createTestFeedbackPrompts(String userId) async {
     if (kDebugMode) {
-      debugPrint('FeedbackService: Creating test feedback prompts for userId: $userId');
+      debugPrint(
+        'FeedbackService: Creating test feedback prompts for userId: $userId',
+      );
 
       final testPrompts = [
         {
@@ -282,7 +305,9 @@ class FeedbackService {
           'hangoutId': 'test_hangout_1',
           'userId': userId,
           'hangoutTitle': 'Coffee at Starbucks Downtown',
-          'hangoutCompletedAt': DateTime.now().subtract(const Duration(hours: 2)),
+          'hangoutCompletedAt': DateTime.now().subtract(
+            const Duration(hours: 2),
+          ),
           'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
           'isShown': false,
           'shownAt': null,
@@ -292,7 +317,9 @@ class FeedbackService {
           'hangoutId': 'test_hangout_2',
           'userId': userId,
           'hangoutTitle': 'Study Group - Library',
-          'hangoutCompletedAt': DateTime.now().subtract(const Duration(hours: 3)),
+          'hangoutCompletedAt': DateTime.now().subtract(
+            const Duration(hours: 3),
+          ),
           'createdAt': DateTime.now().subtract(const Duration(hours: 3)),
           'isShown': false,
           'shownAt': null,
@@ -302,7 +329,9 @@ class FeedbackService {
           'hangoutId': 'test_hangout_3',
           'userId': userId,
           'hangoutTitle': 'Basketball Game - Rec Center',
-          'hangoutCompletedAt': DateTime.now().subtract(const Duration(hours: 4)),
+          'hangoutCompletedAt': DateTime.now().subtract(
+            const Duration(hours: 4),
+          ),
           'createdAt': DateTime.now().subtract(const Duration(hours: 4)),
           'isShown': false,
           'shownAt': null,
@@ -315,7 +344,6 @@ class FeedbackService {
             id: promptData['id'] as String,
             hangoutId: promptData['hangoutId'] as String,
             userId: promptData['userId'] as String,
-            hangoutTitle: promptData['hangoutTitle'] as String,
             hangoutCompletedAt: promptData['hangoutCompletedAt'] as DateTime,
             createdAt: promptData['createdAt'] as DateTime,
             isShown: promptData['isShown'] as bool,
@@ -335,14 +363,18 @@ class FeedbackService {
 
       debugPrint('FeedbackService: Finished creating test prompts');
     } else {
-      debugPrint('FeedbackService: createTestFeedbackPrompts only works in debug mode');
+      debugPrint(
+        'FeedbackService: createTestFeedbackPrompts only works in debug mode',
+      );
     }
   }
 
   // DEBUG ONLY: Clear all test prompts
   Future<void> clearTestFeedbackPrompts(String userId) async {
     if (kDebugMode) {
-      debugPrint('FeedbackService: Clearing test feedback prompts for userId: $userId');
+      debugPrint(
+        'FeedbackService: Clearing test feedback prompts for userId: $userId',
+      );
 
       final testPromptIds = [
         'test_hangout_1_$userId',
@@ -358,7 +390,9 @@ class FeedbackService {
               .delete();
           debugPrint('FeedbackService: Deleted test prompt: $promptId');
         } catch (e) {
-          debugPrint('FeedbackService: Failed to delete test prompt $promptId: $e');
+          debugPrint(
+            'FeedbackService: Failed to delete test prompt $promptId: $e',
+          );
         }
       }
 

@@ -10,7 +10,7 @@ import '../../services/analytics_service.dart';
 import '../../services/debug_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/app_invite_modal.dart';
-import '../../widgets/hangout_card.dart';
+import '../../widgets/doing_card.dart';
 import '../../widgets/create_post_bottom_sheet.dart';
 import 'hangout_screen.dart';
 
@@ -100,10 +100,15 @@ class _FeedScreenState extends State<FeedScreen> {
         padding: const EdgeInsets.only(bottom: 0),
         child: FloatingActionButton.small(
           onPressed: () {
-            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            final authProvider = Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            );
             final currentUser = authProvider.currentUser;
             if (currentUser != null) {
-              final userName = currentUser.displayName?.split(' ').first ?? currentUser.username;
+              final userName =
+                  currentUser.displayName?.split(' ').first ??
+                  currentUser.username;
               CreatePostBottomSheet.show(context, userName);
             }
           },
@@ -262,7 +267,7 @@ class _FeedScreenState extends State<FeedScreen> {
               );
             }
             // Show hangout cards after info cards
-            return HangoutCard(post: filteredPosts[index - 3]);
+            return DoingCard(post: filteredPosts[index - 3]);
           },
         );
       },
@@ -284,6 +289,21 @@ class _FeedScreenState extends State<FeedScreen> {
     final ongoingPosts = postProvider.getOngoingPostsForUser(userGender);
 
     List<Post> filteredPosts = [...upcomingPosts, ...ongoingPosts];
+
+    // Sort by soonest first: ongoing posts first, then upcoming by scheduled time
+    filteredPosts.sort((a, b) {
+      final aIsOngoing = a.dynamicStatus == PostStatus.ongoing;
+      final bIsOngoing = b.dynamicStatus == PostStatus.ongoing;
+
+      // Ongoing posts come first
+      if (aIsOngoing && !bIsOngoing) return -1;
+      if (!aIsOngoing && bIsOngoing) return 1;
+
+      // Within same status, sort by scheduled time (soonest first)
+      final aTime = a.scheduledTime ?? a.createdAt;
+      final bTime = b.scheduledTime ?? b.createdAt;
+      return aTime.compareTo(bTime);
+    });
 
     debugPrint('🔍 FEED DEBUG: Upcoming posts: ${upcomingPosts.length}');
     debugPrint('🔍 FEED DEBUG: Ongoing posts: ${ongoingPosts.length}');

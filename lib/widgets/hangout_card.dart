@@ -15,11 +15,7 @@ class HangoutCard extends StatelessWidget {
   final Post post;
   final VoidCallback? onDeleted;
 
-  const HangoutCard({
-    super.key,
-    required this.post,
-    this.onDeleted,
-  });
+  const HangoutCard({super.key, required this.post, this.onDeleted});
 
   @override
   Widget build(BuildContext context) {
@@ -57,11 +53,7 @@ class HangoutCard extends StatelessWidget {
               Positioned(top: 0, right: 0, child: _buildStatusElement()),
 
               // Menu positioned in bottom right corner (for authors only)
-              Positioned(
-                bottom: -8,
-                right: -8,
-                child: _buildPostMenu(context),
-              ),
+              Positioned(bottom: -8, right: -8, child: _buildPostMenu(context)),
             ],
           ),
         ),
@@ -296,7 +288,7 @@ class HangoutCard extends StatelessWidget {
 
         // Description
         Text(
-          post.description,
+          post.description!,
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 14,
@@ -369,8 +361,8 @@ class HangoutCard extends StatelessWidget {
     final hour = dateTime.hour == 0
         ? 12
         : dateTime.hour > 12
-            ? dateTime.hour - 12
-            : dateTime.hour;
+        ? dateTime.hour - 12
+        : dateTime.hour;
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final period = dateTime.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
@@ -426,7 +418,11 @@ class HangoutCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.visibility_off, color: AppColors.error, size: 18),
+                    Icon(
+                      Icons.visibility_off,
+                      color: AppColors.error,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(

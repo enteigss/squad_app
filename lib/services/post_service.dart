@@ -139,8 +139,8 @@ class PostService {
     // If user hasn't specified gender, they can only join posts that include ALL three options
     if (userGender == null || userGender == 'prefer_not_to_say') {
       return post.genderPreferences.contains('Men') &&
-             post.genderPreferences.contains('Women') &&
-             post.genderPreferences.contains('Non-binary');
+          post.genderPreferences.contains('Women') &&
+          post.genderPreferences.contains('Non-binary');
     }
 
     // Map user gender to preference format
@@ -193,7 +193,9 @@ class PostService {
         }
 
         // Get user data to check gender compatibility
-        final userDoc = await transaction.get(_firestore.collection('users').doc(userId));
+        final userDoc = await transaction.get(
+          _firestore.collection('users').doc(userId),
+        );
         if (!userDoc.exists) {
           throw Exception('User not found');
         }
@@ -237,7 +239,7 @@ class PostService {
         try {
           final user = await _firestoreService.getUser(userId);
           final userName = user?.displayName ?? 'Unknown User';
-          
+
           await _notificationService.notifyHangoutOwnerOfJoin(
             hangoutId: postId,
             ownerId: postForNotification!.authorId,
@@ -311,7 +313,7 @@ class PostService {
         try {
           final user = await _firestoreService.getUser(userId);
           final userName = user?.displayName ?? 'Unknown User';
-          
+
           await _notificationService.notifyHangoutOwnerOfLeave(
             hangoutId: postId,
             ownerId: postForNotification!.authorId,
@@ -352,10 +354,14 @@ class PostService {
   }
 
   // Check if author needs to provide feedback before deletion
-  Future<bool> doesAuthorNeedFeedbackForDeletion(String postId, String authorId) async {
+  Future<bool> doesAuthorNeedFeedbackForDeletion(
+    String postId,
+    String authorId,
+  ) async {
     try {
       // Check if author has already provided feedback
-      final hasProvidedFeedback = await _feedbackService.hasAuthorProvidedFeedback(postId, authorId);
+      final hasProvidedFeedback = await _feedbackService
+          .hasAuthorProvidedFeedback(postId, authorId);
       return !hasProvidedFeedback;
     } catch (e) {
       debugPrint('Error checking if author needs feedback: $e');
@@ -391,7 +397,9 @@ class PostService {
           didMeetup: authorDidMeetup,
           hangoutId: postId,
         );
-        debugPrint('DeletePostWithFeedback: Saved author feedback for $authorId');
+        debugPrint(
+          'DeletePostWithFeedback: Saved author feedback for $authorId',
+        );
       }
     } catch (e) {
       throw Exception('Failed to delete post with feedback: $e');
@@ -443,7 +451,7 @@ class PostService {
         final searchQuery = query.toLowerCase();
         return !post.deleted &&
             !post.isLocked &&
-            post.description.toLowerCase().contains(searchQuery);
+            post.description!.toLowerCase().contains(searchQuery);
       }).toList();
     });
   }
@@ -456,8 +464,8 @@ class PostService {
     // If user hasn't specified gender, they can only see posts that include ALL three options
     if (userGender == null || userGender == 'prefer_not_to_say') {
       return post.genderPreferences.contains('Men') &&
-             post.genderPreferences.contains('Women') &&
-             post.genderPreferences.contains('Non-binary');
+          post.genderPreferences.contains('Women') &&
+          post.genderPreferences.contains('Non-binary');
     }
 
     // Map user gender to new preference format

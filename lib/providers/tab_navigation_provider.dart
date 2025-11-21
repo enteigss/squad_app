@@ -3,24 +3,20 @@ import '../services/navigation_service.dart';
 
 class TabNavigationProvider extends ChangeNotifier {
   int _selectedIndex = 0;
-  
+
   int get selectedIndex => _selectedIndex;
-  
+
   void setSelectedIndex(int index) {
     if (_selectedIndex != index) {
       _selectedIndex = index;
       notifyListeners();
     }
   }
-  
+
   void navigateToHangouts({String? tab}) {
     setSelectedIndex(0);
-    if (tab != null) {
-      // Use NavigationService instead of storing context
-      NavigationService.goToPath('/feed?tab=$tab');
-    }
   }
-  
+
   void navigateToCreate() {
     // TODO: Navigate to create post screen (route or modal)
     // No longer tied to PageView index

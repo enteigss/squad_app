@@ -5,7 +5,6 @@ import '../utils/colors.dart';
 class ReportDialog extends StatefulWidget {
   final String contentType;
   final String contentId;
-  final String contentTitle;
   final String authorId;
   final Map<String, dynamic> contentSnippet;
   final Function(ReportReason reason) onSubmit;
@@ -14,7 +13,6 @@ class ReportDialog extends StatefulWidget {
     super.key,
     required this.contentType,
     required this.contentId,
-    required this.contentTitle,
     required this.authorId,
     required this.contentSnippet,
     required this.onSubmit,
@@ -24,7 +22,6 @@ class ReportDialog extends StatefulWidget {
     BuildContext context, {
     required String contentType,
     required String contentId,
-    required String contentTitle,
     required String authorId,
     required Map<String, dynamic> contentSnippet,
     required Function(ReportReason reason) onSubmit,
@@ -35,7 +32,6 @@ class ReportDialog extends StatefulWidget {
       builder: (context) => ReportDialog(
         contentType: contentType,
         contentId: contentId,
-        contentTitle: contentTitle,
         authorId: authorId,
         contentSnippet: contentSnippet,
         onSubmit: onSubmit,
@@ -106,39 +102,6 @@ class _ReportDialogState extends State<ReportDialog> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-
-          // Content info
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.error.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  widget.contentType == 'hangout' ? Icons.event : Icons.content_copy,
-                  color: AppColors.error,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.contentTitle,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 16),
 

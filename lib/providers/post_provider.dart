@@ -218,7 +218,7 @@ class PostProvider with ChangeNotifier {
         );
         if (posts.isNotEmpty) {
           debugPrint(
-            '📡 DB DEBUG: Sample upcoming post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}',
+            '📡 DB DEBUG: Sample upcoming post: "${posts.first.id}" - Gender prefs: ${posts.first.genderPreferences}',
           );
           debugPrint(
             '📡 DB DEBUG: Upcoming post authors: ${posts.take(3).map((p) => '${p.authorName} (${p.authorId})').join(', ')}',
@@ -236,7 +236,7 @@ class PostProvider with ChangeNotifier {
         );
         if (posts.isNotEmpty) {
           debugPrint(
-            '📡 DB DEBUG: Sample ongoing post: "${posts.first.title}" - Gender prefs: ${posts.first.genderPreferences}',
+            '📡 DB DEBUG: Sample ongoing post: "${posts.first.id}" - Gender prefs: ${posts.first.genderPreferences}',
           );
           debugPrint(
             '📡 DB DEBUG: Ongoing post authors: ${posts.take(3).map((p) => '${p.authorName} (${p.authorId})').join(', ')}',
@@ -278,12 +278,16 @@ class PostProvider with ChangeNotifier {
 
   // Create a new post
   Future<bool> createPost({
-    required String description,
+    required PostType type,
     required String authorId,
     required String authorName,
-    required DateTime scheduledTime,
     required List<String> genderPreferences,
+    String? description,
+    DateTime? scheduledTime,
+    Activity? activity,
+    String? customActivity,
     String? location,
+    String? locationTo,
     int? maxParticipants,
   }) async {
     _setLoading(true);
@@ -291,10 +295,13 @@ class PostProvider with ChangeNotifier {
 
     try {
       final now = DateTime.now();
-      final isNow = scheduledTime.difference(now).inMinutes.abs() < 1;
+      final isNow = scheduledTime == null || scheduledTime.difference(now).inMinutes.abs() < 1;
 
       final post = Post(
         id: '', // Will be set by Firestore
+        type: type,
+        activity: activity,
+        customActivity: customActivity,
         description: description,
         authorId: authorId,
         authorName: authorName,
@@ -303,6 +310,7 @@ class PostProvider with ChangeNotifier {
         status: isNow ? PostStatus.ongoing : PostStatus.upcoming,
         participantIds: [authorId], // Author is automatically a participant
         location: location,
+        locationTo: locationTo,
         maxParticipants: maxParticipants,
         genderPreferences: genderPreferences,
       );

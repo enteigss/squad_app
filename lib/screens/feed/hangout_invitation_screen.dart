@@ -11,10 +11,7 @@ import '../../widgets/custom_button.dart';
 class HangoutInvitationScreen extends StatelessWidget {
   final String hangoutId;
 
-  const HangoutInvitationScreen({
-    super.key,
-    required this.hangoutId,
-  });
+  const HangoutInvitationScreen({super.key, required this.hangoutId});
 
   @override
   Widget build(BuildContext context) {
@@ -30,16 +27,21 @@ class HangoutInvitationScreen extends StatelessWidget {
         builder: (context, postProvider, authProvider, child) {
           final hangout = postProvider.getPostById(hangoutId);
           final currentUser = authProvider.currentUser;
-          
+
           // Track hangout view when we have data
           if (hangout != null && currentUser != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              final canJoin = postProvider.canUserJoinPost(hangout, currentUser.id, userGender: currentUser.gender);
-              final isParticipant = hangout.participantIds.contains(currentUser.id);
-              
+              final canJoin = postProvider.canUserJoinPost(
+                hangout,
+                currentUser.id,
+                userGender: currentUser.gender,
+              );
+              final isParticipant = hangout.participantIds.contains(
+                currentUser.id,
+              );
             });
           }
-          
+
           if (hangout == null) {
             return const Center(
               child: Column(
@@ -62,20 +64,24 @@ class HangoutInvitationScreen extends StatelessWidget {
                   Text(
                     'This hangout may have been deleted or the link is invalid.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                    ),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
               ),
             );
           }
 
-          final isParticipant = currentUser != null && 
+          final isParticipant =
+              currentUser != null &&
               hangout.participantIds.contains(currentUser.id);
-          final canJoin = currentUser != null && 
-              postProvider.canUserJoinPost(hangout, currentUser.id, userGender: currentUser.gender);
-          
+          final canJoin =
+              currentUser != null &&
+              postProvider.canUserJoinPost(
+                hangout,
+                currentUser.id,
+                userGender: currentUser.gender,
+              );
+
           // Determine why user can't join for better error messaging
           String? cantJoinReason;
           String? cantJoinExplanation;
@@ -83,13 +89,15 @@ class HangoutInvitationScreen extends StatelessWidget {
             final effectiveLimit = hangout.maxParticipants ?? 100;
             if (hangout.participantIds.length >= effectiveLimit) {
               cantJoinReason = 'Hangout Full';
-              cantJoinExplanation = 'This hangout has reached its maximum number of participants.';
+              cantJoinExplanation =
+                  'This hangout has reached its maximum number of participants.';
             } else if (hangout.dynamicStatus == PostStatus.completed) {
               cantJoinReason = 'Already Completed';
               cantJoinExplanation = 'This hangout has already ended.';
             } else {
               cantJoinReason = 'Cannot Join';
-              cantJoinExplanation = 'This hangout has gender preferences set by the organizer that don\'t match your profile.';
+              cantJoinExplanation =
+                  'This hangout has gender preferences set by the organizer that don\'t match your profile.';
             }
           }
 
@@ -100,18 +108,21 @@ class HangoutInvitationScreen extends StatelessWidget {
               children: [
                 // Title
                 Text(
-                  hangout.title,
+                  hangout.id,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Status badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(hangout.dynamicStatus),
                     borderRadius: BorderRadius.circular(16),
@@ -125,18 +136,18 @@ class HangoutInvitationScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Details cards
                 _buildDetailCard(
                   icon: Icons.schedule,
                   title: 'When',
                   content: _formatDateTime(hangout.scheduledTime),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 if (hangout.location != null) ...[
                   _buildDetailCard(
                     icon: Icons.location_on,
@@ -145,7 +156,7 @@ class HangoutInvitationScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                 ],
-                
+
                 _buildDetailCard(
                   icon: Icons.people,
                   title: 'Participants',
@@ -153,16 +164,17 @@ class HangoutInvitationScreen extends StatelessWidget {
                       ? '${hangout.participantIds.length}/${hangout.maxParticipants} people'
                       : '${hangout.participantIds.length} people',
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 _buildDetailCard(
                   icon: Icons.person,
                   title: 'Organizer',
                   content: hangout.authorName,
                 ),
-                
-                if (hangout.description.isNotEmpty) ...[
+
+                if (hangout.description != null &&
+                    hangout.description!.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Text(
                     'Description',
@@ -180,7 +192,7 @@ class HangoutInvitationScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      hangout.description,
+                      hangout.description!,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         height: 1.5,
@@ -188,9 +200,9 @@ class HangoutInvitationScreen extends StatelessWidget {
                     ),
                   ),
                 ],
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Action buttons
                 if (isParticipant)
                   Column(
@@ -204,7 +216,8 @@ class HangoutInvitationScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       CustomButton(
                         text: 'Go Back to Hangouts',
-                        onPressed: () => NavigationService.goToPath('/feed?tab=hangouts'),
+                        onPressed: () =>
+                            NavigationService.goToPath('/feed?tab=hangouts'),
                         width: double.infinity,
                         backgroundColor: AppColors.surface,
                         textColor: AppColors.textPrimary,
@@ -216,7 +229,8 @@ class HangoutInvitationScreen extends StatelessWidget {
                     children: [
                       CustomButton(
                         text: 'Join Hangout',
-                        onPressed: () => _joinHangout(context, hangout, currentUser!.id),
+                        onPressed: () =>
+                            _joinHangout(context, hangout, currentUser!.id),
                         width: double.infinity,
                       ),
                       const SizedBox(height: 12),
@@ -275,7 +289,8 @@ class HangoutInvitationScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       CustomButton(
                         text: 'Go Back to Hangouts',
-                        onPressed: () => NavigationService.goToPath('/feed?tab=hangouts'),
+                        onPressed: () =>
+                            NavigationService.goToPath('/feed?tab=hangouts'),
                         width: double.infinity,
                         backgroundColor: AppColors.surface,
                         textColor: AppColors.textPrimary,
@@ -316,11 +331,7 @@ class HangoutInvitationScreen extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 20,
-            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -375,7 +386,7 @@ class HangoutInvitationScreen extends StatelessWidget {
 
   String _formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return 'TBD';
-    
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
@@ -390,7 +401,8 @@ class HangoutInvitationScreen extends StatelessWidget {
       dateStr = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
 
-    final timeStr = '${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
     return '$dateStr at $timeStr';
   }
 
@@ -398,9 +410,10 @@ class HangoutInvitationScreen extends StatelessWidget {
     debugPrint('🚀 JOIN HANGOUT FLOW - Starting join process');
     debugPrint('📋 Hangout ID: ${hangout.id}');
     debugPrint('📋 User ID: $userId');
-    debugPrint('📋 Hangout Title: ${hangout.title}');
-    debugPrint('📋 Current Participants: ${hangout.participantIds.length}/${hangout.maxParticipants}');
-    
+    debugPrint(
+      '📋 Current Participants: ${hangout.participantIds.length}/${hangout.maxParticipants}',
+    );
+
     // Show loading
     debugPrint('⏳ Showing loading dialog');
     showDialog(
@@ -414,26 +427,29 @@ class HangoutInvitationScreen extends StatelessWidget {
     try {
       debugPrint('🔄 Getting PostProvider instance');
       final postProvider = Provider.of<PostProvider>(context, listen: false);
-      
+
       debugPrint('📞 Calling postProvider.joinPost()');
       final success = await postProvider.joinPost(hangout.id, userId);
       debugPrint('✅ joinPost() completed with success: $success');
-      
+
       // Track hangout join attempt
       if (success) {
-        debugPrint('📊 HANGOUT INVITATION SCREEN - Tracking hangout join analytics');
+        debugPrint(
+          '📊 HANGOUT INVITATION SCREEN - Tracking hangout join analytics',
+        );
         debugPrint('📋 User ID: $userId');
         debugPrint('📋 Hangout ID: ${hangout.id}');
-        debugPrint('📋 Hangout Title: ${hangout.title}');
-        
+
         await AnalyticsService().trackHangoutJoined(
           userId: userId,
           hangoutId: hangout.id,
         );
-        
-        debugPrint('✅ HANGOUT INVITATION SCREEN - Analytics tracking completed');
+
+        debugPrint(
+          '✅ HANGOUT INVITATION SCREEN - Analytics tracking completed',
+        );
       }
-      
+
       // Dismiss loading
       debugPrint('❌ Dismissing loading dialog');
       if (context.mounted) {
@@ -442,18 +458,20 @@ class HangoutInvitationScreen extends StatelessWidget {
       } else {
         debugPrint('⚠️  Context not mounted, could not dismiss loading dialog');
       }
-      
+
       if (success && context.mounted) {
         debugPrint('🎉 Join was successful! Proceeding to navigation');
-        
+
         // Navigate to feed hangouts tab after successful join
         debugPrint('🧭 Preparing to navigate to feed hangouts tab');
         debugPrint('🔗 Target route: /feed?tab=hangouts');
-        
+
         // Navigate immediately to show user their joined hangout
         debugPrint('🚀 Attempting navigation to feed hangouts tab');
-        debugPrint('📍 Calling NavigationService.goToPath("/feed?tab=hangouts")');
-        
+        debugPrint(
+          '📍 Calling NavigationService.goToPath("/feed?tab=hangouts")',
+        );
+
         try {
           NavigationService.goToPath('/feed?tab=hangouts');
           debugPrint('✅ Navigation call completed successfully');
@@ -477,16 +495,18 @@ class HangoutInvitationScreen extends StatelessWidget {
       debugPrint('💥 EXCEPTION in _joinHangout: $e');
       debugPrint('🔍 Exception type: ${e.runtimeType}');
       debugPrint('📚 Stack trace: ${StackTrace.current}');
-      
+
       // Dismiss loading
       debugPrint('❌ Dismissing loading dialog due to exception');
       if (context.mounted) {
         Navigator.of(context).pop();
         debugPrint('✅ Loading dialog dismissed after exception');
       } else {
-        debugPrint('⚠️  Context not mounted, could not dismiss loading dialog after exception');
+        debugPrint(
+          '⚠️  Context not mounted, could not dismiss loading dialog after exception',
+        );
       }
-      
+
       if (context.mounted) {
         debugPrint('🚨 Showing exception error snackbar');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -496,26 +516,28 @@ class HangoutInvitationScreen extends StatelessWidget {
           ),
         );
       } else {
-        debugPrint('⚠️  Context not mounted, could not show exception error snackbar');
+        debugPrint(
+          '⚠️  Context not mounted, could not show exception error snackbar',
+        );
       }
     }
-    
+
     debugPrint('🏁 JOIN HANGOUT FLOW - Method completed');
   }
 
   void _notRightNow(BuildContext context) {
     debugPrint('👋 NOT RIGHT NOW - User declined to join hangout');
-    
+
     // Navigate back to feed, same as successful join
     debugPrint('🧭 Navigating back to feed hangouts tab');
-    
+
     try {
       NavigationService.goToPath('/feed?tab=hangouts');
       debugPrint('✅ Navigation to feed completed successfully');
     } catch (e) {
       debugPrint('💥 ERROR during navigation: $e');
       debugPrint('🔍 Error type: ${e.runtimeType}');
-      
+
       // Fallback: just pop the current screen
       if (context.mounted) {
         Navigator.of(context).pop();

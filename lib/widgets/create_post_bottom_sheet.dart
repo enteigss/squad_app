@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import '../utils/colors.dart';
 import '../models/post_model.dart';
 import '../providers/auth_provider.dart';
+import '../providers/post_provider.dart';
+import '../providers/tab_navigation_provider.dart';
+import '../services/analytics_service.dart';
+import '../widgets/invite_options_modal.dart';
 
 enum FoodLocation {
   marcianoCommons,
@@ -12,6 +16,8 @@ enum FoodLocation {
   westCampus,
   other,
 }
+
+enum StudyLocation { mugar, wheelock, cgs, sci, stuviII, other }
 
 class CreatePostBottomSheet extends StatefulWidget {
   final String userName;
@@ -35,7 +41,9 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   PostType? _selectedType;
   Activity? _selectedActivity;
   FoodLocation? _selectedFoodLocation;
+  StudyLocation? _selectedStudyLocation;
   String? _customActivityText;
+  String? _customStudyLocationText;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isTodaySelected = false;
@@ -47,7 +55,10 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   String? _maxGroupSizeError;
   String? _additionalDetails;
   final PageController _pageController = PageController();
-  final TextEditingController _customActivityController = TextEditingController();
+  final TextEditingController _customActivityController =
+      TextEditingController();
+  final TextEditingController _customStudyLocationController =
+      TextEditingController();
   final TextEditingController _maxGroupSizeController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
 
@@ -55,6 +66,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   void dispose() {
     _pageController.dispose();
     _customActivityController.dispose();
+    _customStudyLocationController.dispose();
     _maxGroupSizeController.dispose();
     _detailsController.dispose();
     super.dispose();
@@ -98,6 +110,18 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  void _selectStudyLocation(StudyLocation location) {
+    setState(() => _selectedStudyLocation = location);
+    if (location != StudyLocation.other) {
+      _pageController.animateToPage(
+        3,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+    // If "other" is selected, stay on page to show text field
   }
 
   Future<void> _selectWhen({required bool isToday}) async {
@@ -166,7 +190,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
         if (time != null) {
           // Only validate if selected date is today
           final now = DateTime.now();
-          final isSelectedDateToday = date.year == now.year &&
+          final isSelectedDateToday =
+              date.year == now.year &&
               date.month == now.month &&
               date.day == now.day;
 
@@ -241,11 +266,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0),
       child: IconButton(
-        icon: Icon(
-          Icons.arrow_back,
-          color: AppColors.textPrimary,
-          size: 24,
-        ),
+        icon: Icon(Icons.arrow_back, color: AppColors.textPrimary, size: 24),
         onPressed: _goToPreviousPage,
       ),
     );
@@ -270,7 +291,10 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
         // Centered title
         Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 48.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 8.0,
+              horizontal: 48.0,
+            ),
             child: Text(
               title,
               style: TextStyle(
@@ -409,9 +433,14 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   }
 
   Widget _buildLocationOrNextStep() {
-    // Show location selection only for getting food activity
+    // Show location selection for getting food activity
     if (_selectedActivity == Activity.diningHall) {
       return _buildFoodLocationSelection();
+    }
+
+    // Show location selection for studying activity
+    if (_selectedActivity == Activity.studying) {
+      return _buildStudyLocationSelection();
     }
 
     // For other activities, show placeholder
@@ -461,6 +490,160 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
 
             const SizedBox(height: 24),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudyLocationSelection() {
+    final isOtherSelected = _selectedStudyLocation == StudyLocation.other;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('Where?'),
+
+            const SizedBox(height: 24),
+
+            // Location buttons
+            _buildStudyLocationButton('Mugar', StudyLocation.mugar),
+            const SizedBox(height: 12),
+            _buildStudyLocationButton('Wheelock', StudyLocation.wheelock),
+            const SizedBox(height: 12),
+            _buildStudyLocationButton('CGS', StudyLocation.cgs),
+            const SizedBox(height: 12),
+            _buildStudyLocationButton('SCI', StudyLocation.sci),
+            const SizedBox(height: 12),
+            _buildStudyLocationButton('StuVi II', StudyLocation.stuviII),
+            const SizedBox(height: 12),
+            _buildStudyLocationButton('Other', StudyLocation.other),
+
+            // Show text field if "Other" is selected
+            if (isOtherSelected) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _customStudyLocationController,
+                autofocus: true,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Where are you studying?',
+                  hintStyle: TextStyle(
+                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _customStudyLocationText = value.trim().isEmpty
+                        ? null
+                        : value;
+                  });
+                },
+              ),
+
+              // Show Continue button when text is entered
+              if (_customStudyLocationText != null &&
+                  _customStudyLocationText!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _pageController.animateToPage(
+                        3,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudyLocationButton(String label, StudyLocation location) {
+    final isSelected = _selectedStudyLocation == location;
+
+    return GestureDetector(
+      onTap: () => _selectStudyLocation(location),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textSecondary.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -559,11 +742,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 20,
-                    ),
+                    Icon(Icons.error_outline, color: Colors.red, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -638,7 +817,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
         requiredPreference = 'Non-binary';
         break;
       default:
-        requiredPreference = 'Non-binary'; // Default for other gender identities
+        requiredPreference =
+            'Non-binary'; // Default for other gender identities
         break;
     }
 
@@ -648,6 +828,229 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     }
 
     return null;
+  }
+
+  DateTime? get _selectedDateTime {
+    if (_selectedDate == null || _selectedTime == null) return null;
+    return DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+  }
+
+  String _foodLocationToString(FoodLocation location) {
+    switch (location) {
+      case FoodLocation.marcianoCommons:
+        return 'Marciano Commons';
+      case FoodLocation.warrenTowers:
+        return 'Warren Towers';
+      case FoodLocation.gsu:
+        return 'GSU';
+      case FoodLocation.raisingCanes:
+        return 'Raising Cane\'s';
+      case FoodLocation.westCampus:
+        return 'West Campus';
+      case FoodLocation.other:
+        return 'Other';
+    }
+  }
+
+  String _studyLocationToString(StudyLocation location) {
+    switch (location) {
+      case StudyLocation.mugar:
+        return 'Mugar';
+      case StudyLocation.wheelock:
+        return 'Wheelock';
+      case StudyLocation.cgs:
+        return 'CGS';
+      case StudyLocation.sci:
+        return 'SCI';
+      case StudyLocation.stuviII:
+        return 'StuVi II';
+      case StudyLocation.other:
+        return _customStudyLocationText ?? 'Other';
+    }
+  }
+
+  Future<void> _createPost() async {
+    // Get providers & current user
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    final currentUser = authProvider.currentUser;
+
+    // Validate user is authenticated
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be logged in to create a hangout'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+
+    try {
+      // Determine location based on activity type
+      String? finalLocation;
+      if (_selectedActivity == Activity.diningHall &&
+          _selectedFoodLocation != null) {
+        finalLocation = _foodLocationToString(_selectedFoodLocation!);
+      } else if (_selectedActivity == Activity.studying &&
+          _selectedStudyLocation != null) {
+        finalLocation = _studyLocationToString(_selectedStudyLocation!);
+      }
+      // TODO: Add location selection for chilling activities
+      // TODO: Add from/to location selection for walking activity
+
+      // Create the hangout
+      final success = await postProvider.createPost(
+        type: _selectedType!,
+        activity: _selectedActivity,
+        customActivity: _customActivityText,
+        description: _additionalDetails,
+        authorId: currentUser.id,
+        authorName: currentUser.displayName ?? 'Unknown User',
+        scheduledTime: _selectedDateTime,
+        genderPreferences: _selectedGenderPreferences.toList(),
+        location: finalLocation,
+        locationTo: null, // TODO: Implement for walking activity
+        maxParticipants: _maxGroupSize,
+      );
+
+      // Dismiss loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (success) {
+        // Get hangout ID and track analytics
+        final hangoutId = postProvider.lastCreatedPostId ?? '';
+        await AnalyticsService().trackHangoutCreated(
+          userId: currentUser.id,
+          hangoutId: hangoutId,
+        );
+
+        if (mounted) {
+          // Close bottom sheet
+          Navigator.of(context).pop();
+
+          // Navigate to hangouts tab
+          final tabProvider = Provider.of<TabNavigationProvider>(
+            context,
+            listen: false,
+          );
+          tabProvider.navigateToHangouts(tab: 'yourPosts');
+
+          // Show success dialog with invite option
+          _showSuccessWithInviteOption(
+            hangoutId: hangoutId,
+            inviterName: currentUser.displayName ?? 'Unknown User',
+          );
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(postProvider.error ?? 'Failed to create hangout'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Dismiss loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create hangout: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showSuccessWithInviteOption({
+    required String hangoutId,
+    required String inviterName,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: AppColors.success, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Posted!',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You have posted successfully!',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Want to invite friends to join?',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text(
+              'Maybe Later',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              InviteOptionsModal.show(
+                context,
+                hangoutId: hangoutId,
+                inviterName: inviterName,
+              );
+            },
+            icon: const Icon(Icons.person_add, size: 18),
+            label: const Text('Invite Friends'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _advanceFromGenderPreference() {
@@ -724,11 +1127,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 20,
-                    ),
+                    Icon(Icons.error_outline, color: Colors.red, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -762,10 +1161,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
                 child: const Text(
                   'Continue',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -814,16 +1210,16 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
               ),
               child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 16,
-                    )
+                  ? const Icon(Icons.check, color: Colors.white, size: 16)
                   : null,
             ),
             const SizedBox(width: 16),
             Text(
-              gender == 'Men' ? '👨' : gender == 'Women' ? '👩' : '🏳️‍🌈',
+              gender == 'Men'
+                  ? '👨'
+                  : gender == 'Women'
+                  ? '👩'
+                  : '🏳️‍🌈',
               style: const TextStyle(fontSize: 24),
             ),
             const SizedBox(width: 12),
@@ -832,9 +1228,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 gender,
                 style: TextStyle(
                   fontSize: 16,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textPrimary,
+                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
@@ -1001,7 +1395,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                     decoration: InputDecoration(
                       hintText: 'Enter maximum group size (2-100)',
                       hintStyle: TextStyle(
-                          color: AppColors.textSecondary.withValues(alpha: 0.6)),
+                        color: AppColors.textSecondary.withValues(alpha: 0.6),
+                      ),
                       filled: true,
                       fillColor: AppColors.background,
                       border: OutlineInputBorder(
@@ -1077,11 +1472,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 20,
-                    ),
+                    Icon(Icons.error_outline, color: Colors.red, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1126,7 +1517,9 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             ),
 
             // Header with back button
-            _buildHeaderWithBackButton('Any details you want to share? (Optional)'),
+            _buildHeaderWithBackButton(
+              'Any details you want to share? (Optional)',
+            ),
 
             const SizedBox(height: 24),
 
@@ -1156,10 +1549,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: AppColors.primary,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
                 ),
                 contentPadding: const EdgeInsets.all(16),
               ),
@@ -1176,9 +1566,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Implement post creation logic
-                },
+                onPressed: _createPost,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -1189,10 +1577,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
                 child: const Text(
                   'Post',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -1397,7 +1782,9 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             style: TextStyle(color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: 'What are you doing?',
-              hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6)),
+              hintStyle: TextStyle(
+                color: AppColors.textSecondary.withValues(alpha: 0.6),
+              ),
               filled: true,
               fillColor: AppColors.background,
               border: OutlineInputBorder(
@@ -1414,10 +1801,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
               ),
               contentPadding: const EdgeInsets.all(16),
             ),
@@ -1429,7 +1813,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
           ),
 
           // Show Continue button when text is entered
-          if (_customActivityText != null && _customActivityText!.isNotEmpty) ...[
+          if (_customActivityText != null &&
+              _customActivityText!.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -1451,10 +1836,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                 ),
                 child: const Text(
                   'Continue',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),

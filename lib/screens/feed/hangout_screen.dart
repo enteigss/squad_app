@@ -53,7 +53,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
   @override
   void initState() {
     super.initState();
-    _currentDescription = widget.post.description;
+    _currentDescription = widget.post.description!;
     _currentScheduledTime = widget.post.scheduledTime;
     _currentLocation = widget.post.location;
     _loadGroupMembers();
@@ -62,7 +62,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
 
   Future<void> _loadNotificationPreference() async {
     try {
-      final enabled = await _notificationService.getHangoutChatNotificationPreference(widget.post.id);
+      final enabled = await _notificationService
+          .getHangoutChatNotificationPreference(widget.post.id);
       if (mounted) {
         setState(() {
           _chatNotificationsEnabled = enabled;
@@ -125,7 +126,6 @@ class _HangoutScreenState extends State<HangoutScreen> {
     }
   }
 
-
   Future<void> _loadGroupMembers([Post? post]) async {
     try {
       setState(() {
@@ -185,8 +185,9 @@ class _HangoutScreenState extends State<HangoutScreen> {
           onPressed: () {
             // Check if we came from a notification
             final routeState = GoRouterState.of(context);
-            final fromNotification = routeState.uri.queryParameters['from'] == 'notification';
-            
+            final fromNotification =
+                routeState.uri.queryParameters['from'] == 'notification';
+
             if (fromNotification) {
               // Navigate to feed hangouts tab if came from notification
               context.go('/feed?tab=yourPosts');
@@ -256,12 +257,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
                   const SizedBox(height: 8),
                 if (_currentDescription.isNotEmpty)
                   _buildInfoRow(Icons.description, _currentDescription),
-                if (_currentDescription.isNotEmpty)
-                  const SizedBox(height: 8),
-                _buildInfoRow(
-                  Icons.people,
-                  '${_members.length} members',
-                ),
+                if (_currentDescription.isNotEmpty) const SizedBox(height: 8),
+                _buildInfoRow(Icons.people, '${_members.length} members'),
               ],
             ),
           ),
@@ -405,17 +402,19 @@ class _HangoutScreenState extends State<HangoutScreen> {
       bottomRowButtons.add(
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _isJoiningOrLeaving ? null : () => _leavePost(currentUserId),
+            onPressed: _isJoiningOrLeaving
+                ? null
+                : () => _leavePost(currentUserId),
             icon: _isJoiningOrLeaving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Icon(Icons.exit_to_app, size: 18),
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.exit_to_app, size: 18),
             label: Text(_isJoiningOrLeaving ? 'Leaving...' : 'Leave Group'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
@@ -463,17 +462,19 @@ class _HangoutScreenState extends State<HangoutScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       color: AppColors.background,
       child: ElevatedButton.icon(
-        onPressed: _isJoiningOrLeaving ? null : () => _joinPost(currentUserId, postProvider),
+        onPressed: _isJoiningOrLeaving
+            ? null
+            : () => _joinPost(currentUserId, postProvider),
         icon: _isJoiningOrLeaving
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : const Icon(Icons.login, size: 18),
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Icon(Icons.login, size: 18),
         label: Text(_isJoiningOrLeaving ? 'Joining...' : 'Join Hangout'),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -969,7 +970,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
         contentId: widget.post.id,
         authorId: widget.post.authorId,
         contentSnippet: ReportService.createHangoutContentSnippet(
-          description: widget.post.description,
+          title: "Placeholder Title",
+          description: widget.post.description!,
           location: widget.post.location,
           participantCount: widget.post.participantIds.length,
           scheduledTime: widget.post.scheduledTime,
@@ -992,11 +994,13 @@ class _HangoutScreenState extends State<HangoutScreen> {
   Future<void> _submitReport(ReportReason reason, UserModel currentUser) async {
     try {
       await _reportService.submitReport(
+        contentTitle: "Placeholder title",
         contentType: 'hangout',
         contentId: widget.post.id,
         authorId: widget.post.authorId,
         contentSnippet: ReportService.createHangoutContentSnippet(
-          description: widget.post.description,
+          title: "Placeholder title",
+          description: widget.post.description!,
           location: widget.post.location,
           participantCount: widget.post.participantIds.length,
           scheduledTime: widget.post.scheduledTime,
@@ -1035,11 +1039,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppColors.textSecondary,
-        ),
+        Icon(icon, size: 16, color: AppColors.textSecondary),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -1287,7 +1287,10 @@ class _HangoutScreenState extends State<HangoutScreen> {
 
         // If successfully left, update local state and navigate back if current user left
         if (success) {
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          );
           final currentUserId = authProvider.currentUser?.id;
 
           setState(() {
