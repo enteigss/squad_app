@@ -19,20 +19,34 @@ enum FoodLocation {
 
 enum StudyLocation { mugar, wheelock, cgs, sci, stuviII, other }
 
+enum FitRecActivity { lift, basketball, climb, swim, other }
+
 class CreatePostBottomSheet extends StatefulWidget {
   final String userName;
+  final PostType? initialPostType;
 
-  const CreatePostBottomSheet({super.key, required this.userName});
+  const CreatePostBottomSheet({
+    super.key,
+    required this.userName,
+    this.initialPostType,
+  });
 
   @override
   State<CreatePostBottomSheet> createState() => _CreatePostBottomSheetState();
 
-  static Future<void> show(BuildContext context, String userName) {
+  static Future<void> show(
+    BuildContext context,
+    String userName, {
+    PostType? initialPostType,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CreatePostBottomSheet(userName: userName),
+      builder: (context) => CreatePostBottomSheet(
+        userName: userName,
+        initialPostType: initialPostType,
+      ),
     );
   }
 }
@@ -42,10 +56,17 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   Activity? _selectedActivity;
   FoodLocation? _selectedFoodLocation;
   StudyLocation? _selectedStudyLocation;
+  FitRecActivity? _selectedFitRecActivity;
   String? _customActivityText;
   String? _customStudyLocationText;
+  String? _customFoodLocationText;
+  String? _customFitRecActivityText;
+  String? _walkingFromLocation;
+  String? _walkingToLocation;
+  String? _chillingLocation;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  TimeOfDay? _selectedEndTime;
   bool _isTodaySelected = false;
   String? _timeErrorMessage;
   Set<String> _selectedGenderPreferences = {'Men', 'Women', 'Non-binary'};
@@ -59,14 +80,40 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
       TextEditingController();
   final TextEditingController _customStudyLocationController =
       TextEditingController();
+  final TextEditingController _customFoodLocationController =
+      TextEditingController();
+  final TextEditingController _customFitRecActivityController =
+      TextEditingController();
+  final TextEditingController _walkingFromController = TextEditingController();
+  final TextEditingController _walkingToController = TextEditingController();
+  final TextEditingController _chillingLocationController = TextEditingController();
   final TextEditingController _maxGroupSizeController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // If initial post type is provided, set it and navigate to appropriate page
+    if (widget.initialPostType != null) {
+      _selectedType = widget.initialPostType;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Waving skips to date selection (page 3), others go to activity selection (page 1)
+        final targetPage = widget.initialPostType == PostType.waving ? 3 : 1;
+        _pageController.jumpToPage(targetPage);
+      });
+    }
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
     _customActivityController.dispose();
     _customStudyLocationController.dispose();
+    _customFoodLocationController.dispose();
+    _customFitRecActivityController.dispose();
+    _walkingFromController.dispose();
+    _walkingToController.dispose();
+    _chillingLocationController.dispose();
     _maxGroupSizeController.dispose();
     _detailsController.dispose();
     super.dispose();
@@ -74,8 +121,12 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
 
   void _goToNextStep(PostType type) {
     setState(() => _selectedType = type);
+
+    // Waving skips activity and location, goes straight to when
+    final targetPage = type == PostType.waving ? 3 : 1;
+
     _pageController.animateToPage(
-      1,
+      targetPage,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -85,8 +136,15 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     if (_pageController.hasClients) {
       final currentPage = _pageController.page?.round() ?? 0;
       if (currentPage > 0) {
+        int targetPage = currentPage - 1;
+
+        // If waving and on date selection page (3), go back to type selection (0)
+        if (_selectedType == PostType.waving && currentPage == 3) {
+          targetPage = 0;
+        }
+
         _pageController.animateToPage(
-          currentPage - 1,
+          targetPage,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
@@ -98,15 +156,6 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     setState(() => _selectedActivity = activity);
     _pageController.animateToPage(
       2,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _selectFoodLocation(FoodLocation location) {
-    setState(() => _selectedFoodLocation = location);
-    _pageController.animateToPage(
-      3,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -131,100 +180,29 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     });
 
     if (isToday) {
-      // Today: Just show time picker
+      // Today: Set date to today and navigate to time selection
       setState(() => _selectedDate = DateTime.now());
-
-      final TimeOfDay? time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
+      _pageController.animateToPage(
+        4, // Navigate to time selection screen
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
       );
-
-      if (time != null) {
-        // Validate that the selected time is in the future
-        final now = DateTime.now();
-        final selectedDateTime = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          time.hour,
-          time.minute,
-        );
-
-        if (selectedDateTime.isBefore(now)) {
-          // Show error - time is in the past
-          setState(() {
-            _timeErrorMessage = 'Please select a time in the future';
-          });
-          return; // Don't proceed
-        }
-
-        // Valid time selected
-        setState(() {
-          _selectedTime = time;
-          _timeErrorMessage = null;
-        });
-        _pageController.animateToPage(
-          4, // Navigate to gender preference screen
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
     } else {
-      // Another day: Show date picker, then time picker
+      // Another day: Show date picker, then navigate to time selection
       final DateTime? date = await showDatePicker(
         context: context,
-        initialDate: DateTime.now(),
+        initialDate: DateTime.now().add(const Duration(days: 1)),
         firstDate: DateTime.now(), // Prevents selecting past dates
         lastDate: DateTime.now().add(const Duration(days: 365)),
       );
 
       if (date != null) {
         setState(() => _selectedDate = date);
-
-        // Now show time picker
-        final TimeOfDay? time = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.now(),
+        _pageController.animateToPage(
+          4, // Navigate to time selection screen
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
         );
-
-        if (time != null) {
-          // Only validate if selected date is today
-          final now = DateTime.now();
-          final isSelectedDateToday =
-              date.year == now.year &&
-              date.month == now.month &&
-              date.day == now.day;
-
-          if (isSelectedDateToday) {
-            // Check if time is in the past
-            final selectedDateTime = DateTime(
-              date.year,
-              date.month,
-              date.day,
-              time.hour,
-              time.minute,
-            );
-
-            if (selectedDateTime.isBefore(now)) {
-              // Show error - time is in the past
-              setState(() {
-                _timeErrorMessage = 'Please select a time in the future';
-              });
-              return; // Don't proceed
-            }
-          }
-
-          // Valid selection
-          setState(() {
-            _selectedTime = time;
-            _timeErrorMessage = null;
-          });
-          _pageController.animateToPage(
-            4, // Navigate to gender preference screen
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
       }
     }
   }
@@ -248,14 +226,15 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
           controller: _pageController,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildTypeSelection(),
-            _buildActivitySelection(),
-            _buildLocationOrNextStep(),
-            _buildWhenSelection(),
-            _buildGenderPreferenceSelection(),
-            _buildMaxGroupSizeSelection(),
-            _buildDetailsSelection(),
-            _buildFinalStep(),
+            _buildTypeSelection(),        // 0
+            _buildActivitySelection(),    // 1
+            _buildLocationOrNextStep(),   // 2
+            _buildWhenSelection(),        // 3 - Date selection
+            _buildTimeSelection(),        // 4 - Time selection (NEW)
+            _buildGenderPreferenceSelection(), // 5
+            _buildMaxGroupSizeSelection(), // 6
+            _buildDetailsSelection(),     // 7
+            _buildFinalStep(),            // 8
           ],
         ),
       ),
@@ -381,12 +360,16 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   }
 
   Widget _buildActivitySelection() {
-    // Only show activity selection for walking type
-    if (_selectedType != PostType.walking) {
+    // Show activity selection for walking and raising types
+    if (_selectedType != PostType.walking && _selectedType != PostType.raising) {
       return _buildPlaceholder(
         'Activity selection not yet implemented for this type',
       );
     }
+
+    // Determine header and labels based on type
+    final isRaising = _selectedType == PostType.raising;
+    final headerText = isRaising ? 'What do you want to do?' : 'What are you doing?';
 
     return SingleChildScrollView(
       child: Padding(
@@ -408,20 +391,40 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             ),
 
             // Header with back button
-            _buildHeaderWithBackButton('What are you doing?'),
+            _buildHeaderWithBackButton(headerText),
 
             const SizedBox(height: 24),
 
-            // Activity buttons
-            _buildActivityButton('🍔', 'Getting food', Activity.diningHall),
+            // Activity buttons with grammar based on type
+            _buildActivityButton(
+              '🍔',
+              isRaising ? 'Get food' : 'Getting food',
+              Activity.diningHall,
+            ),
             const SizedBox(height: 12),
-            _buildActivityButton('📚', 'Studying', Activity.studying),
+            _buildActivityButton(
+              '📚',
+              isRaising ? 'Study' : 'Studying',
+              Activity.studying,
+            ),
             const SizedBox(height: 12),
-            _buildActivityButton('🚶', 'Walking somewhere', Activity.walking),
+            _buildActivityButton(
+              '🚶',
+              isRaising ? 'Walk somewhere' : 'Walking somewhere',
+              Activity.walking,
+            ),
             const SizedBox(height: 12),
-            _buildActivityButton('🏋️', 'Hitting FitRec', Activity.fitRec),
+            _buildActivityButton(
+              '🏋️',
+              isRaising ? 'Hit FitRec' : 'Hitting FitRec',
+              Activity.fitRec,
+            ),
             const SizedBox(height: 12),
-            _buildActivityButton('😎', 'Just chilling', Activity.chilling),
+            _buildActivityButton(
+              '😎',
+              isRaising ? 'Just chill' : 'Just chilling',
+              Activity.chilling,
+            ),
             const SizedBox(height: 12),
             _buildOtherActivityButton(),
 
@@ -443,11 +446,28 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
       return _buildStudyLocationSelection();
     }
 
+    // Show activity selection for FitRec
+    if (_selectedActivity == Activity.fitRec) {
+      return _buildFitRecActivitySelection();
+    }
+
+    // Show from/to location for walking activity
+    if (_selectedActivity == Activity.walking) {
+      return _buildWalkingLocationSelection();
+    }
+
+    // Show location for chilling activity
+    if (_selectedActivity == Activity.chilling) {
+      return _buildChillingLocationSelection();
+    }
+
     // For other activities, show placeholder
     return _buildPlaceholder('Next step not yet implemented for this activity');
   }
 
   Widget _buildFoodLocationSelection() {
+    final isOtherSelected = _selectedFoodLocation == FoodLocation.other;
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -473,23 +493,139 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             const SizedBox(height: 24),
 
             // Location buttons
-            _buildLocationButton(
+            _buildFoodLocationButton(
               'Marciano Commons',
               FoodLocation.marcianoCommons,
             ),
             const SizedBox(height: 12),
-            _buildLocationButton('Warren Towers', FoodLocation.warrenTowers),
+            _buildFoodLocationButton('Warren Towers', FoodLocation.warrenTowers),
             const SizedBox(height: 12),
-            _buildLocationButton('GSU', FoodLocation.gsu),
+            _buildFoodLocationButton('GSU', FoodLocation.gsu),
             const SizedBox(height: 12),
-            _buildLocationButton('Raising Cane\'s', FoodLocation.raisingCanes),
+            _buildFoodLocationButton('Raising Cane\'s', FoodLocation.raisingCanes),
             const SizedBox(height: 12),
-            _buildLocationButton('West Campus', FoodLocation.westCampus),
+            _buildFoodLocationButton('West Campus', FoodLocation.westCampus),
             const SizedBox(height: 12),
-            _buildLocationButton('Other', FoodLocation.other),
+            _buildFoodLocationButton('Other', FoodLocation.other),
+
+            // Show text field if "Other" is selected
+            if (isOtherSelected) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _customFoodLocationController,
+                autofocus: true,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Where are you getting food?',
+                  hintStyle: TextStyle(
+                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _customFoodLocationText = value.trim().isEmpty
+                        ? null
+                        : value;
+                  });
+                },
+              ),
+
+              // Show Continue button when text is entered
+              if (_customFoodLocationText != null &&
+                  _customFoodLocationText!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _pageController.animateToPage(
+                        3,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
 
             const SizedBox(height: 24),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFoodLocationButton(String label, FoodLocation location) {
+    final isSelected = _selectedFoodLocation == location;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedFoodLocation = location);
+        if (location != FoodLocation.other) {
+          _pageController.animateToPage(
+            3,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textSecondary.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -649,6 +785,515 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     );
   }
 
+  Widget _buildFitRecActivitySelection() {
+    final isOtherSelected = _selectedFitRecActivity == FitRecActivity.other;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton(
+              _selectedType == PostType.raising
+                  ? 'What do you want to do at FitRec?'
+                  : 'What are you doing at FitRec?',
+            ),
+
+            const SizedBox(height: 24),
+
+            // Activity buttons
+            _buildFitRecActivityButton('🏋️', 'Lift', FitRecActivity.lift),
+            const SizedBox(height: 12),
+            _buildFitRecActivityButton('🏀', 'Basketball', FitRecActivity.basketball),
+            const SizedBox(height: 12),
+            _buildFitRecActivityButton('🧗', 'Climb', FitRecActivity.climb),
+            const SizedBox(height: 12),
+            _buildFitRecActivityButton('🏊', 'Swim', FitRecActivity.swim),
+            const SizedBox(height: 12),
+
+            // Other button with text field
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (_selectedFitRecActivity == FitRecActivity.other) {
+                        _selectedFitRecActivity = null;
+                        _customFitRecActivityText = null;
+                        _customFitRecActivityController.clear();
+                      } else {
+                        _selectedFitRecActivity = FitRecActivity.other;
+                      }
+                    });
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isOtherSelected
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isOtherSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary.withValues(alpha: 0.2),
+                        width: isOtherSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('✨', style: TextStyle(fontSize: 28)),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            'Other',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: isOtherSelected
+                                  ? AppColors.primary
+                                  : AppColors.textPrimary,
+                              fontWeight: isOtherSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Show text field when "Other" is selected
+                if (isOtherSelected) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _customFitRecActivityController,
+                    autofocus: true,
+                    style: TextStyle(color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'What are you doing at FitRec?',
+                      hintStyle: TextStyle(
+                        color: AppColors.textSecondary.withValues(alpha: 0.6),
+                      ),
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.textSecondary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.textSecondary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.primary, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _customFitRecActivityText = value.trim().isEmpty
+                            ? null
+                            : value;
+                      });
+                    },
+                  ),
+
+                  // Show Continue button when text is entered
+                  if (_customFitRecActivityText != null &&
+                      _customFitRecActivityText!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _pageController.animateToPage(
+                            3,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _selectFitRecActivity(FitRecActivity activity) {
+    setState(() => _selectedFitRecActivity = activity);
+    _pageController.animateToPage(
+      3,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildFitRecActivityButton(String emoji, String label, FitRecActivity activity) {
+    final isSelected = _selectedFitRecActivity == activity;
+
+    return GestureDetector(
+      onTap: () => _selectFitRecActivity(activity),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textSecondary.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 28)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fitRecActivityToString(FitRecActivity activity) {
+    switch (activity) {
+      case FitRecActivity.lift:
+        return 'Lift';
+      case FitRecActivity.basketball:
+        return 'Basketball';
+      case FitRecActivity.climb:
+        return 'Climb';
+      case FitRecActivity.swim:
+        return 'Swim';
+      case FitRecActivity.other:
+        return _customFitRecActivityText ?? 'Other';
+    }
+  }
+
+  Widget _buildChillingLocationSelection() {
+    final hasLocation = _chillingLocation != null && _chillingLocation!.isNotEmpty;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('Where?'),
+
+            const SizedBox(height: 24),
+
+            // Location text field
+            TextField(
+              controller: _chillingLocationController,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Where are you chilling?',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _chillingLocation = value.trim().isEmpty ? null : value.trim();
+                });
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Continue button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: hasLocation
+                    ? () {
+                        _pageController.animateToPage(
+                          3,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWalkingLocationSelection() {
+    final hasFromLocation = _walkingFromLocation != null && _walkingFromLocation!.isNotEmpty;
+    final hasToLocation = _walkingToLocation != null && _walkingToLocation!.isNotEmpty;
+    final canContinue = hasFromLocation || hasToLocation;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('Where?'),
+
+            const SizedBox(height: 24),
+
+            // From location
+            Text(
+              'Where are you walking from?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _walkingFromController,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'e.g., Warren Towers',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _walkingFromLocation = value.trim().isEmpty ? null : value.trim();
+                });
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // To location
+            Text(
+              'Where are you walking to?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _walkingToController,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'e.g., GSU',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _walkingToLocation = value.trim().isEmpty ? null : value.trim();
+                });
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Continue button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: canContinue
+                    ? () {
+                        _pageController.animateToPage(
+                          3,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWhenSelection() {
     return SingleChildScrollView(
       child: Padding(
@@ -766,6 +1411,259 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     );
   }
 
+  Widget _buildTimeSelection() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('When?'),
+
+            const SizedBox(height: 24),
+
+            // Start Time
+            Text(
+              'Start Time',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () async {
+                final TimeOfDay? time = await showTimePicker(
+                  context: context,
+                  initialTime: _selectedTime ?? TimeOfDay.now(),
+                );
+                if (time != null) {
+                  // Validate if today
+                  if (_isTodaySelected) {
+                    final now = DateTime.now();
+                    final selectedDateTime = DateTime(
+                      now.year,
+                      now.month,
+                      now.day,
+                      time.hour,
+                      time.minute,
+                    );
+                    if (selectedDateTime.isBefore(now)) {
+                      setState(() {
+                        _timeErrorMessage = 'Please select a time in the future';
+                      });
+                      return;
+                    }
+                  }
+                  setState(() {
+                    _selectedTime = time;
+                    _timeErrorMessage = null;
+                  });
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedTime != null
+                        ? AppColors.primary
+                        : AppColors.textSecondary.withValues(alpha: 0.2),
+                    width: _selectedTime != null ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      color: _selectedTime != null
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _selectedTime != null
+                          ? _selectedTime!.format(context)
+                          : 'Select start time',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _selectedTime != null
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary.withValues(alpha: 0.6),
+                        fontWeight: _selectedTime != null
+                            ? FontWeight.w500
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // End Time
+            Text(
+              'End Time',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () async {
+                final TimeOfDay? time = await showTimePicker(
+                  context: context,
+                  initialTime: _selectedEndTime ??
+                      (_selectedTime != null
+                          ? TimeOfDay(
+                              hour: (_selectedTime!.hour + 1) % 24,
+                              minute: _selectedTime!.minute,
+                            )
+                          : TimeOfDay.now()),
+                );
+                if (time != null) {
+                  setState(() {
+                    _selectedEndTime = time;
+                  });
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedEndTime != null
+                        ? AppColors.primary
+                        : AppColors.textSecondary.withValues(alpha: 0.2),
+                    width: _selectedEndTime != null ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      color: _selectedEndTime != null
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _selectedEndTime != null
+                          ? _selectedEndTime!.format(context)
+                          : 'Select end time (optional)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _selectedEndTime != null
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary.withValues(alpha: 0.6),
+                        fontWeight: _selectedEndTime != null
+                            ? FontWeight.w500
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Error message display
+            if (_timeErrorMessage != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _timeErrorMessage!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            // Continue button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedTime != null
+                    ? () {
+                        _pageController.animateToPage(
+                          5, // Navigate to gender preference screen
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _toggleGenderPreference(String gender) {
     setState(() {
       _genderPreferenceError = null; // Clear any previous error
@@ -854,7 +1752,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
       case FoodLocation.westCampus:
         return 'West Campus';
       case FoodLocation.other:
-        return 'Other';
+        return _customFoodLocationText ?? 'Other';
     }
   }
 
@@ -910,9 +1808,20 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
       } else if (_selectedActivity == Activity.studying &&
           _selectedStudyLocation != null) {
         finalLocation = _studyLocationToString(_selectedStudyLocation!);
+      } else if (_selectedActivity == Activity.fitRec &&
+          _selectedFitRecActivity != null) {
+        finalLocation = 'FitRec - ${_fitRecActivityToString(_selectedFitRecActivity!)}';
+      } else if (_selectedActivity == Activity.walking) {
+        finalLocation = _walkingFromLocation;
+      } else if (_selectedActivity == Activity.chilling) {
+        finalLocation = _chillingLocation;
       }
-      // TODO: Add location selection for chilling activities
-      // TODO: Add from/to location selection for walking activity
+
+      // Determine locationTo for walking activity
+      String? finalLocationTo;
+      if (_selectedActivity == Activity.walking) {
+        finalLocationTo = _walkingToLocation;
+      }
 
       // Create the hangout
       final success = await postProvider.createPost(
@@ -925,7 +1834,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
         scheduledTime: _selectedDateTime,
         genderPreferences: _selectedGenderPreferences.toList(),
         location: finalLocation,
-        locationTo: null, // TODO: Implement for walking activity
+        locationTo: finalLocationTo,
         maxParticipants: _maxGroupSize,
       );
 
@@ -1069,7 +1978,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     });
 
     _pageController.animateToPage(
-      5, // Navigate to max group size screen
+      6, // Navigate to max group size screen
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -1249,7 +2158,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
         _maxGroupSize = null;
         _maxGroupSizeController.clear();
         _pageController.animateToPage(
-          6, // Navigate to final step
+          7, // Navigate to details screen
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
@@ -1290,7 +2199,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     });
 
     _pageController.animateToPage(
-      6, // Navigate to final step
+      7, // Navigate to details screen
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -1843,32 +2752,6 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
           ],
         ],
       ],
-    );
-  }
-
-  Widget _buildLocationButton(String text, FoodLocation location) {
-    return GestureDetector(
-      onTap: () => _selectFoodLocation(location),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.textSecondary.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 16,
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
     );
   }
 

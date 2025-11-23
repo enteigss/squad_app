@@ -252,18 +252,21 @@ class _FeedScreenState extends State<FeedScreen> {
               return _buildInfoCard(
                 emoji: '🚶',
                 text: 'Got plans? Let people join you.',
+                postType: PostType.walking,
               );
             }
             if (index == 1) {
               return _buildInfoCard(
                 emoji: '🙋',
                 text: 'Need a group? Find people here.',
+                postType: PostType.raising,
               );
             }
             if (index == 2) {
               return _buildInfoCard(
                 emoji: '👋',
                 text: 'No plans? Let people know you\'re free.',
+                postType: PostType.waving,
               );
             }
             // Show hangout cards after info cards
@@ -324,7 +327,11 @@ class _FeedScreenState extends State<FeedScreen> {
     return filteredPosts;
   }
 
-  Widget _buildInfoCard({required String emoji, required String text}) {
+  Widget _buildInfoCard({
+    required String emoji,
+    required String text,
+    required PostType postType,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       height: 50,
@@ -332,7 +339,23 @@ class _FeedScreenState extends State<FeedScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
-          onTap: () {}, // TODO: Add create post functionality
+          onTap: () {
+            final authProvider = Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            );
+            final currentUser = authProvider.currentUser;
+            if (currentUser != null) {
+              final userName =
+                  currentUser.displayName?.split(' ').first ??
+                  currentUser.username;
+              CreatePostBottomSheet.show(
+                context,
+                userName,
+                initialPostType: postType,
+              );
+            }
+          },
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
