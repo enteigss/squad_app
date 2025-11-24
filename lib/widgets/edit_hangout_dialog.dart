@@ -37,7 +37,6 @@ class EditHangoutDialog extends StatefulWidget {
 
 class _EditHangoutDialogState extends State<EditHangoutDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _customLocationController;
   late DateTime? _selectedDateTime;
@@ -49,7 +48,6 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController();
     _descriptionController = TextEditingController(
       text: widget.post.description,
     );
@@ -69,7 +67,6 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     _customLocationController.dispose();
     super.dispose();
@@ -482,35 +479,6 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Title Field
-                      Text(
-                        'Title',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter hangout title',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: AppColors.surface,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a title';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
                       // Description Field
                       Text(
                         'Description (optional)',

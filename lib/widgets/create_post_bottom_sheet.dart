@@ -1522,11 +1522,19 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
 
             // End Time
             Text(
-              'End Time',
+              'End Time (Approximately)',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'This determines when your post will be removed from the feed',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -1574,7 +1582,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
                     Text(
                       _selectedEndTime != null
                           ? _selectedEndTime!.format(context)
-                          : 'Select end time (optional)',
+                          : 'Select end time',
                       style: TextStyle(
                         fontSize: 16,
                         color: _selectedEndTime != null
@@ -1629,7 +1637,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedTime != null
+                onPressed: _selectedTime != null && _selectedEndTime != null
                     ? () {
                         _pageController.animateToPage(
                           5, // Navigate to gender preference screen
@@ -1831,6 +1839,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
         description: _additionalDetails,
         authorId: currentUser.id,
         authorName: currentUser.displayName ?? 'Unknown User',
+        authorDorm: currentUser.location,
+        authorYear: currentUser.classYear,
         scheduledTime: _selectedDateTime,
         genderPreferences: _selectedGenderPreferences.toList(),
         location: finalLocation,

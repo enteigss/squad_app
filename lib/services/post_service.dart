@@ -451,7 +451,7 @@ class PostService {
         final searchQuery = query.toLowerCase();
         return !post.deleted &&
             !post.isLocked &&
-            post.description!.toLowerCase().contains(searchQuery);
+            (post.description?.toLowerCase().contains(searchQuery) ?? false);
       }).toList();
     });
   }

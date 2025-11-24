@@ -53,7 +53,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
   @override
   void initState() {
     super.initState();
-    _currentDescription = widget.post.description!;
+    _currentDescription = widget.post.description ?? '';
     _currentScheduledTime = widget.post.scheduledTime;
     _currentLocation = widget.post.location;
     _loadGroupMembers();
@@ -971,7 +971,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
         authorId: widget.post.authorId,
         contentSnippet: ReportService.createHangoutContentSnippet(
           title: "Placeholder Title",
-          description: widget.post.description!,
+          description: widget.post.description ?? '',
           location: widget.post.location,
           participantCount: widget.post.participantIds.length,
           scheduledTime: widget.post.scheduledTime,
@@ -1000,7 +1000,7 @@ class _HangoutScreenState extends State<HangoutScreen> {
         authorId: widget.post.authorId,
         contentSnippet: ReportService.createHangoutContentSnippet(
           title: "Placeholder title",
-          description: widget.post.description!,
+          description: widget.post.description ?? '',
           location: widget.post.location,
           participantCount: widget.post.participantIds.length,
           scheduledTime: widget.post.scheduledTime,

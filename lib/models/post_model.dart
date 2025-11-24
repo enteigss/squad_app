@@ -14,6 +14,8 @@ class Post {
   final String? description;
   final String authorId;
   final String authorName;
+  final String? authorDorm;
+  final String? authorYear;
   final DateTime createdAt;
   final DateTime? scheduledTime;
   final PostStatus status;
@@ -37,6 +39,8 @@ class Post {
     this.description,
     required this.authorId,
     required this.authorName,
+    this.authorDorm,
+    this.authorYear,
     required this.createdAt,
     this.scheduledTime,
     required this.status,
@@ -70,6 +74,8 @@ class Post {
       description: map['description'],
       authorId: map['authorId'] ?? '',
       authorName: map['authorName'] ?? '',
+      authorDorm: map['authorDorm'],
+      authorYear: map['authorYear'],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       scheduledTime: map['scheduledTime'] != null
           ? (map['scheduledTime'] as Timestamp).toDate()
@@ -103,6 +109,8 @@ class Post {
       'description': description,
       'authorId': authorId,
       'authorName': authorName,
+      'authorDorm': authorDorm,
+      'authorYear': authorYear,
       'createdAt': Timestamp.fromDate(createdAt),
       'scheduledTime': scheduledTime != null
           ? Timestamp.fromDate(scheduledTime!)
@@ -132,6 +140,8 @@ class Post {
     String? description,
     String? authorId,
     String? authorName,
+    String? authorDorm,
+    String? authorYear,
     DateTime? createdAt,
     DateTime? scheduledTime,
     PostStatus? status,
@@ -155,6 +165,8 @@ class Post {
       description: description ?? this.description,
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
+      authorDorm: authorDorm ?? this.authorDorm,
+      authorYear: authorYear ?? this.authorYear,
       createdAt: createdAt ?? this.createdAt,
       scheduledTime: scheduledTime ?? this.scheduledTime,
       status: status ?? this.status,

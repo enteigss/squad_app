@@ -10,7 +10,7 @@ import '../../services/analytics_service.dart';
 import '../../services/debug_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/app_invite_modal.dart';
-import '../../widgets/doing_card.dart';
+import '../../widgets/post_card.dart';
 import '../../widgets/create_post_bottom_sheet.dart';
 import 'hangout_screen.dart';
 
@@ -67,11 +67,6 @@ class _FeedScreenState extends State<FeedScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: _showHangoutsInfo,
-            tooltip: 'How does hangouts work?',
-          ),
           if (kDebugMode)
             IconButton(
               icon: Icon(
@@ -270,7 +265,7 @@ class _FeedScreenState extends State<FeedScreen> {
               );
             }
             // Show hangout cards after info cards
-            return DoingCard(post: filteredPosts[index - 3]);
+            return PostCard(post: filteredPosts[index - 3]);
           },
         );
       },

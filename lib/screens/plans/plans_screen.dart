@@ -4,7 +4,7 @@ import '../../models/post_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
 import '../../utils/colors.dart';
-import '../../widgets/hangout_card.dart';
+import '../../widgets/post_card.dart';
 
 class PlansScreen extends StatefulWidget {
   const PlansScreen({super.key});
@@ -80,7 +80,7 @@ class _PlansScreenState extends State<PlansScreen> {
           itemCount: userHangouts.length,
           itemBuilder: (context, index) {
             final post = userHangouts[index];
-            return HangoutCard(
+            return PostCard(
               post: post,
               onDeleted: () {
                 // Refresh the list after deletion

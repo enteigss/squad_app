@@ -288,7 +288,7 @@ class HangoutCard extends StatelessWidget {
 
         // Description
         Text(
-          post.description!,
+          post.description ?? '',
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 14,
