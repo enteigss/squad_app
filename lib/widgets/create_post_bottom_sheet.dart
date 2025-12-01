@@ -64,6 +64,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   String? _walkingFromLocation;
   String? _walkingToLocation;
   String? _chillingLocation;
+  String? _customActivityLocation;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   TimeOfDay? _selectedEndTime;
@@ -88,6 +89,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   final TextEditingController _walkingFromController = TextEditingController();
   final TextEditingController _walkingToController = TextEditingController();
   final TextEditingController _chillingLocationController = TextEditingController();
+  final TextEditingController _customActivityLocationController = TextEditingController();
   final TextEditingController _maxGroupSizeController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
 
@@ -115,6 +117,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     _walkingFromController.dispose();
     _walkingToController.dispose();
     _chillingLocationController.dispose();
+    _customActivityLocationController.dispose();
     _maxGroupSizeController.dispose();
     _detailsController.dispose();
     super.dispose();
@@ -460,6 +463,11 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     // Show location for chilling activity
     if (_selectedActivity == Activity.chilling) {
       return _buildChillingLocationSelection();
+    }
+
+    // Show location input for custom "other" activity
+    if (_selectedActivity == Activity.other) {
+      return _buildCustomActivityLocationSelection();
     }
 
     // For other activities, show placeholder
@@ -1088,6 +1096,111 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
               onChanged: (value) {
                 setState(() {
                   _chillingLocation = value.trim().isEmpty ? null : value.trim();
+                });
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Continue button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: hasLocation
+                    ? () {
+                        _pageController.animateToPage(
+                          3,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomActivityLocationSelection() {
+    final hasLocation = _customActivityLocation != null && _customActivityLocation!.isNotEmpty;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with back button
+            _buildHeaderWithBackButton('Where?'),
+
+            const SizedBox(height: 24),
+
+            // Location text field
+            TextField(
+              controller: _customActivityLocationController,
+              autofocus: true,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Where will this be?',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _customActivityLocation = value.trim().isEmpty ? null : value.trim();
                 });
               },
             ),
@@ -1927,6 +2040,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
         finalLocation = _walkingFromLocation;
       } else if (_selectedActivity == Activity.chilling) {
         finalLocation = _chillingLocation;
+      } else if (_selectedActivity == Activity.other) {
+        finalLocation = _customActivityLocation;
       }
 
       // Determine locationTo for walking activity

@@ -31,6 +31,9 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _raisingSelected = true;
   bool _wavingSelected = true;
 
+  // Track count of ongoing posts for header display
+  int _ongoingPostCount = 0;
+
   final DebugService _debugService = DebugService();
   bool _isCreatingDebugPosts = false;
   bool _isDeletingDebugPosts = false;
@@ -238,11 +241,14 @@ class _FeedScreenState extends State<FeedScreen> {
 
         final filteredPosts = _getFilteredPosts(postProvider);
 
+        // Calculate if "Now" header should be shown
+        final showNowHeader = _ongoingPostCount > 0 && _nowSelected;
+
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: filteredPosts.length + 3, // +3 for info cards
+          itemCount: filteredPosts.length + 3 + (showNowHeader ? 1 : 0), // +3 for info cards, +1 for "Now" header if needed
           itemBuilder: (context, index) {
-            // Show info cards first
+            // Show info cards first (indices 0-2)
             if (index == 0) {
               return _buildInfoCard(
                 emoji: '🚶',
@@ -264,8 +270,22 @@ class _FeedScreenState extends State<FeedScreen> {
                 postType: PostType.waving,
               );
             }
-            // Show hangout cards after info cards
-            return PostCard(post: filteredPosts[index - 3]);
+
+            // Show "Now" header after info cards (index 3, if showNowHeader)
+            if (showNowHeader && index == 3) {
+              return _buildSectionHeader('Now');
+            }
+
+            // Show posts after info cards (and header if present)
+            final postIndex = index - 3 - (showNowHeader ? 1 : 0);
+            final post = filteredPosts[postIndex];
+
+            // Hide time label for ongoing posts, show for upcoming
+            final isOngoing = post.dynamicStatus == PostStatus.ongoing;
+            return PostCard(
+              post: post,
+              showTimeLabel: !isOngoing, // Hide time for ongoing, show for upcoming
+            );
           },
         );
       },
@@ -280,13 +300,30 @@ class _FeedScreenState extends State<FeedScreen> {
     debugPrint('🔍 FEED DEBUG: Getting filtered posts');
     debugPrint('🔍 FEED DEBUG: Current user ID: $currentUserId');
     debugPrint('🔍 FEED DEBUG: User gender: $userGender');
+    debugPrint('🔍 FEED DEBUG: Now filter: $_nowSelected, Later filter: $_laterSelected');
 
-    // For now, show all posts (both upcoming and ongoing) until filters are functional
-    // Combine upcoming and ongoing posts
-    final upcomingPosts = postProvider.getUpcomingPostsForUser(userGender);
-    final ongoingPosts = postProvider.getOngoingPostsForUser(userGender);
+    // Get posts based on time filters
+    List<Post> filteredPosts = [];
 
-    List<Post> filteredPosts = [...upcomingPosts, ...ongoingPosts];
+    if (_nowSelected) {
+      final ongoingPosts = postProvider.getOngoingPostsForUser(userGender);
+      filteredPosts.addAll(ongoingPosts);
+      debugPrint('🔍 FEED DEBUG: Added ${ongoingPosts.length} ongoing posts');
+    }
+
+    if (_laterSelected) {
+      final upcomingPosts = postProvider.getUpcomingPostsForUser(userGender);
+      filteredPosts.addAll(upcomingPosts);
+      debugPrint('🔍 FEED DEBUG: Added ${upcomingPosts.length} upcoming posts');
+    }
+
+    // Apply type filters (emoji filters)
+    filteredPosts = filteredPosts.where((post) {
+      if (post.type == PostType.walking && !_walkingSelected) return false;
+      if (post.type == PostType.raising && !_raisingSelected) return false;
+      if (post.type == PostType.waving && !_wavingSelected) return false;
+      return true;
+    }).toList();
 
     // Sort by soonest first: ongoing posts first, then upcoming by scheduled time
     filteredPosts.sort((a, b) {
@@ -303,23 +340,42 @@ class _FeedScreenState extends State<FeedScreen> {
       return aTime.compareTo(bTime);
     });
 
-    debugPrint('🔍 FEED DEBUG: Upcoming posts: ${upcomingPosts.length}');
-    debugPrint('🔍 FEED DEBUG: Ongoing posts: ${ongoingPosts.length}');
     debugPrint('🔍 FEED DEBUG: Total filtered posts: ${filteredPosts.length}');
+
+    // Count ongoing posts for header display
+    _ongoingPostCount = filteredPosts
+        .where((post) => post.dynamicStatus == PostStatus.ongoing)
+        .length;
 
     if (filteredPosts.isEmpty) {
       debugPrint('⚠️ FEED DEBUG: No posts found!');
     } else {
       debugPrint('✅ FEED DEBUG: Showing ${filteredPosts.length} posts');
+      debugPrint('🔍 FEED DEBUG: Ongoing posts: $_ongoingPostCount');
       for (int i = 0; i < filteredPosts.length && i < 3; i++) {
         final post = filteredPosts[i];
         debugPrint(
-          '🔍 FEED DEBUG: Post $i: (${post.id}) - Status: ${post.dynamicStatus} - Participants: ${post.participantIds.length}',
+          '🔍 FEED DEBUG: Post $i: (${post.id}) - Type: ${post.type.name} - Status: ${post.dynamicStatus} - Participants: ${post.participantIds.length}',
         );
       }
     }
 
     return filteredPosts;
+  }
+
+  Widget _buildSectionHeader(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12, top: 8),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
   }
 
   Widget _buildInfoCard({

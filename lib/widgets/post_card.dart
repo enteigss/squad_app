@@ -9,8 +9,14 @@ import '../utils/colors.dart';
 class PostCard extends StatelessWidget {
   final Post post;
   final VoidCallback? onDeleted;
+  final bool showTimeLabel;
 
-  const PostCard({super.key, required this.post, this.onDeleted});
+  const PostCard({
+    super.key,
+    required this.post,
+    this.onDeleted,
+    this.showTimeLabel = true,
+  });
 
   Color get _accentColor {
     switch (post.type) {
@@ -31,17 +37,18 @@ class PostCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Time above the card (top left, outside)
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 6),
-            child: Text(
-              _formatDateTime(post.scheduledTime ?? post.createdAt),
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+          if (showTimeLabel)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 6),
+              child: Text(
+                _formatDateTime(post.scheduledTime ?? post.createdAt),
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
           // Card content
           Container(
             decoration: BoxDecoration(
@@ -423,6 +430,10 @@ class PostCard extends StatelessWidget {
   String _buildActivityText() {
     // Handle custom activity
     if (post.activity == Activity.other && post.customActivity != null) {
+      // Include location if available
+      if (post.location != null) {
+        return '${post.customActivity} at ${post.location}';
+      }
       return post.customActivity!;
     }
 

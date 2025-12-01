@@ -275,6 +275,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontSize: 16)),
+          Expanded(child: Text(text)),
+        ],
+      ),
+    );
+  }
+
   Future<void> _completeProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -310,8 +323,70 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
 
       if (mounted) {
-        // Navigate directly to main app - onboarding complete
-        context.go('/main');
+        // Show welcome popup with expectation management
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text(
+              'Welcome to LinkUp BU!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'You\'re joining at the perfect time!',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'LinkUp BU is in its early days at BU, which means you get to help shape the community from the ground up.',
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'What to expect:',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildBulletPoint('The community is growing daily'),
+                  _buildBulletPoint('Your participation helps attract more students'),
+                  _buildBulletPoint('We\'re actively adding features and improvements'),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Get the most out of LinkUp BU:',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildBulletPoint('Create hangouts to connect with others'),
+                  _buildBulletPoint('Check back regularly as more students join'),
+                  _buildBulletPoint('Share feedback to help us improve'),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Thanks for being an early member!',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Let\'s Go!',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        // Navigate to main app after popup is dismissed
+        if (mounted) {
+          context.go('/main');
+        }
       }
     } catch (e) {
       if (mounted) {
