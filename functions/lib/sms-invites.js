@@ -35,6 +35,34 @@ const twilio_1 = __importDefault(require("twilio"));
 function getTwilioClient() {
     return (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
+/**
+ * Helper function to format activity text for SMS messages
+ * Returns format: "{activity} at {location}" or just "{activity}" or just "{location}"
+ */
+function formatActivityText(hangout) {
+    let text = "";
+    // Get activity name
+    if (hangout.activity === "other" && hangout.customActivity) {
+        text = hangout.customActivity;
+    }
+    else if (hangout.activity) {
+        const activityMap = {
+            "diningHall": "Eating",
+            "studying": "Studying",
+            "walking": "Walking",
+            "fitRec": "Working out",
+            "chilling": "Chilling",
+            "other": "",
+        };
+        text = activityMap[hangout.activity] || "";
+    }
+    // Add location
+    if (hangout.location) {
+        text = text ? `${text} at ${hangout.location}` : hangout.location;
+    }
+    // Fallback if no activity or location
+    return text || "a hangout";
+}
 exports.sendSMSInvite = (0, https_1.onCall)({ cors: true }, async (request) => {
     var _a, _b;
     logger.info("🚀 SMS Invite Function - Starting execution");
@@ -90,7 +118,8 @@ exports.sendSMSInvite = (0, https_1.onCall)({ cors: true }, async (request) => {
         logger.info("✅ SMS Invite Function - Hangout document found");
         const hangout = hangoutDoc.data();
         logger.info("📋 SMS Invite Function - Hangout data:", {
-            title: hangout.title,
+            activity: hangout.activity,
+            customActivity: hangout.customActivity,
             authorId: hangout.authorId,
             location: hangout.location,
             hasScheduledTime: !!hangout.scheduledTime,
@@ -151,8 +180,10 @@ exports.sendSMSInvite = (0, https_1.onCall)({ cors: true }, async (request) => {
         const location = hangout.location || "TBD";
         // Count current participants
         const participantCount = ((_b = hangout.participantIds) === null || _b === void 0 ? void 0 : _b.length) || 1;
+        // Format hangout title
+        const hangoutTitle = formatActivityText(hangout);
         // Create SMS message
-        const smsMessage = `Hey! ${inviterName} invited you to "${hangout.title}" ${dateTimeStr} at ${location}. ${participantCount} people going. Join: ${webUrl}`;
+        const smsMessage = `Hey! ${inviterName} invited you to "${hangoutTitle}" ${dateTimeStr}. ${participantCount} people going. Join: ${webUrl}`;
         logger.info("💬 SMS Invite Function - SMS message created:", {
             messageLength: smsMessage.length,
             message: smsMessage,

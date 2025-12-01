@@ -77,7 +77,7 @@ exports.chatMessageNotifications = (0, firestore_1.onDocumentCreated)("posts/{po
             recipientIds: recipientIds,
         });
         // Send notifications to each recipient
-        const notificationPromises = recipientIds.map((recipientId) => sendNotificationToUser(recipientId, postId, postData.title, messageData, messageId));
+        const notificationPromises = recipientIds.map((recipientId) => sendNotificationToUser(recipientId, postId, messageData, messageId));
         const results = await Promise.allSettled(notificationPromises);
         // Count successes and failures
         const successCount = results.filter((r) => r.status === "fulfilled").length;
@@ -97,7 +97,7 @@ exports.chatMessageNotifications = (0, firestore_1.onDocumentCreated)("posts/{po
 /**
  * Send notification to a specific user if they have notifications enabled
  */
-async function sendNotificationToUser(userId, postId, postTitle, messageData, messageId) {
+async function sendNotificationToUser(userId, postId, messageData, messageId) {
     var _a;
     let userData;
     try {
@@ -131,13 +131,12 @@ async function sendNotificationToUser(userId, postId, postTitle, messageData, me
         const message = {
             token: userData.fcmToken,
             notification: {
-                title: `${messageData.senderName} in ${postTitle}`,
+                title: `${messageData.senderName}`,
                 body: contentPreview,
             },
             data: {
                 type: "chat_message",
                 postId: postId,
-                postTitle: postTitle,
                 messageId: messageId,
                 senderId: messageData.senderId,
                 senderName: messageData.senderName,

@@ -68,6 +68,7 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
   TimeOfDay? _selectedTime;
   TimeOfDay? _selectedEndTime;
   bool _isTodaySelected = false;
+  bool _isNowSelected = false;
   String? _timeErrorMessage;
   Set<String> _selectedGenderPreferences = {'Men', 'Women', 'Non-binary'};
   String? _genderPreferenceError;
@@ -1436,84 +1437,186 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
 
             const SizedBox(height: 24),
 
+            // Now button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    if (_isNowSelected) {
+                      // Deselect Now
+                      _isNowSelected = false;
+                      _selectedTime = null;
+                    } else {
+                      // Select Now
+                      _isNowSelected = true;
+                      _selectedTime = TimeOfDay.now();
+                      _timeErrorMessage = null;
+                      // Suggest end time 1 hour from now if not set
+                      if (_selectedEndTime == null) {
+                        final now = TimeOfDay.now();
+                        _selectedEndTime = TimeOfDay(
+                          hour: (now.hour + 1) % 24,
+                          minute: now.minute,
+                        );
+                      }
+                    }
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isNowSelected
+                      ? AppColors.primary
+                      : AppColors.surface,
+                  foregroundColor: _isNowSelected
+                      ? Colors.white
+                      : AppColors.textPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: _isNowSelected
+                          ? AppColors.primary
+                          : AppColors.textSecondary.withValues(alpha: 0.2),
+                      width: _isNowSelected ? 0 : 1,
+                    ),
+                  ),
+                ),
+                child: const Text(
+                  'Now',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // "or" divider
+            Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'or',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
             // Start Time
             Text(
               'Start Time',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: _isNowSelected
+                    ? AppColors.textSecondary.withValues(alpha: 0.5)
+                    : AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: () async {
-                final TimeOfDay? time = await showTimePicker(
-                  context: context,
-                  initialTime: _selectedTime ?? TimeOfDay.now(),
-                );
-                if (time != null) {
-                  // Validate if today
-                  if (_isTodaySelected) {
-                    final now = DateTime.now();
-                    final selectedDateTime = DateTime(
-                      now.year,
-                      now.month,
-                      now.day,
-                      time.hour,
-                      time.minute,
-                    );
-                    if (selectedDateTime.isBefore(now)) {
-                      setState(() {
-                        _timeErrorMessage = 'Please select a time in the future';
-                      });
-                      return;
-                    }
-                  }
-                  setState(() {
-                    _selectedTime = time;
-                    _timeErrorMessage = null;
-                  });
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedTime != null
-                        ? AppColors.primary
-                        : AppColors.textSecondary.withValues(alpha: 0.2),
-                    width: _selectedTime != null ? 2 : 1,
+              onTap: _isNowSelected
+                  ? null
+                  : () async {
+                      final TimeOfDay? time = await showTimePicker(
+                        context: context,
+                        initialTime: _selectedTime ?? TimeOfDay.now(),
+                      );
+                      if (time != null) {
+                        // Validate if today
+                        if (_isTodaySelected) {
+                          final now = DateTime.now();
+                          final selectedDateTime = DateTime(
+                            now.year,
+                            now.month,
+                            now.day,
+                            time.hour,
+                            time.minute,
+                          );
+                          if (selectedDateTime.isBefore(now)) {
+                            setState(() {
+                              _timeErrorMessage =
+                                  'Please select a time in the future';
+                            });
+                            return;
+                          }
+                        }
+                        setState(() {
+                          _selectedTime = time;
+                          _isNowSelected = false;
+                          _timeErrorMessage = null;
+                        });
+                      }
+                    },
+              child: Opacity(
+                opacity: _isNowSelected ? 0.5 : 1.0,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isNowSelected
+                          ? AppColors.textSecondary.withValues(alpha: 0.2)
+                          : (_selectedTime != null
+                              ? AppColors.primary
+                              : AppColors.textSecondary.withValues(alpha: 0.2)),
+                      width: _selectedTime != null && !_isNowSelected ? 2 : 1,
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      color: _selectedTime != null
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _selectedTime != null
-                          ? _selectedTime!.format(context)
-                          : 'Select start time',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _selectedTime != null
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary.withValues(alpha: 0.6),
-                        fontWeight: _selectedTime != null
-                            ? FontWeight.w500
-                            : FontWeight.normal,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        color: _isNowSelected
+                            ? AppColors.textSecondary.withValues(alpha: 0.5)
+                            : (_selectedTime != null
+                                ? AppColors.primary
+                                : AppColors.textSecondary),
+                        size: 20,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Text(
+                        _isNowSelected
+                            ? 'Now'
+                            : (_selectedTime != null
+                                ? _selectedTime!.format(context)
+                                : 'Select start time'),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _isNowSelected
+                              ? AppColors.textSecondary.withValues(alpha: 0.6)
+                              : (_selectedTime != null
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary
+                                      .withValues(alpha: 0.6)),
+                          fontWeight: _selectedTime != null && !_isNowSelected
+                              ? FontWeight.w500
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1637,7 +1740,8 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedTime != null && _selectedEndTime != null
+                onPressed: (_isNowSelected || _selectedTime != null) &&
+                        _selectedEndTime != null
                     ? () {
                         _pageController.animateToPage(
                           5, // Navigate to gender preference screen

@@ -25,6 +25,38 @@ function getTwilioClient() {
   );
 }
 
+/**
+ * Helper function to format activity text for SMS messages
+ * Returns format: "{activity} at {location}" or just "{activity}" or just "{location}"
+ */
+function formatActivityText(hangout: any): string {
+  let text = "";
+
+  // Get activity name
+  if (hangout.activity === "other" && hangout.customActivity) {
+    text = hangout.customActivity;
+  } else if (hangout.activity) {
+    const activityMap: {[key: string]: string} = {
+      "diningHall": "Eating",
+      "studying": "Studying",
+      "walking": "Walking",
+      "fitRec": "Working out",
+      "chilling": "Chilling",
+      "other": "",
+    };
+    text = activityMap[hangout.activity] || "";
+  }
+
+  // Add location
+  if (hangout.location) {
+    text = text ? `${text} at ${hangout.location}` : hangout.location;
+  }
+
+  // Fallback if no activity or location
+  return text || "a hangout";
+}
+
+
 export const sendSMSInvite = onCall<SMSInviteRequest, Promise<SMSInviteResponse>>(
   {cors: true},
   async (request) => {
@@ -98,7 +130,8 @@ export const sendSMSInvite = onCall<SMSInviteRequest, Promise<SMSInviteResponse>
       const hangout = hangoutDoc.data()!;
       
       logger.info("📋 SMS Invite Function - Hangout data:", {
-        title: hangout.title,
+        activity: hangout.activity,
+        customActivity: hangout.customActivity,
         authorId: hangout.authorId,
         location: hangout.location,
         hasScheduledTime: !!hangout.scheduledTime,
@@ -164,12 +197,15 @@ export const sendSMSInvite = onCall<SMSInviteRequest, Promise<SMSInviteResponse>
 
       // Format location
       const location = hangout.location || "TBD";
-      
+
       // Count current participants
       const participantCount = hangout.participantIds?.length || 1;
 
+      // Format hangout title
+      const hangoutTitle = formatActivityText(hangout);
+
       // Create SMS message
-      const smsMessage = `Hey! ${inviterName} invited you to "${hangout.title}" ${dateTimeStr} at ${location}. ${participantCount} people going. Join: ${webUrl}`;
+      const smsMessage = `Hey! ${inviterName} invited you to "${hangoutTitle}" ${dateTimeStr}. ${participantCount} people going. Join: ${webUrl}`;
       
       logger.info("💬 SMS Invite Function - SMS message created:", {
         messageLength: smsMessage.length,

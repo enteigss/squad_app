@@ -22,7 +22,6 @@ interface ChatMessage {
  */
 interface Post {
   id: string;
-  title: string;
   participantIds: string[];
   deleted?: boolean;
   isLocked?: boolean;
@@ -105,7 +104,6 @@ export const chatMessageNotifications = onDocumentCreated(
         sendNotificationToUser(
           recipientId,
           postId,
-          postData.title,
           messageData,
           messageId
         )
@@ -136,7 +134,6 @@ export const chatMessageNotifications = onDocumentCreated(
 async function sendNotificationToUser(
   userId: string,
   postId: string,
-  postTitle: string,
   messageData: ChatMessage,
   messageId: string
 ): Promise<void> {
@@ -180,13 +177,12 @@ async function sendNotificationToUser(
     const message = {
       token: userData.fcmToken,
       notification: {
-        title: `${messageData.senderName} in ${postTitle}`,
+        title: `${messageData.senderName}`,
         body: contentPreview,
       },
       data: {
         type: "chat_message",
         postId: postId,
-        postTitle: postTitle,
         messageId: messageId,
         senderId: messageData.senderId,
         senderName: messageData.senderName,

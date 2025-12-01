@@ -3,6 +3,37 @@ import * as admin from "firebase-admin";
 import * as fs from 'fs';
 import * as path from 'path';
 
+/**
+ * Helper function to format activity text for web previews
+ * Returns format: "{activity} at {location}" or just "{activity}" or just "{location}"
+ */
+function formatActivityText(hangout: any): string {
+  let text = "";
+
+  // Get activity name
+  if (hangout.activity === "other" && hangout.customActivity) {
+    text = hangout.customActivity;
+  } else if (hangout.activity) {
+    const activityMap: {[key: string]: string} = {
+      "diningHall": "Eating",
+      "studying": "Studying",
+      "walking": "Walking",
+      "fitRec": "Working out",
+      "chilling": "Chilling",
+      "other": "",
+    };
+    text = activityMap[hangout.activity] || "";
+  }
+
+  // Add location
+  if (hangout.location) {
+    text = text ? `${text} at ${hangout.location}` : hangout.location;
+  }
+
+  // Fallback if no activity or location
+  return text || "Hangout";
+}
+
 export const hangoutPreview = onRequest(
   {
     cors: true,
@@ -104,10 +135,11 @@ function generateHangoutPageFromTemplate(hangout: any, hangoutId: string, invite
 
     const participantCount = hangout.participantIds?.length || 1;
     const location = hangout.location || "TBD";
+    const hangoutTitle = formatActivityText(hangout);
 
     // Replace template variables with actual data
     const html = template
-      .replace(/\{\{hangoutTitle\}\}/g, hangout.title || 'LinkUp BU Hangout')
+      .replace(/\{\{hangoutTitle\}\}/g, hangoutTitle)
       .replace(/\{\{hangoutId\}\}/g, hangoutId)
       .replace(/\{\{inviterName\}\}/g, inviterName)
       .replace(/\{\{inviterId\}\}/g, hangout.authorId || '')
@@ -162,7 +194,7 @@ function generateHangoutPage(hangout: any, hangoutId: string): string {
 
   const participantCount = hangout.participantIds?.length || 1;
   const location = hangout.location || "TBD";
-  const title = hangout.title || "Hangout";
+  const title = formatActivityText(hangout);
 
   return `
 <!DOCTYPE html>
@@ -171,7 +203,7 @@ function generateHangoutPage(hangout: any, hangoutId: string): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join ${title} - Squad</title>
-    
+
     <!-- Open Graph / Social Media -->
     <meta property="og:title" content="You're invited to ${title}">
     <meta property="og:description" content="${dateTimeStr} at ${location} • ${participantCount} people going">

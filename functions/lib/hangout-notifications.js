@@ -29,6 +29,33 @@ const https_1 = require("firebase-functions/v2/https");
 const firebase_functions_1 = require("firebase-functions");
 const admin = __importStar(require("firebase-admin"));
 /**
+ * Helper function to format activity text for notifications
+ * Returns format: "{activity} at {location}" or just "{activity}" or just "{location}"
+ */
+function formatActivityText(post) {
+    let text = "";
+    // Get activity name
+    if (post.activity === "other" && post.customActivity) {
+        text = post.customActivity;
+    }
+    else if (post.activity) {
+        const activityMap = {
+            "diningHall": "Eating",
+            "studying": "Studying",
+            "walking": "Walking",
+            "fitRec": "Working out",
+            "chilling": "Chilling",
+            "other": "",
+        };
+        text = activityMap[post.activity] || "";
+    }
+    // Add location
+    if (post.location) {
+        text = text ? `${text} at ${post.location}` : post.location;
+    }
+    return text;
+}
+/**
  * Cloud Function that triggers when a new hangout (post) is created
  * Sends push notifications to appropriate FCM topics based on gender preferences
  */
@@ -62,7 +89,8 @@ exports.hangoutNotifications = (0, firestore_1.onDocumentCreated)("posts/{postId
         await sendNotificationToTopic(debugTopic, simplePayload, postData, postId);
         */
         firebase_functions_1.logger.info(`Processing new hangout notification for post ${postId}`, {
-            title: postData.title,
+            activity: postData.activity,
+            location: postData.location,
             authorName: postData.authorName,
             genderPreferences: postData.genderPreferences,
         });
@@ -123,20 +151,18 @@ function determineNotificationTopics(genderPreferences) {
  * Creates the notification body and data payloads (common for all platforms)
  */
 function createNotificationBody(postData) {
-    const maxDescriptionLength = 100;
-    const descriptionPreview = postData.description.length > maxDescriptionLength
-        ? `${postData.description.substring(0, maxDescriptionLength)}...`
-        : postData.description;
+    const activityText = formatActivityText(postData);
+    const bodyText = activityText
+        ? `${postData.authorName} just posted: ${activityText}`
+        : `${postData.authorName} just posted`;
     // This function returns a simple object with `notification` and `data` keys.
     return {
         notification: {
-            title: `New Hangout: ${postData.title}`,
-            body: `by ${postData.authorName} - ${descriptionPreview}`,
+            body: bodyText,
         },
         data: {
             type: "new_hangout",
             hangout_id: postData.id,
-            hangout_title: postData.title,
             author_name: postData.authorName,
             author_id: postData.authorId,
             click_action: "FLUTTER_NOTIFICATION_CLICK",
@@ -150,7 +176,8 @@ async function sendNotificationToTopic(topic, commonPayload, postData, postId) {
     try {
         firebase_functions_1.logger.info(`Sending notification to topic: ${topic}`, {
             postId: postId,
-            title: postData.title,
+            activity: postData.activity,
+            location: postData.location,
         });
         // Construct the full message payload for the unified `send` method
         /* const message = {
@@ -209,12 +236,11 @@ async function sendNotificationToTopic(topic, commonPayload, postData, postId) {
  */
 exports.sendJoinNotification = (0, https_1.onCall)(async (request) => {
     try {
-        const { hangoutId, hangoutTitle, ownerId, joinerName, joinerId } = request.data;
+        const { hangoutId, ownerId, joinerName, joinerId } = request.data;
         // Validate required parameters
-        if (!hangoutId || !hangoutTitle || !ownerId || !joinerName || !joinerId) {
+        if (!hangoutId || !ownerId || !joinerName || !joinerId) {
             firebase_functions_1.logger.error("Missing required parameters for join notification", {
                 hangoutId,
-                hangoutTitle,
                 ownerId,
                 joinerName,
                 joinerId,
@@ -231,7 +257,6 @@ exports.sendJoinNotification = (0, https_1.onCall)(async (request) => {
         }
         firebase_functions_1.logger.info("Processing join notification", {
             hangoutId,
-            hangoutTitle,
             ownerId,
             joinerName,
             joinerId,
@@ -252,13 +277,11 @@ exports.sendJoinNotification = (0, https_1.onCall)(async (request) => {
         const message = {
             token: fcmToken,
             notification: {
-                title: `${joinerName} joined your hangout!`,
-                body: `Someone joined "${hangoutTitle}". Tap to view.`,
+                body: "Someone joined your plan.",
             },
             data: {
                 type: "hangout_join",
                 hangoutId: hangoutId,
-                hangoutTitle: hangoutTitle,
                 joinerName: joinerName,
                 joinerId: joinerId,
                 click_action: "FLUTTER_NOTIFICATION_CLICK",
@@ -300,12 +323,11 @@ exports.sendJoinNotification = (0, https_1.onCall)(async (request) => {
  */
 exports.sendLeaveNotification = (0, https_1.onCall)(async (request) => {
     try {
-        const { hangoutId, hangoutTitle, ownerId, leaverName, leaverId } = request.data;
+        const { hangoutId, ownerId, leaverName, leaverId } = request.data;
         // Validate required parameters
-        if (!hangoutId || !hangoutTitle || !ownerId || !leaverName || !leaverId) {
+        if (!hangoutId || !ownerId || !leaverName || !leaverId) {
             firebase_functions_1.logger.error("Missing required parameters for leave notification", {
                 hangoutId,
-                hangoutTitle,
                 ownerId,
                 leaverName,
                 leaverId,
@@ -322,7 +344,6 @@ exports.sendLeaveNotification = (0, https_1.onCall)(async (request) => {
         }
         firebase_functions_1.logger.info("Processing leave notification", {
             hangoutId,
-            hangoutTitle,
             ownerId,
             leaverName,
             leaverId,
@@ -343,13 +364,11 @@ exports.sendLeaveNotification = (0, https_1.onCall)(async (request) => {
         const message = {
             token: fcmToken,
             notification: {
-                title: `${leaverName} left your hangout`,
-                body: `Someone left "${hangoutTitle}". Tap to view.`,
+                body: "Someone left your hangout.",
             },
             data: {
                 type: "hangout_leave",
                 hangoutId: hangoutId,
-                hangoutTitle: hangoutTitle,
                 leaverName: leaverName,
                 leaverId: leaverId,
                 click_action: "FLUTTER_NOTIFICATION_CLICK",
@@ -388,17 +407,16 @@ exports.sendLeaveNotification = (0, https_1.onCall)(async (request) => {
 });
 /**
  * Cloud Function to send notification when a hangout is updated
- * (title, description, time, or location changed)
+ * (description, time, or location changed)
  */
 exports.sendHangoutUpdateNotification = (0, https_1.onCall)(async (request) => {
     var _a;
     try {
-        const { hangoutId, hangoutTitle, ownerId, participantIds, changes, oldTitle, oldDescription, oldTime, oldLocation, newTitle, newDescription, newTime, newLocation, } = request.data;
+        const { hangoutId, ownerId, participantIds, changes, oldDescription, oldTime, oldLocation, newDescription, newTime, newLocation, } = request.data;
         // Validate required parameters
-        if (!hangoutId || !hangoutTitle || !ownerId || !participantIds || !changes) {
+        if (!hangoutId || !ownerId || !participantIds || !changes) {
             firebase_functions_1.logger.error("Missing required parameters for hangout update notification", {
                 hangoutId,
-                hangoutTitle,
                 ownerId,
                 participantIds,
                 changes,
@@ -407,7 +425,6 @@ exports.sendHangoutUpdateNotification = (0, https_1.onCall)(async (request) => {
         }
         firebase_functions_1.logger.info("Processing hangout update notification", {
             hangoutId,
-            hangoutTitle,
             ownerId,
             changes,
             participantCount: participantIds.length,
@@ -444,38 +461,20 @@ exports.sendHangoutUpdateNotification = (0, https_1.onCall)(async (request) => {
             });
             return { success: true, message: "No valid FCM tokens found" };
         }
-        // Build notification body based on changes
-        let bodyText;
-        if (changes.length === 1) {
-            const change = changes[0];
-            bodyText = `"${hangoutTitle}" ${change} has been updated`;
-        }
-        else if (changes.length === 2) {
-            bodyText = `"${hangoutTitle}" ${changes[0]} and ${changes[1]} have been updated`;
-        }
-        else if (changes.length > 2) {
-            bodyText = `"${hangoutTitle}" details have been updated`;
-        }
-        else {
-            bodyText = `"${hangoutTitle}" has been updated`;
-        }
         firebase_functions_1.logger.info("Sending hangout update notifications", {
             hangoutId,
             tokenCount: tokens.length,
             changes,
-            bodyText,
         });
         // Create notification message
         const message = {
             notification: {
-                title: "Hangout Updated",
-                body: bodyText,
+                body: "A plan you're in was updated. Tap to view.",
             },
             data: {
                 type: "hangout_update",
                 hangoutId: hangoutId,
                 hangout_id: hangoutId,
-                hangoutTitle: hangoutTitle,
                 changes: JSON.stringify(changes),
                 click_action: "FLUTTER_NOTIFICATION_CLICK",
             },

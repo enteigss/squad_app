@@ -6,13 +6,44 @@ import * as admin from "firebase-admin";
 // Interface for Post data structure matching the Flutter model
 interface Post {
   id: string;
-  title: string;
-  description: string;
+  activity?: string;
+  customActivity?: string;
+  location?: string;
   authorId: string;
   authorName: string;
   genderPreferences: string[];
   deleted?: boolean;
   isLocked?: boolean;
+}
+
+/**
+ * Helper function to format activity text for notifications
+ * Returns format: "{activity} at {location}" or just "{activity}" or just "{location}"
+ */
+function formatActivityText(post: Post): string {
+  let text = "";
+
+  // Get activity name
+  if (post.activity === "other" && post.customActivity) {
+    text = post.customActivity;
+  } else if (post.activity) {
+    const activityMap: {[key: string]: string} = {
+      "diningHall": "Eating",
+      "studying": "Studying",
+      "walking": "Walking",
+      "fitRec": "Working out",
+      "chilling": "Chilling",
+      "other": "",
+    };
+    text = activityMap[post.activity] || "";
+  }
+
+  // Add location
+  if (post.location) {
+    text = text ? `${text} at ${post.location}` : post.location;
+  }
+
+  return text;
 }
 
 /**
@@ -54,7 +85,8 @@ export const hangoutNotifications = onDocumentCreated(
       */
      
       logger.info(`Processing new hangout notification for post ${postId}`, {
-        title: postData.title,
+        activity: postData.activity,
+        location: postData.location,
         authorName: postData.authorName,
         genderPreferences: postData.genderPreferences,
       });
@@ -128,21 +160,19 @@ function determineNotificationTopics(genderPreferences: string[]): string[] {
  * Creates the notification body and data payloads (common for all platforms)
  */
 function createNotificationBody(postData: Post) {
-  const maxDescriptionLength = 100;
-  const descriptionPreview = postData.description.length > maxDescriptionLength
-    ? `${postData.description.substring(0, maxDescriptionLength)}...`
-    : postData.description;
+  const activityText = formatActivityText(postData);
+  const bodyText = activityText
+    ? `${postData.authorName} just posted: ${activityText}`
+    : `${postData.authorName} just posted`;
 
   // This function returns a simple object with `notification` and `data` keys.
   return {
     notification: {
-      title: `New Hangout: ${postData.title}`,
-      body: `by ${postData.authorName} - ${descriptionPreview}`,
+      body: bodyText,
     },
     data: {
       type: "new_hangout",
       hangout_id: postData.id,
-      hangout_title: postData.title,
       author_name: postData.authorName,
       author_id: postData.authorId,
       click_action: "FLUTTER_NOTIFICATION_CLICK",
@@ -162,7 +192,8 @@ async function sendNotificationToTopic(
   try {
     logger.info(`Sending notification to topic: ${topic}`, {
       postId: postId,
-      title: postData.title,
+      activity: postData.activity,
+      location: postData.location,
     });
 
     // Construct the full message payload for the unified `send` method
@@ -225,13 +256,12 @@ async function sendNotificationToTopic(
  */
 export const sendJoinNotification = onCall(async (request) => {
   try {
-    const {hangoutId, hangoutTitle, ownerId, joinerName, joinerId} = request.data;
+    const {hangoutId, ownerId, joinerName, joinerId} = request.data;
 
     // Validate required parameters
-    if (!hangoutId || !hangoutTitle || !ownerId || !joinerName || !joinerId) {
+    if (!hangoutId || !ownerId || !joinerName || !joinerId) {
       logger.error("Missing required parameters for join notification", {
         hangoutId,
-        hangoutTitle,
         ownerId,
         joinerName,
         joinerId,
@@ -250,7 +280,6 @@ export const sendJoinNotification = onCall(async (request) => {
 
     logger.info("Processing join notification", {
       hangoutId,
-      hangoutTitle,
       ownerId,
       joinerName,
       joinerId,
@@ -276,13 +305,11 @@ export const sendJoinNotification = onCall(async (request) => {
     const message = {
       token: fcmToken,
       notification: {
-        title: `${joinerName} joined your hangout!`,
-        body: `Someone joined "${hangoutTitle}". Tap to view.`,
+        body: "Someone joined your plan.",
       },
       data: {
         type: "hangout_join",
         hangoutId: hangoutId,
-        hangoutTitle: hangoutTitle,
         joinerName: joinerName,
         joinerId: joinerId,
         click_action: "FLUTTER_NOTIFICATION_CLICK",
@@ -327,13 +354,12 @@ export const sendJoinNotification = onCall(async (request) => {
  */
 export const sendLeaveNotification = onCall(async (request) => {
   try {
-    const {hangoutId, hangoutTitle, ownerId, leaverName, leaverId} = request.data;
+    const {hangoutId, ownerId, leaverName, leaverId} = request.data;
 
     // Validate required parameters
-    if (!hangoutId || !hangoutTitle || !ownerId || !leaverName || !leaverId) {
+    if (!hangoutId || !ownerId || !leaverName || !leaverId) {
       logger.error("Missing required parameters for leave notification", {
         hangoutId,
-        hangoutTitle,
         ownerId,
         leaverName,
         leaverId,
@@ -352,7 +378,6 @@ export const sendLeaveNotification = onCall(async (request) => {
 
     logger.info("Processing leave notification", {
       hangoutId,
-      hangoutTitle,
       ownerId,
       leaverName,
       leaverId,
@@ -378,13 +403,11 @@ export const sendLeaveNotification = onCall(async (request) => {
     const message = {
       token: fcmToken,
       notification: {
-        title: `${leaverName} left your hangout`,
-        body: `Someone left "${hangoutTitle}". Tap to view.`,
+        body: "Someone left your hangout.",
       },
       data: {
         type: "hangout_leave",
         hangoutId: hangoutId,
-        hangoutTitle: hangoutTitle,
         leaverName: leaverName,
         leaverId: leaverId,
         click_action: "FLUTTER_NOTIFICATION_CLICK",
@@ -426,31 +449,27 @@ export const sendLeaveNotification = onCall(async (request) => {
 
 /**
  * Cloud Function to send notification when a hangout is updated
- * (title, description, time, or location changed)
+ * (description, time, or location changed)
  */
 export const sendHangoutUpdateNotification = onCall(async (request) => {
   try {
     const {
       hangoutId,
-      hangoutTitle,
       ownerId,
       participantIds,
       changes,
-      oldTitle,
       oldDescription,
       oldTime,
       oldLocation,
-      newTitle,
       newDescription,
       newTime,
       newLocation,
     } = request.data;
 
     // Validate required parameters
-    if (!hangoutId || !hangoutTitle || !ownerId || !participantIds || !changes) {
+    if (!hangoutId || !ownerId || !participantIds || !changes) {
       logger.error("Missing required parameters for hangout update notification", {
         hangoutId,
-        hangoutTitle,
         ownerId,
         participantIds,
         changes,
@@ -460,7 +479,6 @@ export const sendHangoutUpdateNotification = onCall(async (request) => {
 
     logger.info("Processing hangout update notification", {
       hangoutId,
-      hangoutTitle,
       ownerId,
       changes,
       participantCount: participantIds.length,
@@ -502,37 +520,21 @@ export const sendHangoutUpdateNotification = onCall(async (request) => {
       return {success: true, message: "No valid FCM tokens found"};
     }
 
-    // Build notification body based on changes
-    let bodyText: string;
-    if (changes.length === 1) {
-      const change = changes[0];
-      bodyText = `"${hangoutTitle}" ${change} has been updated`;
-    } else if (changes.length === 2) {
-      bodyText = `"${hangoutTitle}" ${changes[0]} and ${changes[1]} have been updated`;
-    } else if (changes.length > 2) {
-      bodyText = `"${hangoutTitle}" details have been updated`;
-    } else {
-      bodyText = `"${hangoutTitle}" has been updated`;
-    }
-
     logger.info("Sending hangout update notifications", {
       hangoutId,
       tokenCount: tokens.length,
       changes,
-      bodyText,
     });
 
     // Create notification message
     const message = {
       notification: {
-        title: "Hangout Updated",
-        body: bodyText,
+        body: "A plan you're in was updated. Tap to view.",
       },
       data: {
         type: "hangout_update",
         hangoutId: hangoutId,
         hangout_id: hangoutId,
-        hangoutTitle: hangoutTitle,
         changes: JSON.stringify(changes),
         click_action: "FLUTTER_NOTIFICATION_CLICK",
       },
