@@ -494,7 +494,7 @@ class _SquadAppState extends State<SquadApp> {
         // /feed route removed - Create is no longer in PageView
         GoRoute(
           path: '/plans',
-          builder: (context, state) => const MainScaffold(initialIndex: 1),
+          builder: (context, state) => const MainScaffold(initialIndex: 2),
         ),
         GoRoute(
           path: '/profile',

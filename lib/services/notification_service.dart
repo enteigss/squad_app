@@ -492,10 +492,10 @@ class NotificationService {
         print('🎯 Navigating to chat screen: $postId');
       }
 
-      // Build stack: Feed -> Chat (so back button works naturally)
+      // Build stack: Plans -> Chat (so back button works naturally)
       final context = NavigationService.navigatorKey.currentContext;
       if (context != null && context.mounted) {
-        context.go('/feed?tab=hangouts');
+        context.go('/plans');
         Future.delayed(const Duration(milliseconds: 100), () {
           if (context.mounted) {
             context.push('/post-chat/$postId');

@@ -108,7 +108,7 @@ class HangoutInvitationScreen extends StatelessWidget {
               children: [
                 // Title
                 Text(
-                  hangout.id,
+                  'Invitation',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -215,9 +215,9 @@ class HangoutInvitationScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       CustomButton(
-                        text: 'Go Back to Hangouts',
+                        text: 'Go Back to Plans',
                         onPressed: () =>
-                            NavigationService.goToPath('/feed?tab=hangouts'),
+                            NavigationService.goToPath('/plans'),
                         width: double.infinity,
                         backgroundColor: AppColors.surface,
                         textColor: AppColors.textPrimary,
@@ -288,9 +288,9 @@ class HangoutInvitationScreen extends StatelessWidget {
                       ],
                       const SizedBox(height: 12),
                       CustomButton(
-                        text: 'Go Back to Hangouts',
+                        text: 'Go Back to Plans',
                         onPressed: () =>
-                            NavigationService.goToPath('/feed?tab=hangouts'),
+                            NavigationService.goToPath('/plans'),
                         width: double.infinity,
                         backgroundColor: AppColors.surface,
                         textColor: AppColors.textPrimary,
@@ -462,18 +462,18 @@ class HangoutInvitationScreen extends StatelessWidget {
       if (success && context.mounted) {
         debugPrint('🎉 Join was successful! Proceeding to navigation');
 
-        // Navigate to feed hangouts tab after successful join
-        debugPrint('🧭 Preparing to navigate to feed hangouts tab');
-        debugPrint('🔗 Target route: /feed?tab=hangouts');
+        // Navigate to plans tab after successful join
+        debugPrint('🧭 Preparing to navigate to plans tab');
+        debugPrint('🔗 Target route: /plans');
 
         // Navigate immediately to show user their joined hangout
-        debugPrint('🚀 Attempting navigation to feed hangouts tab');
+        debugPrint('🚀 Attempting navigation to plans tab');
         debugPrint(
-          '📍 Calling NavigationService.goToPath("/feed?tab=hangouts")',
+          '📍 Calling NavigationService.goToPath("/plans")',
         );
 
         try {
-          NavigationService.goToPath('/feed?tab=hangouts');
+          NavigationService.goToPath('/plans');
           debugPrint('✅ Navigation call completed successfully');
         } catch (e) {
           debugPrint('💥 ERROR during navigation: $e');
@@ -528,12 +528,12 @@ class HangoutInvitationScreen extends StatelessWidget {
   void _notRightNow(BuildContext context) {
     debugPrint('👋 NOT RIGHT NOW - User declined to join hangout');
 
-    // Navigate back to feed, same as successful join
-    debugPrint('🧭 Navigating back to feed hangouts tab');
+    // Navigate back to home tab
+    debugPrint('🧭 Navigating back to home tab');
 
     try {
-      NavigationService.goToPath('/feed?tab=hangouts');
-      debugPrint('✅ Navigation to feed completed successfully');
+      NavigationService.goToPath('/home');
+      debugPrint('✅ Navigation to home completed successfully');
     } catch (e) {
       debugPrint('💥 ERROR during navigation: $e');
       debugPrint('🔍 Error type: ${e.runtimeType}');

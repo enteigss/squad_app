@@ -189,8 +189,8 @@ class _HangoutScreenState extends State<HangoutScreen> {
                 routeState.uri.queryParameters['from'] == 'notification';
 
             if (fromNotification) {
-              // Navigate to feed hangouts tab if came from notification
-              context.go('/feed?tab=yourPosts');
+              // Navigate to plans tab if came from notification
+              context.go('/plans');
             } else {
               // Use GoRouter to go back
               context.pop();
