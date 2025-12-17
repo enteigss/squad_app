@@ -237,32 +237,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  Widget _buildDefaultAvatar(UserModel user) {
-    final String initials =
-        user.displayName != null && user.displayName!.isNotEmpty
-        ? user.displayName!.split(' ').map((n) => n[0]).join().toUpperCase()
-        : user.username[0].toUpperCase();
-
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: AppColors.getAvatarColor(user.displayName ?? user.username),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBasicInfoCard(BuildContext context, UserModel user) {
     return Container(
       width: double.infinity,

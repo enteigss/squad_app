@@ -9,10 +9,23 @@ import 'analytics_service.dart';
 import '../config/environment.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  final FirebaseAuth _auth;
+  final FirebaseAnalytics _analytics;
+  final FirebaseFirestore _firestore;
+  final GoogleSignIn Function() _getGoogleSignIn;
+  final FirebaseCrashlytics Function() _getCrashlytics;
 
-  AuthService() {
+  AuthService({
+    FirebaseAuth? auth,
+    FirebaseAnalytics? analytics,
+    FirebaseFirestore? firestore,
+    GoogleSignIn Function()? getGoogleSignIn,
+    FirebaseCrashlytics Function()? getCrashlytics,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _analytics = analytics ?? FirebaseAnalytics.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _getGoogleSignIn = getGoogleSignIn ?? (() => GoogleSignIn.instance),
+        _getCrashlytics = getCrashlytics ?? (() => FirebaseCrashlytics.instance) {
     _auth.authStateChanges().listen((User? user) {
       if (user == null) {
         print('User is currently signed out!');
@@ -23,8 +36,6 @@ class AuthService {
       }
     });
   }
-
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   User? get currentUser => _auth.currentUser;
 
@@ -42,10 +53,10 @@ class AuthService {
       debugPrint('📧 Password length: ${password.length}');
 
       // Log attempt to Crashlytics
-      await FirebaseCrashlytics.instance.log(
+      await _getCrashlytics().log(
         'Email/Password Sign-In attempt started',
       );
-      await FirebaseCrashlytics.instance.setCustomKey(
+      await _getCrashlytics().setCustomKey(
         'signin_attempt_email',
         DateTime.now().toIso8601String(),
       );
@@ -94,10 +105,10 @@ class AuthService {
             debugPrint('✅ User document created successfully');
 
             // Log successful sign-in to Crashlytics
-            await FirebaseCrashlytics.instance.log(
+            await _getCrashlytics().log(
               'Email/Password Sign-In completed successfully (new user doc created)',
             );
-            await FirebaseCrashlytics.instance.setCustomKey(
+            await _getCrashlytics().setCustomKey(
               'signin_success_email',
               DateTime.now().toIso8601String(),
             );
@@ -122,10 +133,10 @@ class AuthService {
           }
 
           // Log successful sign-in to Crashlytics
-          await FirebaseCrashlytics.instance.log(
+          await _getCrashlytics().log(
             'Email/Password Sign-In completed successfully (existing user)',
           );
-          await FirebaseCrashlytics.instance.setCustomKey(
+          await _getCrashlytics().setCustomKey(
             'signin_success_email',
             DateTime.now().toIso8601String(),
           );
@@ -143,7 +154,7 @@ class AuthService {
       debugPrint('🚨 Full error: $e');
 
       // Log to Crashlytics
-      await FirebaseCrashlytics.instance.recordError(
+      await _getCrashlytics().recordError(
         e,
         StackTrace.current,
         reason: 'Email/Password Sign-In failed',
@@ -188,7 +199,7 @@ class AuthService {
       debugPrint('🚨 Stack trace: ${StackTrace.current}');
 
       // Log to Crashlytics
-      await FirebaseCrashlytics.instance.recordError(
+      await _getCrashlytics().recordError(
         e,
         StackTrace.current,
         reason: 'Email/Password Sign-In unexpected error',
@@ -266,13 +277,13 @@ class AuthService {
       );
 
       // Log sign-in attempt to Crashlytics
-      await FirebaseCrashlytics.instance.log('Google Sign-In attempt started');
-      await FirebaseCrashlytics.instance.setCustomKey(
+      await _getCrashlytics().log('Google Sign-In attempt started');
+      await _getCrashlytics().setCustomKey(
         'signin_attempt',
         DateTime.now().toIso8601String(),
       );
 
-      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      final GoogleSignIn googleSignIn = _getGoogleSignIn();
       debugPrint('🔧 Initializing GoogleSignIn with server client ID');
 
       // Use environment-specific web client ID
@@ -284,9 +295,9 @@ class AuthService {
 
       // Check if authenticate() is supported
       debugPrint(
-        '🔍 Checking if authenticate() is supported: ${GoogleSignIn.instance.supportsAuthenticate()}',
+        '🔍 Checking if authenticate() is supported: ${googleSignIn.supportsAuthenticate()}',
       );
-      if (GoogleSignIn.instance.supportsAuthenticate()) {
+      if (googleSignIn.supportsAuthenticate()) {
         debugPrint('🔐 Attempting Google authentication...');
         final GoogleSignInAccount? googleUser = await googleSignIn
             .authenticate();
@@ -390,10 +401,10 @@ class AuthService {
               print('✅ User document created successfully');
 
               // Log successful sign-in to Crashlytics
-              await FirebaseCrashlytics.instance.log(
+              await _getCrashlytics().log(
                 'Google Sign-In completed successfully',
               );
-              await FirebaseCrashlytics.instance.setCustomKey(
+              await _getCrashlytics().setCustomKey(
                 'signin_success',
                 DateTime.now().toIso8601String(),
               );
@@ -411,10 +422,10 @@ class AuthService {
             await _updateUserOnlineStatus(result.user!.uid, true);
 
             // Log successful sign-in to Crashlytics
-            await FirebaseCrashlytics.instance.log(
+            await _getCrashlytics().log(
               'Google Sign-In completed successfully (existing user)',
             );
-            await FirebaseCrashlytics.instance.setCustomKey(
+            await _getCrashlytics().setCustomKey(
               'signin_success',
               DateTime.now().toIso8601String(),
             );
@@ -438,7 +449,7 @@ class AuthService {
       }
 
       // Log to Crashlytics for production debugging
-      await FirebaseCrashlytics.instance.recordError(
+      await _getCrashlytics().recordError(
         e,
         StackTrace.current,
         reason: 'Google Sign-In failed',
@@ -462,8 +473,8 @@ class AuthService {
       );
 
       // Log sign-in attempt to Crashlytics
-      await FirebaseCrashlytics.instance.log('Apple Sign-In attempt started');
-      await FirebaseCrashlytics.instance.setCustomKey(
+      await _getCrashlytics().log('Apple Sign-In attempt started');
+      await _getCrashlytics().setCustomKey(
         'signin_attempt_apple',
         DateTime.now().toIso8601String(),
       );
@@ -574,10 +585,10 @@ class AuthService {
           debugPrint('✅ Apple user document created successfully');
 
           // Log successful sign-in to Crashlytics
-          await FirebaseCrashlytics.instance.log(
+          await _getCrashlytics().log(
             'Apple Sign-In completed successfully',
           );
-          await FirebaseCrashlytics.instance.setCustomKey(
+          await _getCrashlytics().setCustomKey(
             'signin_success_apple',
             DateTime.now().toIso8601String(),
           );
@@ -594,10 +605,10 @@ class AuthService {
         await _updateUserOnlineStatus(result.user!.uid, true);
 
         // Log successful sign-in to Crashlytics
-        await FirebaseCrashlytics.instance.log(
+        await _getCrashlytics().log(
           'Apple Sign-In completed successfully (existing user)',
         );
-        await FirebaseCrashlytics.instance.setCustomKey(
+        await _getCrashlytics().setCustomKey(
           'signin_success_apple',
           DateTime.now().toIso8601String(),
         );
@@ -615,7 +626,7 @@ class AuthService {
       }
 
       // Log to Crashlytics for production debugging
-      await FirebaseCrashlytics.instance.recordError(
+      await _getCrashlytics().recordError(
         e,
         StackTrace.current,
         reason: 'Apple Sign-In failed',
@@ -889,7 +900,7 @@ class AuthService {
     try {
       debugPrint('🔐 Starting Google re-authentication...');
 
-      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      final GoogleSignIn googleSignIn = _getGoogleSignIn();
 
       // Use environment-specific web client ID
       final serverClientId = EnvironmentConfig.isDev

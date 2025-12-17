@@ -245,16 +245,6 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
     );
   }
 
-  Widget _buildBackButton() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0),
-      child: IconButton(
-        icon: Icon(Icons.arrow_back, color: AppColors.textPrimary, size: 24),
-        onPressed: _goToPreviousPage,
-      ),
-    );
-  }
-
   Widget _buildHeaderWithBackButton(String title) {
     return Stack(
       children: [

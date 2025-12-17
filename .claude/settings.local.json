@@ -5,7 +5,10 @@
       "mcp__atlassian__transitionJiraIssue",
       "mcp__atlassian__getVisibleJiraProjects",
       "mcp__atlassian__searchJiraIssuesUsingJql",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "mcp__linear-server__create_issue",
+      "mcp__linear-server__create_comment",
+      "mcp__linear-server__update_issue"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

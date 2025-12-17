@@ -52,7 +52,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
             height: 4,
             margin: const EdgeInsets.only(top: 12),
             decoration: BoxDecoration(
-              color: AppColors.textSecondary.withOpacity(0.3),
+              color: AppColors.textSecondary.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -117,13 +117,13 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
     return Container(
       decoration: BoxDecoration(
         color: isComingSoon
-            ? AppColors.textSecondary.withOpacity(0.1)
+            ? AppColors.textSecondary.withValues(alpha: 0.1)
             : AppColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isComingSoon
-              ? AppColors.textSecondary.withOpacity(0.2)
-              : AppColors.primary.withOpacity(0.2),
+              ? AppColors.textSecondary.withValues(alpha: 0.2)
+              : AppColors.primary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -134,8 +134,8 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
           height: 48,
           decoration: BoxDecoration(
             color: isComingSoon || isLoading
-                ? AppColors.textSecondary.withOpacity(0.2)
-                : AppColors.primary.withOpacity(0.1),
+                ? AppColors.textSecondary.withValues(alpha: 0.2)
+                : AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: isLoading
@@ -171,7 +171,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withOpacity(0.2),
+                  color: AppColors.textSecondary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -190,14 +190,14 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
           isLoading ? 'Loading contacts...' : subtitle,
           style: TextStyle(
             color: isComingSoon || isLoading
-                ? AppColors.textSecondary.withOpacity(0.7)
+                ? AppColors.textSecondary.withValues(alpha: 0.7)
                 : AppColors.textSecondary,
           ),
         ),
         trailing: Icon(
           Icons.chevron_right,
           color: isComingSoon
-              ? AppColors.textSecondary.withOpacity(0.5)
+              ? AppColors.textSecondary.withValues(alpha: 0.5)
               : AppColors.textSecondary,
         ),
       ),

@@ -27,7 +27,7 @@ class AppleSignInButton extends StatelessWidget {
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           elevation: 1,
-          shadowColor: Colors.black.withOpacity(0.25),
+          shadowColor: Colors.black.withValues(alpha: 0.25),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(2),
             side: const BorderSide(color: Colors.black, width: 1),

@@ -186,13 +186,13 @@ class _ReportDialogState extends State<ReportDialog> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected 
-                ? AppColors.primary.withOpacity(0.1) 
+                ? AppColors.primary.withValues(alpha: 0.1) 
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected 
                   ? AppColors.primary 
-                  : AppColors.textSecondary.withOpacity(0.3),
+                  : AppColors.textSecondary.withValues(alpha: 0.3),
               width: isSelected ? 2 : 1,
             ),
           ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/account_deletion_service.dart';
 import '../../utils/colors.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -13,12 +12,10 @@ class DeleteAccountScreen extends StatefulWidget {
 }
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
-  final AccountDeletionService _deletionService = AccountDeletionService();
   final TextEditingController _confirmationController = TextEditingController();
 
   bool _isLoading = false;
   bool _understandChecked = false;
-  bool _showReauthDialog = false;
   String? _currentStep;
 
   @override

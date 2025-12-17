@@ -101,7 +101,8 @@ class PostCard extends StatelessWidget {
                                     _buildBody(),
 
                                     // Description (if provided)
-                                    if (post.description != null && post.description!.isNotEmpty) ...[
+                                    if (post.description != null &&
+                                        post.description!.isNotEmpty) ...[
                                       const SizedBox(height: 8),
                                       Text(
                                         post.description!,
@@ -116,7 +117,8 @@ class PostCard extends StatelessWidget {
                                     const SizedBox(height: 0),
                                     // Bottom row: member count (left) and tap to view (right)
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         // Member count (bottom left)
                                         Transform.translate(
@@ -192,11 +194,7 @@ class PostCard extends StatelessWidget {
       top: 4,
       right: 4,
       child: PopupMenuButton<String>(
-        icon: Icon(
-          Icons.more_vert,
-          color: AppColors.textSecondary,
-          size: 20,
-        ),
+        icon: Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
         padding: EdgeInsets.zero,
         onSelected: (value) {
           if (value == 'lock') {
@@ -273,7 +271,9 @@ class PostCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Post'),
-        content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this post? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

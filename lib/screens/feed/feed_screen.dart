@@ -1,18 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../models/post_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
-import '../../providers/tab_navigation_provider.dart';
-import '../../services/analytics_service.dart';
 import '../../services/debug_service.dart';
 import '../../utils/colors.dart';
-import '../../widgets/app_invite_modal.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/create_post_bottom_sheet.dart';
-import 'hangout_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -440,122 +435,6 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showAppInviteModal() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUser = authProvider.currentUser;
-
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You must be signed in to invite friends'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    AppInviteModal.show(
-      context,
-      inviterUserId: currentUser.id,
-      inviterName: currentUser.displayName ?? currentUser.username,
-    );
-  }
-
-  Future<void> _showHangoutsInfo() async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.help_outline, color: AppColors.primary, size: 24),
-              const SizedBox(width: 8),
-              const Text('How does Hangouts work?'),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInfoSection(
-                  icon: Icons.group_add,
-                  title: 'Create & Join',
-                  description:
-                      'Create hangouts for activities you want to do or join existing ones that interest you.',
-                ),
-                const SizedBox(height: 16),
-                _buildInfoSection(
-                  icon: Icons.people,
-                  title: 'View Groups',
-                  description:
-                      'See who\'s joined each hangout and chat with group members before meeting up.',
-                ),
-                const SizedBox(height: 16),
-                _buildInfoSection(
-                  icon: Icons.filter_alt,
-                  title: 'Smart Filtering',
-                  description:
-                      'Hangouts are filtered by your gender preferences for safer, more comfortable experiences.',
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Got it!'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildInfoSection({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

@@ -28,19 +28,6 @@ class HangoutInvitationScreen extends StatelessWidget {
           final hangout = postProvider.getPostById(hangoutId);
           final currentUser = authProvider.currentUser;
 
-          // Track hangout view when we have data
-          if (hangout != null && currentUser != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final canJoin = postProvider.canUserJoinPost(
-                hangout,
-                currentUser.id,
-                userGender: currentUser.gender,
-              );
-              final isParticipant = hangout.participantIds.contains(
-                currentUser.id,
-              );
-            });
-          }
 
           if (hangout == null) {
             return const Center(
@@ -257,10 +244,10 @@ class HangoutInvitationScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
+                              color: AppColors.primary.withValues(alpha: 0.3),
                               width: 1,
                             ),
                           ),
@@ -317,7 +304,7 @@ class HangoutInvitationScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -328,7 +315,7 @@ class HangoutInvitationScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),

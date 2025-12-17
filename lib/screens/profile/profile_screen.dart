@@ -382,10 +382,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: const Icon(Icons.analytics, size: 18),
                       label: const Text('View Analytics (Debug)'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.textSecondary.withOpacity(0.1),
+                        backgroundColor: AppColors.textSecondary.withValues(alpha: 0.1),
                         foregroundColor: AppColors.textSecondary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: BorderSide(color: AppColors.textSecondary.withOpacity(0.3), width: 1),
+                        side: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3), width: 1),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

@@ -109,7 +109,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 : widget.suffixIcon,
             filled: true,
             fillColor:
-                widget.fillColor ?? theme.colorScheme.surface.withOpacity(0.8),
+                widget.fillColor ?? theme.colorScheme.surface.withValues(alpha: 0.8),
             contentPadding:
                 widget.contentPadding ??
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -118,7 +118,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide(
                 color:
                     widget.borderColor ??
-                    theme.colorScheme.outline.withOpacity(0.3),
+                    theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             enabledBorder: OutlineInputBorder(
@@ -126,7 +126,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide(
                 color:
                     widget.borderColor ??
-                    theme.colorScheme.outline.withOpacity(0.3),
+                    theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -144,7 +144,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(widget.borderRadius),
               borderSide: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.1),
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
               ),
             ),
           ),

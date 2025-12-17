@@ -47,7 +47,6 @@ void main() {
 
       // Example: If your consent dialog has "Accept" and "Decline" buttons
       final acceptButton = find.text('Allow Analytics');
-      final declineButton = find.text('No Thanks');
 
       // If consent dialog is shown, one of these should be present
       if (acceptButton.evaluate().isNotEmpty) {
@@ -111,8 +110,6 @@ void main() {
 
       // Example: Looking for common login UI elements
       // You might have email fields, password fields, or social login buttons
-      final googleSignInButton = find.text('Sign in with Google');
-      final appleSignInButton = find.text('Sign in with Apple');
 
       // At least one authentication method should be visible
       // (or adjust based on your actual implementation)

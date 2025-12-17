@@ -31,7 +31,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Timer? _resendTimer;
   int _resendCountdown = 0;
   bool _isLoading = false;
-  int _attemptCount = 0;
 
   @override
   void initState() {
@@ -132,7 +131,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     });
 
     try {
-      final result = await _verificationService.validateCode(
+      await _verificationService.validateCode(
         _codeController.text.trim(),
       );
 
@@ -159,7 +158,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           e.toString(),
         );
         _state = VerificationState.error;
-        _attemptCount++;
         _isLoading = false;
       });
     }

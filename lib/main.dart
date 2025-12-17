@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -47,7 +46,7 @@ void main() async {
 
     // Initialize Facebook App Events for ad attribution (release mode only)
     if (kReleaseMode) {
-      final facebookAppEvents = FacebookAppEvents();
+      FacebookAppEvents();
       debugPrint('📱 Facebook App Events initialized for ad tracking');
     } else {
       debugPrint('📱 Facebook App Events disabled in debug mode');

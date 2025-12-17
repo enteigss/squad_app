@@ -427,10 +427,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -557,7 +557,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           (interest) => Chip(
                             label: Text(interest),
                             onDeleted: () => _removeInterest(interest),
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                             deleteIconColor: AppColors.primary,
                           ),
                         )
@@ -587,7 +587,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               if (selected) _addInterest(interest);
                             },
                             backgroundColor: AppColors.surface,
-                            selectedColor: AppColors.primary.withOpacity(0.2),
+                            selectedColor: AppColors.primary.withValues(alpha: 0.2),
                           ),
                         )
                         .toList(),
@@ -611,7 +611,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: AppColors.divider.withOpacity(0.3),
+                      color: AppColors.divider.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -655,13 +655,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.primary.withOpacity(0.1)
+                                ? AppColors.primary.withValues(alpha: 0.1)
                                 : AppColors.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
-                                  : AppColors.divider.withOpacity(0.3),
+                                  : AppColors.divider.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(

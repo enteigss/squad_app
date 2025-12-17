@@ -22,7 +22,7 @@ class BlockedMessageBubble extends StatelessWidget {
           // Blocked user icon
           CircleAvatar(
             radius: 16,
-            backgroundColor: AppColors.textSecondary.withOpacity(0.3),
+            backgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
             child: Icon(
               Icons.block,
               color: AppColors.textSecondary,
@@ -46,7 +46,7 @@ class BlockedMessageBubble extends StatelessWidget {
                       bottomRight: Radius.circular(16),
                     ),
                     border: Border.all(
-                      color: AppColors.divider.withOpacity(0.3),
+                      color: AppColors.divider.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -77,7 +77,7 @@ class BlockedMessageBubble extends StatelessWidget {
                 Text(
                   _formatTimestamp(timestamp),
                   style: TextStyle(
-                    color: AppColors.textSecondary.withOpacity(0.7),
+                    color: AppColors.textSecondary.withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),

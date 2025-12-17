@@ -193,7 +193,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -203,7 +203,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         controller: _titleController,
         decoration: InputDecoration(
           hintText: 'Basketball at the park, coffee meetup, study session...',
-          hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.7)),
+          hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -369,7 +369,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -381,7 +381,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         decoration: InputDecoration(
           hintText:
               'Share more details about your plans...',
-          hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.7)),
+          hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -404,7 +404,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -450,7 +450,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -480,7 +480,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             color:
                                 (_selectedDateTime == null ||
                                     _isNow(_selectedDateTime!))
-                                ? AppColors.textSecondary.withOpacity(0.7)
+                                ? AppColors.textSecondary.withValues(alpha: 0.7)
                                 : AppColors.textPrimary,
                           ),
                         ),
@@ -665,7 +665,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -861,7 +861,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -915,7 +915,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(8),
@@ -926,7 +926,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       Icons.remove,
                       color: _maxParticipants > 2
                           ? AppColors.primary
-                          : AppColors.textSecondary.withOpacity(0.5),
+                          : AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
                     padding: const EdgeInsets.all(8),
                     constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -938,10 +938,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -961,7 +961,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(8),
@@ -972,7 +972,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       Icons.add,
                       color: _maxParticipants < 100
                           ? AppColors.primary
-                          : AppColors.textSecondary.withOpacity(0.5),
+                          : AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
                     padding: const EdgeInsets.all(8),
                     constraints: const BoxConstraints(minWidth: 40, minHeight: 40),

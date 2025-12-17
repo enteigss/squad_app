@@ -15,7 +15,7 @@ class CensoredProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: AppColors.surface.withOpacity(0.5),
+      color: AppColors.surface.withValues(alpha: 0.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -24,7 +24,7 @@ class CensoredProfileCard extends StatelessWidget {
             // Blocked user icon instead of profile picture
             CircleAvatar(
               radius: 24,
-              backgroundColor: AppColors.textSecondary.withOpacity(0.3),
+              backgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
               child: Icon(
                 Icons.block,
                 color: AppColors.textSecondary,
@@ -59,7 +59,7 @@ class CensoredProfileCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.1),
+                            color: AppColors.success.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -79,7 +79,7 @@ class CensoredProfileCard extends StatelessWidget {
                     'Profile hidden due to blocking',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary.withOpacity(0.7),
+                      color: AppColors.textSecondary.withValues(alpha: 0.7),
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -90,7 +90,7 @@ class CensoredProfileCard extends StatelessWidget {
             // No action buttons for blocked users
             Icon(
               Icons.visibility_off,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
               size: 20,
             ),
           ],

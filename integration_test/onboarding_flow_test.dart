@@ -188,10 +188,7 @@ Future<void> completeProfileSetup(WidgetTester tester) async {
 
   // Select gender identity (required for safety)
   // Scroll down to see gender options
-  await tester.drag(
-    find.byType(SingleChildScrollView),
-    const Offset(0, -300),
-  );
+  await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -300));
   await tester.pumpAndSettle();
 
   // Find and tap a gender option (e.g., "Man")
@@ -201,10 +198,7 @@ Future<void> completeProfileSetup(WidgetTester tester) async {
   debugPrint('✅ Selected gender identity');
 
   // Scroll down to see the Complete Profile button
-  await tester.drag(
-    find.byType(SingleChildScrollView),
-    const Offset(0, -200),
-  );
+  await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -200));
   await tester.pumpAndSettle();
 
   // Tap Complete Profile button
@@ -239,10 +233,7 @@ Future<void> createFirstHangout(WidgetTester tester) async {
   debugPrint('✅ Entered hangout title');
 
   // Scroll down to see more fields
-  await tester.drag(
-    find.byType(SingleChildScrollView),
-    const Offset(0, -200),
-  );
+  await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -200));
   await tester.pumpAndSettle();
 
   // Select location by tapping the location selector
@@ -261,10 +252,7 @@ Future<void> createFirstHangout(WidgetTester tester) async {
   }
 
   // Scroll down more
-  await tester.drag(
-    find.byType(SingleChildScrollView),
-    const Offset(0, -200),
-  );
+  await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -200));
   await tester.pumpAndSettle();
 
   // Select "Now" for date/time
@@ -276,10 +264,7 @@ Future<void> createFirstHangout(WidgetTester tester) async {
   }
 
   // Scroll to bottom to find Create Hangout button
-  await tester.drag(
-    find.byType(SingleChildScrollView),
-    const Offset(0, -300),
-  );
+  await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -300));
   await tester.pumpAndSettle();
 
   // Find and tap Create Hangout button
@@ -309,10 +294,8 @@ Future<void> verifySuccessfulFlow(WidgetTester tester) async {
     find.text('Invite Friends'),
   ];
 
-  bool foundSuccess = false;
   for (final indicator in successIndicators) {
     if (indicator.evaluate().isNotEmpty) {
-      foundSuccess = true;
       debugPrint('✅ Found success indicator: ${indicator.toString()}');
       break;
     }
