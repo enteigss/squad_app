@@ -28,7 +28,6 @@ class HangoutInvitationScreen extends StatelessWidget {
           final hangout = postProvider.getPostById(hangoutId);
           final currentUser = authProvider.currentUser;
 
-
           if (hangout == null) {
             return const Center(
               child: Column(
@@ -203,8 +202,7 @@ class HangoutInvitationScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       CustomButton(
                         text: 'Go Back to Plans',
-                        onPressed: () =>
-                            NavigationService.goToPath('/plans'),
+                        onPressed: () => NavigationService.goToPath('/plans'),
                         width: double.infinity,
                         backgroundColor: AppColors.surface,
                         textColor: AppColors.textPrimary,
@@ -217,7 +215,7 @@ class HangoutInvitationScreen extends StatelessWidget {
                       CustomButton(
                         text: 'Join Hangout',
                         onPressed: () =>
-                            _joinHangout(context, hangout, currentUser!.id),
+                            _joinHangout(context, hangout, currentUser.id),
                         width: double.infinity,
                       ),
                       const SizedBox(height: 12),
@@ -276,8 +274,7 @@ class HangoutInvitationScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       CustomButton(
                         text: 'Go Back to Plans',
-                        onPressed: () =>
-                            NavigationService.goToPath('/plans'),
+                        onPressed: () => NavigationService.goToPath('/plans'),
                         width: double.infinity,
                         backgroundColor: AppColors.surface,
                         textColor: AppColors.textPrimary,
@@ -455,9 +452,7 @@ class HangoutInvitationScreen extends StatelessWidget {
 
         // Navigate immediately to show user their joined hangout
         debugPrint('🚀 Attempting navigation to plans tab');
-        debugPrint(
-          '📍 Calling NavigationService.goToPath("/plans")',
-        );
+        debugPrint('📍 Calling NavigationService.goToPath("/plans")');
 
         try {
           NavigationService.goToPath('/plans');

@@ -13,10 +13,7 @@ import '../../constants/bu_dorms.dart';
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
 
-  const EditProfileScreen({
-    super.key,
-    required this.user,
-  });
+  const EditProfileScreen({super.key, required this.user});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -46,7 +43,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // Class year options
   final List<String> _classYearOptions = [
     'Freshman',
-    'Sophomore', 
+    'Sophomore',
     'Junior',
     'Senior',
     'Graduate',
@@ -91,7 +88,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _initializeControllers() {
-    _displayNameController = TextEditingController(text: widget.user.displayName ?? '');
+    _displayNameController = TextEditingController(
+      text: widget.user.displayName ?? '',
+    );
     _bioController = TextEditingController(text: widget.user.bio ?? '');
     _locationController = TextEditingController();
     _selectedClassYear = widget.user.classYear;
@@ -142,9 +141,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               // Profile Picture Section
               _buildProfilePictureSection(),
-              
+
               const SizedBox(height: 20),
-              
+
               // Display Name
               _buildSectionTitle('Display Name'),
               const SizedBox(height: 6),
@@ -215,7 +214,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     _error!,
@@ -265,9 +266,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Change/Remove Photo Buttons
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -276,9 +277,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onPressed: _isUploadingPhoto ? null : _changeProfilePhoto,
               icon: const Icon(Icons.camera_alt),
               label: const Text('Change Photo'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
             if (_tempPhotoUrl != null || widget.user.photoUrl != null) ...[
               const SizedBox(width: 8),
@@ -286,9 +285,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 onPressed: _isUploadingPhoto ? null : _removeProfilePhoto,
                 icon: const Icon(Icons.delete_outline),
                 label: const Text('Remove'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                ),
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
               ),
             ],
           ],
@@ -326,18 +323,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ],
           ),
           child: DropdownButtonFormField<String>(
-            value: _selectedLocation,
+            initialValue: _selectedLocation,
             decoration: InputDecoration(
               hintText: 'Select your dorm',
               hintStyle: TextStyle(color: AppColors.textSecondary),
               prefixIcon: const Icon(Icons.location_on_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+                borderSide: BorderSide(
+                  color: AppColors.divider.withValues(alpha: 0.3),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+                borderSide: BorderSide(
+                  color: AppColors.divider.withValues(alpha: 0.3),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -345,7 +346,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               filled: true,
               fillColor: AppColors.surface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             items: BUDorms.dormitories.map((String dorm) {
               return DropdownMenuItem<String>(
@@ -395,17 +399,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ],
       ),
       child: DropdownButtonFormField<String>(
-        value: _selectedClassYear,
+        initialValue: _selectedClassYear,
         decoration: InputDecoration(
           hintText: 'Select your class year',
           hintStyle: TextStyle(color: AppColors.textSecondary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+            borderSide: BorderSide(
+              color: AppColors.divider.withValues(alpha: 0.3),
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.3)),
+            borderSide: BorderSide(
+              color: AppColors.divider.withValues(alpha: 0.3),
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
@@ -413,7 +421,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           filled: true,
           fillColor: AppColors.surface,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
         items: _classYearOptions.map((String classYear) {
           return DropdownMenuItem<String>(
@@ -467,11 +478,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
+                Icon(Icons.info_outline, size: 16, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -506,7 +513,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  hasUsedChange ? Icons.lock_outline : Icons.warning_amber_rounded,
+                  hasUsedChange
+                      ? Icons.lock_outline
+                      : Icons.warning_amber_rounded,
                   size: 16,
                   color: hasUsedChange ? AppColors.error : Colors.orange,
                 ),
@@ -522,7 +531,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: hasUsedChange ? AppColors.error : Colors.orange.shade800,
+                          color: hasUsedChange
+                              ? AppColors.error
+                              : Colors.orange.shade800,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -554,11 +565,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: GestureDetector(
-                  onTap: isDisabled ? null : () {
-                    setState(() {
-                      _selectedGender = option['value'];
-                    });
-                  },
+                  onTap: isDisabled
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedGender = option['value'];
+                          });
+                        },
                   child: Opacity(
                     opacity: isDisabled ? 0.5 : 1.0,
                     child: Container(
@@ -578,8 +591,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                            isSelected
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -587,15 +604,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: Text(
                               option['label']!,
                               style: TextStyle(
-                                color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                                 fontSize: 16,
                               ),
                             ),
                           ),
                           if (isCurrentGender)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(4),
@@ -656,7 +680,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                onPressed: () => _addCustomInterest(_interestController.text.trim()),
+                onPressed: () =>
+                    _addCustomInterest(_interestController.text.trim()),
                 icon: const Icon(Icons.add),
                 style: IconButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -665,9 +690,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Selected Interests (if any)
           if (_selectedInterests.isNotEmpty) ...[
             Text(
@@ -698,7 +723,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          
+
           // Available Interests
           Text(
             'Popular Interests (tap to add):',
@@ -715,28 +740,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: _availableInterests
                 .where((interest) => !_selectedInterests.contains(interest))
                 .map((interest) {
-              return GestureDetector(
-                onTap: () => _toggleInterest(interest),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                  return GestureDetector(
+                    onTap: () => _toggleInterest(interest),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        interest,
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    interest,
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+                  );
+                })
+                .toList(),
           ),
         ],
       ),
@@ -781,8 +810,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   bool _isGenderChanging() {
-    return _selectedGender != null &&
-           _selectedGender != widget.user.gender;
+    return _selectedGender != null && _selectedGender != widget.user.gender;
   }
 
   void _changeProfilePhoto() {
@@ -848,17 +876,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color: AppColors.primary,
-            ),
+            Icon(icon, size: 32, color: AppColors.primary),
             const SizedBox(height: 8),
             Text(
               label,
@@ -910,7 +932,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = authProvider.currentUser;
-      
+
       if (currentUser == null) {
         throw Exception('User not found');
       }
@@ -929,7 +951,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Photo uploaded successfully! Don\'t forget to save your changes.'),
+              content: Text(
+                'Photo uploaded successfully! Don\'t forget to save your changes.',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
@@ -965,10 +989,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.error),
     );
   }
 
@@ -978,7 +999,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     // Validate gender change
     if (_isGenderChanging() && !_canChangeGender()) {
       setState(() {
-        _error = 'You have already changed your gender once. To change it again, please contact jordan@linkupbu.com';
+        _error =
+            'You have already changed your gender once. To change it again, please contact jordan@linkupbu.com';
       });
       return;
     }
@@ -1009,8 +1031,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         location: _selectedLocation == null
             ? null
             : _selectedLocation == 'Other'
-                ? (_locationController.text.trim().isEmpty ? null : _locationController.text.trim())
-                : _selectedLocation,
+            ? (_locationController.text.trim().isEmpty
+                  ? null
+                  : _locationController.text.trim())
+            : _selectedLocation,
         classYear: _selectedClassYear,
         interests: _selectedInterests.toList(),
         gender: _selectedGender,

@@ -116,7 +116,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ],
           ),
           child: DropdownButtonFormField<String>(
-            value: _selectedClassYear,
+            initialValue: _selectedClassYear,
             decoration: InputDecoration(
               hintText: 'Select your class year',
               hintStyle: TextStyle(color: AppColors.textSecondary),
@@ -197,7 +197,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ],
           ),
           child: DropdownButtonFormField<String>(
-            value: _selectedLocation,
+            initialValue: _selectedLocation,
             decoration: InputDecoration(
               hintText: 'Select your dorm',
               hintStyle: TextStyle(color: AppColors.textSecondary),
@@ -352,8 +352,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   const SizedBox(height: 8),
                   _buildBulletPoint('The community is growing daily'),
-                  _buildBulletPoint('Your participation helps attract more students'),
-                  _buildBulletPoint('We\'re actively adding features and improvements'),
+                  _buildBulletPoint(
+                    'Your participation helps attract more students',
+                  ),
+                  _buildBulletPoint(
+                    'We\'re actively adding features and improvements',
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Get the most out of LinkUp BU:',
@@ -361,7 +365,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   const SizedBox(height: 8),
                   _buildBulletPoint('Create hangouts to connect with others'),
-                  _buildBulletPoint('Check back regularly as more students join'),
+                  _buildBulletPoint(
+                    'Check back regularly as more students join',
+                  ),
                   _buildBulletPoint('Share feedback to help us improve'),
                   const SizedBox(height: 16),
                   const Text(
@@ -557,7 +563,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           (interest) => Chip(
                             label: Text(interest),
                             onDeleted: () => _removeInterest(interest),
-                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.1,
+                            ),
                             deleteIconColor: AppColors.primary,
                           ),
                         )
@@ -587,7 +595,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               if (selected) _addInterest(interest);
                             },
                             backgroundColor: AppColors.surface,
-                            selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                            selectedColor: AppColors.primary.withValues(
+                              alpha: 0.2,
+                            ),
                           ),
                         )
                         .toList(),

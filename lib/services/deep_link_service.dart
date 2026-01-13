@@ -147,9 +147,6 @@ class DeepLinkService {
 
   // Handle joining hangout from invite
   void _handleJoinHangout(BuildContext context, String hangoutId) {
-    // TODO: Implement auto-join logic here
-    // This could automatically join the user to the hangout
-    // or show a join confirmation dialog
     debugPrint('User wants to join hangout: $hangoutId');
   }
 

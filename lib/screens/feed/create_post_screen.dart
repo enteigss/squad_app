@@ -31,7 +31,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _genderSectionKey = GlobalKey();
 
   DateTime? _selectedDateTime;
-  Set<String> _selectedGenders = {'Men', 'Women', 'Non-binary'}; // All selected by default
+  Set<String> _selectedGenders = {
+    'Men',
+    'Women',
+    'Non-binary',
+  }; // All selected by default
   bool _showSuggestions = false;
   bool _hasParticipantLimit = false;
   int _maxParticipants = 10;
@@ -75,7 +79,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+            final tabProvider = Provider.of<TabNavigationProvider>(
+              context,
+              listen: false,
+            );
             tabProvider.navigateToHangouts();
           },
         ),
@@ -203,7 +210,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         controller: _titleController,
         decoration: InputDecoration(
           hintText: 'Basketball at the park, coffee meetup, study session...',
-          hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7)),
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withValues(alpha: 0.7),
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -301,7 +310,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
           ..._activitySuggestions.entries.map((category) {
             return _buildSuggestionCategory(category.key, category.value);
-          }).toList(),
+          }),
           const SizedBox(height: 8),
         ],
       ),
@@ -379,9 +388,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         controller: _descriptionController,
         maxLines: 4,
         decoration: InputDecoration(
-          hintText:
-              'Share more details about your plans...',
-          hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7)),
+          hintText: 'Share more details about your plans...',
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withValues(alpha: 0.7),
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -552,10 +562,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           const SizedBox(height: 8),
           Text(
             'Select who can join this hangout (multiple allowed)',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 4),
           Container(
@@ -602,9 +609,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary
-                        : Colors.transparent,
+                    color: isSelected ? AppColors.primary : Colors.transparent,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
@@ -617,11 +622,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isSelected)
-                        Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+                        Icon(Icons.check, color: Colors.white, size: 16),
                       if (isSelected) const SizedBox(width: 4),
                       Text(
                         option,
@@ -704,10 +705,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          BULocations.getDisplayText(_selectedLocation, _customLocation),
+                          BULocations.getDisplayText(
+                            _selectedLocation,
+                            _customLocation,
+                          ),
                           style: TextStyle(
                             fontSize: 14,
-                            color: _selectedLocation == null 
+                            color: _selectedLocation == null
                                 ? AppColors.textSecondary.withValues(alpha: 0.7)
                                 : AppColors.textSecondary,
                           ),
@@ -734,7 +738,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ),
                       const SizedBox(width: 8),
                       Icon(
-                        _showLocationSearch ? Icons.expand_less : Icons.expand_more,
+                        _showLocationSearch
+                            ? Icons.expand_less
+                            : Icons.expand_more,
                         color: AppColors.primary,
                         size: 20,
                       ),
@@ -744,7 +750,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
             ),
           ),
-          
+
           // Expandable location search
           if (_showLocationSearch) ...[
             const Divider(height: 1),
@@ -784,21 +790,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             onChanged: _filterLocations,
           ),
           const SizedBox(height: 16),
-          
+
           // Other option first
           if (_filteredLocations.contains(BULocations.otherOption))
             _buildLocationCategory('Custom', [BULocations.otherOption]),
-          
+
           // Location categories
           ...BULocations.locationsByCategory.entries.map((category) {
             final categoryLocations = _filteredLocations
                 .where((location) => category.value.contains(location))
                 .toList();
-            
+
             if (categoryLocations.isEmpty) return const SizedBox.shrink();
-            
+
             return _buildLocationCategory(category.key, categoryLocations);
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -825,12 +831,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               margin: const EdgeInsets.only(bottom: 4),
               decoration: BoxDecoration(
-                color: _selectedLocation == location 
+                color: _selectedLocation == location
                     ? AppColors.primary.withValues(alpha: 0.1)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: _selectedLocation == location 
+                  color: _selectedLocation == location
                       ? AppColors.primary.withValues(alpha: 0.3)
                       : Colors.transparent,
                 ),
@@ -838,17 +844,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               child: Text(
                 location,
                 style: TextStyle(
-                  color: _selectedLocation == location 
+                  color: _selectedLocation == location
                       ? AppColors.primary
                       : AppColors.textPrimary,
-                  fontWeight: _selectedLocation == location 
+                  fontWeight: _selectedLocation == location
                       ? FontWeight.w500
                       : FontWeight.normal,
                 ),
               ),
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 16),
       ],
     );
@@ -892,7 +898,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     _hasParticipantLimit = value;
                   });
                 },
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
             ],
           ),
@@ -921,7 +927,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: IconButton(
-                    onPressed: _maxParticipants > 2 ? _decreaseMaxParticipants : null,
+                    onPressed: _maxParticipants > 2
+                        ? _decreaseMaxParticipants
+                        : null,
                     icon: Icon(
                       Icons.remove,
                       color: _maxParticipants > 2
@@ -929,14 +937,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           : AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
                     padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 // Number display
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -967,7 +981,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: IconButton(
-                    onPressed: _maxParticipants < 100 ? _increaseMaxParticipants : null,
+                    onPressed: _maxParticipants < 100
+                        ? _increaseMaxParticipants
+                        : null,
                     icon: Icon(
                       Icons.add,
                       color: _maxParticipants < 100
@@ -975,7 +991,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           : AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
                     padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                   ),
                 ),
               ],
@@ -1143,8 +1162,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         _filteredLocations = BULocations.allLocations;
       } else {
         _filteredLocations = BULocations.allLocations
-            .where((location) => 
-                location.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (location) =>
+                  location.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
@@ -1154,7 +1175,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() {
       _selectedLocation = location;
       _showLocationSearch = false;
-      
+
       // If "Other" is selected, show custom input dialog
       if (BULocations.isOtherOption(location)) {
         _showCustomLocationDialog();
@@ -1164,7 +1185,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _showCustomLocationDialog() async {
     _customLocationController.text = _customLocation ?? '';
-    
+
     final result = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
@@ -1205,7 +1226,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ElevatedButton(
               onPressed: () {
                 final customText = _customLocationController.text.trim();
-                Navigator.of(context).pop(customText.isNotEmpty ? customText : null);
+                Navigator.of(
+                  context,
+                ).pop(customText.isNotEmpty ? customText : null);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -1234,22 +1257,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String? _validateGenderSelection() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUser = authProvider.currentUser;
-    
+
     if (currentUser == null) return 'Authentication error';
-    
+
     final userGender = currentUser.gender;
-    
+
     // If user has no gender or prefers not to say, they must select all genders
     if (userGender == null || userGender == 'prefer_not_to_say') {
-      if (_selectedGenders.length != 3 || 
-          !_selectedGenders.contains('Men') || 
-          !_selectedGenders.contains('Women') || 
+      if (_selectedGenders.length != 3 ||
+          !_selectedGenders.contains('Men') ||
+          !_selectedGenders.contains('Women') ||
           !_selectedGenders.contains('Non-binary')) {
         return 'Since you haven\'t specified a gender, you must include all gender options to create a hangout';
       }
       return null;
     }
-    
+
     // Map user gender to required preference
     String requiredPreference;
     switch (userGender) {
@@ -1263,15 +1286,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         requiredPreference = 'Non-binary';
         break;
       default:
-        requiredPreference = 'Non-binary'; // Default for other gender identities
+        requiredPreference =
+            'Non-binary'; // Default for other gender identities
         break;
     }
-    
+
     // Check if user's gender is included in selection
     if (!_selectedGenders.contains(requiredPreference)) {
       return 'You must include your own gender ($requiredPreference) to create this hangout';
     }
-    
+
     return null;
   }
 
@@ -1282,7 +1306,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final position = renderBox.localToGlobal(Offset.zero);
 
       _scrollController.animateTo(
-        _scrollController.offset + position.dy - 100, // 100px offset for padding
+        _scrollController.offset +
+            position.dy -
+            100, // 100px offset for padding
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
@@ -1400,7 +1426,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             'DEBUG: Hangout created successfully, navigating to hangouts page',
           );
           // Switch to the hangouts tab (index 0) using provider and show "yourPosts" tab
-          final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+          final tabProvider = Provider.of<TabNavigationProvider>(
+            context,
+            listen: false,
+          );
           tabProvider.navigateToHangouts(tab: 'yourPosts');
 
           // Then show success message with invite option on hangouts page

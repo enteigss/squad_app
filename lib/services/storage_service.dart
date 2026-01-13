@@ -81,7 +81,7 @@ class StorageService {
       
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -101,7 +101,7 @@ class StorageService {
       
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -118,7 +118,7 @@ class StorageService {
       
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -131,7 +131,7 @@ class StorageService {
         imageQuality: 80,
       );
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -144,7 +144,7 @@ class StorageService {
         imageQuality: 80,
       );
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -156,7 +156,7 @@ class StorageService {
         imageQuality: 80,
       );
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -199,7 +199,7 @@ class StorageService {
       final Reference ref = _storage.ref().child(path);
       return ref.putFile(file);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 

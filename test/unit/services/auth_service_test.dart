@@ -457,8 +457,6 @@ void main() {
             .get();
         expect(userDoc.data()?['isOnline'], true);
       });
-
-      // TODO: Add test for cancelled authentication once we figure out nullable mocks
       // test('returns null when user cancels authentication', () async { ... });
 
       test('rejects non-BU email addresses', () async {

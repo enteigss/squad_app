@@ -128,6 +128,7 @@ class AppColors {
   static MaterialColor createMaterialColor(Color color) {
     List strengths = <double>[.05];
     Map<int, Color> swatch = {};
+    // ignore: deprecated_member_use
     final int r = color.red, g = color.green, b = color.blue;
 
     for (int i = 1; i < 10; i++) {
@@ -142,6 +143,7 @@ class AppColors {
         1,
       );
     }
+    // ignore: deprecated_member_use
     return MaterialColor(color.value, swatch);
   }
 }

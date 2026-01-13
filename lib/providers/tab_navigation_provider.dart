@@ -17,7 +17,6 @@ class TabNavigationProvider extends ChangeNotifier {
   }
 
   void navigateToCreate() {
-    // TODO: Navigate to create post screen (route or modal)
     // No longer tied to PageView index
   }
 

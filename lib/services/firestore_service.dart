@@ -46,12 +46,23 @@ class FirestoreService {
       }
 
       // Filter out blocked users
-      final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+      final currentUserDoc = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .get();
       final currentUserData = currentUserDoc.data();
-      final blockedUserIds = List<String>.from(currentUserData?['blockedUserIds'] ?? []);
-      final blockedByUserIds = List<String>.from(currentUserData?['blockedByUserIds'] ?? []);
+      final blockedUserIds = List<String>.from(
+        currentUserData?['blockedUserIds'] ?? [],
+      );
+      final blockedByUserIds = List<String>.from(
+        currentUserData?['blockedByUserIds'] ?? [],
+      );
 
-      final filteredMembers = _blockService.filterBlockedUsers(members, blockedUserIds, blockedByUserIds);
+      final filteredMembers = _blockService.filterBlockedUsers(
+        members,
+        blockedUserIds,
+        blockedByUserIds,
+      );
       return filteredMembers;
     } catch (e) {
       throw Exception('Failed to get group members: $e');
@@ -91,10 +102,10 @@ class FirestoreService {
     if (location != null) updateData['location'] = location;
     if (interests != null) updateData['interests'] = interests;
 
-    await _firestore.collection('users').doc(userId).set(
-      updateData,
-      SetOptions(merge: true),
-    );
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .set(updateData, SetOptions(merge: true));
   }
 
   Future<GroupModel> createGroup({
@@ -127,7 +138,7 @@ class FirestoreService {
 
       return group;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -139,7 +150,7 @@ class FirestoreService {
 
       await _updateUserGroupId(userId, groupId);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -152,7 +163,7 @@ class FirestoreService {
 
       await _updateUserGroupId(userId, null);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -221,7 +232,7 @@ class FirestoreService {
 
       return message;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -240,7 +251,7 @@ class FirestoreService {
             'readBy': FieldValue.arrayUnion([userId]),
           });
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -261,7 +272,7 @@ class FirestoreService {
             'editedAt': DateTime.now().millisecondsSinceEpoch,
           });
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -274,7 +285,7 @@ class FirestoreService {
           .doc(messageId)
           .delete();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -290,7 +301,7 @@ class FirestoreService {
       }
       return null;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -299,7 +310,7 @@ class FirestoreService {
       final QuerySnapshot result = await _firestore
           .collection('users')
           .where('username', isGreaterThanOrEqualTo: query)
-          .where('username', isLessThan: query + 'z')
+          .where('username', isLessThan: '${query}z')
           .limit(10)
           .get();
 
@@ -307,7 +318,7 @@ class FirestoreService {
           .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -333,7 +344,7 @@ class FirestoreService {
         'groupId': groupId,
       });
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 

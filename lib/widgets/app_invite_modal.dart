@@ -34,7 +34,6 @@ class AppInviteModal extends StatefulWidget {
 }
 
 class _AppInviteModalState extends State<AppInviteModal> {
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -93,9 +92,9 @@ class _AppInviteModalState extends State<AppInviteModal> {
                     subtitle: 'Share via messages, social media, or any app',
                     onTap: () => _handleShareLink(context),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   _buildInviteOption(
                     context: context,
                     icon: Icons.copy,
@@ -213,15 +212,14 @@ class _AppInviteModalState extends State<AppInviteModal> {
     );
   }
 
-
   void _handleShareLink(BuildContext context) async {
     print('DEBUG: _handleShareLink() called for app invite');
     try {
-
       // Generate the app invite URL
       final shareUrl =
           'https://squad-7bc7e.web.app/invite/${widget.inviterUserId}';
-      final shareText = 'Join me on LinkUp BU - the app for spontaneous hangouts! $shareUrl';
+      final shareText =
+          'Join me on LinkUp BU - the app for spontaneous hangouts! $shareUrl';
 
       // Get the box position BEFORE closing the modal
       print('DEBUG: Getting render box position');
@@ -241,6 +239,7 @@ class _AppInviteModalState extends State<AppInviteModal> {
       // Try native sharing first, fallback to clipboard
       try {
         print('DEBUG: Calling Share.share() for app invite');
+        // ignore: deprecated_member_use
         await Share.share(
           shareText,
           subject: '${widget.inviterName} invited you to LinkUp BU!',
@@ -279,11 +278,11 @@ class _AppInviteModalState extends State<AppInviteModal> {
 
   void _handleCopyLink(BuildContext context) async {
     try {
-
       // Generate the app invite URL
       final shareUrl =
           'https://squad-7bc7e.web.app/invite/${widget.inviterUserId}';
-      final shareText = 'Join me on LinkUp BU - the app for spontaneous hangouts! $shareUrl';
+      final shareText =
+          'Join me on LinkUp BU - the app for spontaneous hangouts! $shareUrl';
 
       // Copy to clipboard
       await Clipboard.setData(ClipboardData(text: shareText));

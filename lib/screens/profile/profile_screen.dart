@@ -79,8 +79,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SnackBar(
             content: Text(
               enabled
-                ? 'Analytics enabled - helps us improve the app'
-                : 'Analytics disabled - no data will be collected',
+                  ? 'Analytics enabled - helps us improve the app'
+                  : 'Analytics disabled - no data will be collected',
             ),
             backgroundColor: AppColors.success,
           ),
@@ -109,7 +109,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Test feedback prompts created! Restart the app to see them.'),
+              content: Text(
+                'Test feedback prompts created! Restart the app to see them.',
+              ),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),
@@ -150,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           final user = authProvider.currentUser;
-          
+
           if (user == null) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -168,9 +170,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   textColor: AppColors.primary,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // User Name
                 Text(
                   user.displayName ?? user.username,
@@ -179,9 +181,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 6),
-                
+
                 // Username
                 Text(
                   '@${user.username}',
@@ -191,20 +193,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
 
                 const SizedBox(height: 20),
-                
+
                 // Profile Info Cards
                 _buildInfoCard('Email', user.email),
                 if (user.bio != null) _buildInfoCard('Bio', user.bio!),
-                if (user.location != null) _buildInfoCard('Location', user.location!),
-                if (user.classYear != null) _buildInfoCard('Class Year', user.classYear!),
-                
+                if (user.location != null)
+                  _buildInfoCard('Location', user.location!),
+                if (user.classYear != null)
+                  _buildInfoCard('Class Year', user.classYear!),
+
                 const SizedBox(height: 16),
-                
+
                 // Interests
-                if (user.interests.isNotEmpty) _buildInterestsSection(user.interests),
-                
+                if (user.interests.isNotEmpty)
+                  _buildInterestsSection(user.interests),
+
                 const SizedBox(height: 20),
-                
+
                 // Edit Profile Button
                 SizedBox(
                   width: double.infinity,
@@ -249,7 +254,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Notifications Toggle
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(8),
@@ -297,13 +305,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
+                                ),
                               ),
                             )
                           : Switch(
                               value: _notificationsEnabled,
                               onChanged: _toggleNotifications,
-                              activeColor: AppColors.primary,
+                              activeThumbColor: AppColors.primary,
                             ),
                     ],
                   ),
@@ -322,7 +332,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: AppColors.surface,
                       foregroundColor: AppColors.textPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: AppColors.divider.withValues(alpha: 0.3), width: 1),
+                      side: BorderSide(
+                        color: AppColors.divider.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -343,7 +356,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: AppColors.surface,
                       foregroundColor: AppColors.textPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: AppColors.divider.withValues(alpha: 0.3), width: 1),
+                      side: BorderSide(
+                        color: AppColors.divider.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -364,7 +380,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: AppColors.surface,
                       foregroundColor: AppColors.textPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: AppColors.divider.withValues(alpha: 0.3), width: 1),
+                      side: BorderSide(
+                        color: AppColors.divider.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -382,10 +401,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: const Icon(Icons.analytics, size: 18),
                       label: const Text('View Analytics (Debug)'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.textSecondary.withValues(alpha: 0.1),
+                        backgroundColor: AppColors.textSecondary.withValues(
+                          alpha: 0.1,
+                        ),
                         foregroundColor: AppColors.textSecondary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3), width: 1),
+                        side: BorderSide(
+                          color: AppColors.textSecondary.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -451,10 +475,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
           ),
         ],
       ),
@@ -491,24 +512,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: interests.map((interest) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                interest,
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            )).toList(),
+            children: interests
+                .map(
+                  (interest) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      interest,
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -520,20 +548,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user != null) {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => EditProfileScreen(user: user),
-        ),
+        MaterialPageRoute(builder: (context) => EditProfileScreen(user: user)),
       );
     }
   }
 
-
   void _viewAnalytics() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AnalyticsScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
     );
   }
 
@@ -579,10 +602,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text(
-                'Close',
-                style: TextStyle(color: AppColors.primary),
-              ),
+              child: Text('Close', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
@@ -613,7 +633,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     subtitle: Text(
                       'Help improve the app with anonymous usage data',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                     trailing: Switch(
                       value: _analyticsEnabled,
@@ -621,83 +644,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         await _toggleAnalytics(value);
                         setDialogState(() {}); // Update dialog UI immediately
                       },
-                      activeColor: AppColors.primary,
+                      activeThumbColor: AppColors.primary,
                     ),
                   ),
-              ListTile(
-                leading: Icon(Icons.privacy_tip, color: AppColors.primary),
-                title: Text(
-                  'Privacy Policy',
-                  style: TextStyle(color: AppColors.textPrimary),
+                  ListTile(
+                    leading: Icon(Icons.privacy_tip, color: AppColors.primary),
+                    title: Text(
+                      'Privacy Policy',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                    trailing: Icon(
+                      Icons.open_in_browser,
+                      color: AppColors.textSecondary,
+                    ),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      final success =
+                          await UrlLauncherHelper.launchPrivacyPolicy();
+                      if (!success && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not open privacy policy'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.delete_outline,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'Data Deletion',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                    trailing: Icon(
+                      Icons.open_in_browser,
+                      color: AppColors.textSecondary,
+                    ),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      final success =
+                          await UrlLauncherHelper.launchDataDeletion();
+                      if (!success && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not open data deletion page'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.shield, color: AppColors.primary),
+                    title: Text(
+                      'Child Safety',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                    trailing: Icon(
+                      Icons.open_in_browser,
+                      color: AppColors.textSecondary,
+                    ),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      final success =
+                          await UrlLauncherHelper.launchChildSafety();
+                      if (!success && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not open child safety page'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Close',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
                 ),
-                trailing: Icon(Icons.open_in_browser, color: AppColors.textSecondary),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  final success = await UrlLauncherHelper.launchPrivacyPolicy();
-                  if (!success && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Could not open privacy policy'),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.delete_outline, color: AppColors.primary),
-                title: Text(
-                  'Data Deletion',
-                  style: TextStyle(color: AppColors.textPrimary),
-                ),
-                trailing: Icon(Icons.open_in_browser, color: AppColors.textSecondary),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  final success = await UrlLauncherHelper.launchDataDeletion();
-                  if (!success && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Could not open data deletion page'),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.shield, color: AppColors.primary),
-                title: Text(
-                  'Child Safety',
-                  style: TextStyle(color: AppColors.textPrimary),
-                ),
-                trailing: Icon(Icons.open_in_browser, color: AppColors.textSecondary),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  final success = await UrlLauncherHelper.launchChildSafety();
-                  if (!success && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Could not open child safety page'),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Close',
-                style: TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ],
-        );
+              ],
+            );
           },
         );
       },
@@ -842,7 +880,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         imageUrl: user.photoUrl,
                         name: user.displayName ?? user.username,
                         radius: 20,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.1,
+                        ),
                         textColor: AppColors.primary,
                       ),
                       title: Text(
@@ -871,10 +911,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text(
-                'Close',
-                style: TextStyle(color: AppColors.primary),
-              ),
+              child: Text('Close', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
@@ -938,7 +975,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Please enable notifications in your device settings'),
+                  content: Text(
+                    'Please enable notifications in your device settings',
+                  ),
                   backgroundColor: AppColors.error,
                 ),
               );
@@ -948,7 +987,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         // Subscribe to topics based on user's gender
-        await _notificationService.subscribeToHangoutTopicsBasedOnGender(user.gender);
+        await _notificationService.subscribeToHangoutTopicsBasedOnGender(
+          user.gender,
+        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -979,7 +1020,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Refresh user data to get updated subscribedTopics
       await authProvider.refreshCurrentUser();
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1045,10 +1085,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.of(context).pop();
                 context.push('/profile/delete-account');
               },
-              child: Text(
-                'Continue',
-                style: TextStyle(color: AppColors.error),
-              ),
+              child: Text('Continue', style: TextStyle(color: AppColors.error)),
             ),
           ],
         );

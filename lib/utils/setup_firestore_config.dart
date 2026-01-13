@@ -36,7 +36,7 @@ class FirestoreConfigSetup {
       
     } catch (e) {
       debugPrint('❌ Error setting up test accounts document: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -56,7 +56,7 @@ class FirestoreConfigSetup {
       debugPrint('✅ Test email added successfully');
     } catch (e) {
       debugPrint('❌ Error adding test email: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -76,7 +76,7 @@ class FirestoreConfigSetup {
       debugPrint('✅ Test email removed successfully');
     } catch (e) {
       debugPrint('❌ Error removing test email: $e');
-      throw e;
+      rethrow;
     }
   }
 

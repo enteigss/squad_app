@@ -388,7 +388,7 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
                       category.key,
                       categoryLocations,
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
@@ -435,7 +435,7 @@ class _EditHangoutDialogState extends State<EditHangoutDialog> {
               ),
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 12),
       ],
     );

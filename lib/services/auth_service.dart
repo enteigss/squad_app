@@ -21,11 +21,12 @@ class AuthService {
     FirebaseFirestore? firestore,
     GoogleSignIn Function()? getGoogleSignIn,
     FirebaseCrashlytics Function()? getCrashlytics,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _analytics = analytics ?? FirebaseAnalytics.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance,
-        _getGoogleSignIn = getGoogleSignIn ?? (() => GoogleSignIn.instance),
-        _getCrashlytics = getCrashlytics ?? (() => FirebaseCrashlytics.instance) {
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _analytics = analytics ?? FirebaseAnalytics.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _getGoogleSignIn = getGoogleSignIn ?? (() => GoogleSignIn.instance),
+       _getCrashlytics =
+           getCrashlytics ?? (() => FirebaseCrashlytics.instance) {
     _auth.authStateChanges().listen((User? user) {
       if (user == null) {
         print('User is currently signed out!');
@@ -53,9 +54,7 @@ class AuthService {
       debugPrint('📧 Password length: ${password.length}');
 
       // Log attempt to Crashlytics
-      await _getCrashlytics().log(
-        'Email/Password Sign-In attempt started',
-      );
+      await _getCrashlytics().log('Email/Password Sign-In attempt started');
       await _getCrashlytics().setCustomKey(
         'signin_attempt_email',
         DateTime.now().toIso8601String(),
@@ -299,12 +298,12 @@ class AuthService {
       );
       if (googleSignIn.supportsAuthenticate()) {
         debugPrint('🔐 Attempting Google authentication...');
-        final GoogleSignInAccount? googleUser = await googleSignIn
-            .authenticate();
-
-        if (googleUser == null) {
-          debugPrint('❌ Google authentication cancelled by user');
-          return null; // User cancelled
+        final GoogleSignInAccount googleUser;
+        try {
+          googleUser = await googleSignIn.authenticate();
+        } catch (e) {
+          debugPrint('❌ Google authentication cancelled or failed: $e');
+          return null; // User cancelled or auth failed
         }
 
         debugPrint(
@@ -325,8 +324,7 @@ class AuthService {
 
         // Get authentication details
         debugPrint('🔑 Getting Google authentication details...');
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
+        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
         debugPrint(
           '🔑 Google auth tokens received: idToken=${googleAuth.idToken != null}',
         );
@@ -585,9 +583,7 @@ class AuthService {
           debugPrint('✅ Apple user document created successfully');
 
           // Log successful sign-in to Crashlytics
-          await _getCrashlytics().log(
-            'Apple Sign-In completed successfully',
-          );
+          await _getCrashlytics().log('Apple Sign-In completed successfully');
           await _getCrashlytics().setCustomKey(
             'signin_success_apple',
             DateTime.now().toIso8601String(),
@@ -657,7 +653,7 @@ class AuthService {
       }
       await _auth.signOut();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -674,7 +670,7 @@ class AuthService {
       return null;
     } catch (e) {
       print('❌ getUserData error for uid $uid: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -745,7 +741,7 @@ class AuthService {
         }
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -770,7 +766,7 @@ class AuthService {
 
       return result.docs.isEmpty;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -778,7 +774,7 @@ class AuthService {
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -912,14 +908,15 @@ class AuthService {
       // Disconnect first to force account selection
       await googleSignIn.disconnect();
 
-      final GoogleSignInAccount? googleUser = await googleSignIn.authenticate();
-      if (googleUser == null) {
-        debugPrint('❌ Google re-authentication cancelled by user');
+      final GoogleSignInAccount googleUser;
+      try {
+        googleUser = await googleSignIn.authenticate();
+      } catch (e) {
+        debugPrint('❌ Google re-authentication cancelled or failed: $e');
         return false;
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );

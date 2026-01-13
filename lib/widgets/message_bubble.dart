@@ -20,8 +20,9 @@ class MessageBubble extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isOwn
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isOwn) ...[
             CircleAvatar(
@@ -126,17 +127,12 @@ class MessageBubble extends StatelessWidget {
         return _buildFileMessage();
       case MessageType.system:
         return _buildSystemMessage();
-      default:
-        return _buildTextMessage();
     }
   }
 
   Widget _buildTextMessage() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isOwn ? AppColors.chatBubbleOwn : AppColors.chatBubbleOther,
         borderRadius: BorderRadius.circular(16).copyWith(
@@ -164,13 +160,12 @@ class MessageBubble extends StatelessWidget {
       children: [
         if (message.imageUrl != null)
           Container(
-            constraints: const BoxConstraints(
-              maxWidth: 250,
-              maxHeight: 300,
-            ),
+            constraints: const BoxConstraints(maxWidth: 250, maxHeight: 300),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: isOwn ? AppColors.chatBubbleOwn : AppColors.chatBubbleOther,
+              color: isOwn
+                  ? AppColors.chatBubbleOwn
+                  : AppColors.chatBubbleOther,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -186,9 +181,7 @@ class MessageBubble extends StatelessWidget {
                       color: AppColors.inputBackground,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
@@ -199,9 +192,7 @@ class MessageBubble extends StatelessWidget {
                       color: AppColors.inputBackground,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(
-                      child: Icon(Icons.error),
-                    ),
+                    child: const Center(child: Icon(Icons.error)),
                   );
                 },
               ),
@@ -248,7 +239,7 @@ class MessageBubble extends StatelessWidget {
                   Text(
                     _formatFileSize(message.fileSize!),
                     style: TextStyle(
-                      color: isOwn 
+                      color: isOwn
                           ? AppColors.onPrimary.withValues(alpha: 0.7)
                           : AppColors.textSecondary,
                       fontSize: 12,

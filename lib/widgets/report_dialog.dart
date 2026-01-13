@@ -132,7 +132,6 @@ class _ReportDialogState extends State<ReportDialog> {
           ],
 
           const SizedBox(height: 16),
-
         ],
       ),
       actions: [
@@ -147,7 +146,9 @@ class _ReportDialogState extends State<ReportDialog> {
 
         // Submit button
         ElevatedButton(
-          onPressed: (_selectedReason != null && !_isSubmitting) ? _submitReport : null,
+          onPressed: (_selectedReason != null && !_isSubmitting)
+              ? _submitReport
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.error,
             foregroundColor: Colors.white,
@@ -172,7 +173,7 @@ class _ReportDialogState extends State<ReportDialog> {
 
   Widget _buildReasonOption(ReportReason reason) {
     final isSelected = _selectedReason == reason;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
@@ -185,13 +186,13 @@ class _ReportDialogState extends State<ReportDialog> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? AppColors.primary.withValues(alpha: 0.1) 
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isSelected 
-                  ? AppColors.primary 
+              color: isSelected
+                  ? AppColors.primary
                   : AppColors.textSecondary.withValues(alpha: 0.3),
               width: isSelected ? 2 : 1,
             ),
@@ -200,7 +201,9 @@ class _ReportDialogState extends State<ReportDialog> {
             children: [
               Radio<ReportReason>(
                 value: reason,
+                // ignore: deprecated_member_use
                 groupValue: _selectedReason,
+                // ignore: deprecated_member_use
                 onChanged: (ReportReason? value) {
                   setState(() {
                     _selectedReason = value;
@@ -214,9 +217,11 @@ class _ReportDialogState extends State<ReportDialog> {
                   reason.displayName,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected 
-                        ? AppColors.primary 
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? AppColors.primary
                         : AppColors.textPrimary,
                   ),
                 ),

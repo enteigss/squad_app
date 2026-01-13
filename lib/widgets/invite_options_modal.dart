@@ -26,16 +26,13 @@ class InviteOptionsModal extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => InviteOptionsModal(
-        hangoutId: hangoutId,
-        inviterName: inviterName,
-      ),
+      builder: (context) =>
+          InviteOptionsModal(hangoutId: hangoutId, inviterName: inviterName),
     );
   }
 }
 
 class _InviteOptionsModalState extends State<InviteOptionsModal> {
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -204,7 +201,6 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
     );
   }
 
-
   void _handleShareLink(BuildContext context) async {
     print('DEBUG: _handleShareLink() called');
     try {
@@ -231,6 +227,7 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
       // Try native sharing first, fallback to clipboard
       try {
         print('DEBUG: Calling Share.share()');
+        // ignore: deprecated_member_use
         await Share.share(
           shareText,
           subject: 'You\'re invited to a hangout',
@@ -266,5 +263,4 @@ class _InviteOptionsModalState extends State<InviteOptionsModal> {
       }
     }
   }
-
 }

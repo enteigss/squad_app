@@ -2788,8 +2788,6 @@ class _CreatePostBottomSheetState extends State<CreatePostBottomSheet> {
               'Maximum group size: ${_maxGroupSize != null ? _maxGroupSize.toString() : "No limit"}',
               style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
             ),
-
-            // TODO: Add final step content here
           ],
         ),
       ),

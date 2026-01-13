@@ -195,7 +195,7 @@ void main() {
           createdAt: fixedDate,
         );
 
-        expect(block == 'not a block', false);
+        expect(block, isNot(equals('not a block')));
       });
     });
 

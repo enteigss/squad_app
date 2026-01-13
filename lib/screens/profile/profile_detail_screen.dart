@@ -624,10 +624,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             Provider.of<PostProvider>(
               context,
               listen: false,
+              // ignore: deprecated_member_use_from_same_package
             ).setCurrentUser(updatedUser);
             Provider.of<ChatProvider>(
               context,
               listen: false,
+              // ignore: deprecated_member_use_from_same_package
             ).setCurrentUser(updatedUser);
           }
         }
@@ -690,10 +692,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             Provider.of<PostProvider>(
               context,
               listen: false,
+              // ignore: deprecated_member_use_from_same_package
             ).setCurrentUser(updatedUser);
             Provider.of<ChatProvider>(
               context,
               listen: false,
+              // ignore: deprecated_member_use_from_same_package
             ).setCurrentUser(updatedUser);
           }
         }
