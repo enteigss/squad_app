@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/post_model.dart';
-import 'post_chat_service.dart';
+import '../models/chat_message.dart';
+import 'chat_service.dart';
 import 'firestore_service.dart';
 import 'feedback_service.dart';
 import 'analytics_service.dart';
@@ -14,7 +15,7 @@ class PostService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'posts';
-  final PostChatService _chatService = PostChatService();
+  final ChatService _chatService = ChatService();
   final FirestoreService _firestoreService = FirestoreService();
   final FeedbackService _feedbackService = FeedbackService();
   final AnalyticsService _analyticsService = AnalyticsService();
@@ -29,7 +30,7 @@ class PostService {
       await docRef.set(postWithId.toMap());
 
       // Initialize chat for the new post
-      await _chatService.initializeChat(docRef.id);
+      await _chatService.initializeChat(ChatContext.hangout, docRef.id);
 
       return docRef.id;
     } catch (e) {
@@ -228,7 +229,7 @@ class PostService {
       try {
         final user = await _firestoreService.getUser(userId);
         final userName = user?.displayName ?? 'Unknown User';
-        await _chatService.handleUserJoined(postId: postId, userName: userName);
+        await _chatService.handleUserJoined(context: ChatContext.hangout, chatRoomId: postId, userName: userName);
       } catch (e) {
         // Don't fail the join operation if chat notification fails
         debugPrint('Failed to send chat join notification: $e');
@@ -302,7 +303,7 @@ class PostService {
       try {
         final user = await _firestoreService.getUser(userId);
         final userName = user?.displayName ?? 'Unknown User';
-        await _chatService.handleUserLeft(postId: postId, userName: userName);
+        await _chatService.handleUserLeft(context: ChatContext.hangout, chatRoomId: postId, userName: userName);
       } catch (e) {
         // Don't fail the leave operation if chat notification fails
         debugPrint('Failed to send chat leave notification: $e');
@@ -524,7 +525,7 @@ class PostService {
           // If post just became completed, archive the chat and create feedback prompts
           if (newStatus == PostStatus.completed &&
               post.status != PostStatus.completed) {
-            _chatService.archiveChat(post.id);
+            _chatService.archiveChat(ChatContext.hangout, post.id);
 
             // Create feedback prompts if not already collected
             if (!post.feedbackCollected) {

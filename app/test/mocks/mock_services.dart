@@ -8,7 +8,7 @@ import 'package:squad_app/services/notification_service.dart';
 import 'package:squad_app/services/analytics_service.dart';
 import 'package:squad_app/services/feedback_service.dart';
 import 'package:squad_app/services/report_service.dart';
-import 'package:squad_app/services/post_chat_service.dart';
+import 'package:squad_app/services/chat_service.dart';
 import 'package:squad_app/services/account_deletion_service.dart';
 import 'package:squad_app/services/email_verification_service.dart';
 import 'package:squad_app/services/deep_link_service.dart';
@@ -25,7 +25,7 @@ import 'package:squad_app/services/deep_link_service.dart';
   AnalyticsService,
   FeedbackService,
   ReportService,
-  PostChatService,
+  ChatService,
   AccountDeletionService,
   EmailVerificationService,
   DeepLinkService,

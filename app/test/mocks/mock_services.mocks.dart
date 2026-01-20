@@ -13,8 +13,8 @@ import 'package:image_picker/image_picker.dart' as _i14;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
 import 'package:squad_app/models/block_model.dart' as _i11;
+import 'package:squad_app/models/chat_message.dart' as _i2;
 import 'package:squad_app/models/meetup_feedback.dart' as _i20;
-import 'package:squad_app/models/post_chat_message.dart' as _i2;
 import 'package:squad_app/models/post_model.dart' as _i8;
 import 'package:squad_app/models/report_model.dart' as _i22;
 import 'package:squad_app/models/user_model.dart' as _i6;
@@ -22,12 +22,12 @@ import 'package:squad_app/services/account_deletion_service.dart' as _i24;
 import 'package:squad_app/services/analytics_service.dart' as _i18;
 import 'package:squad_app/services/auth_service.dart' as _i3;
 import 'package:squad_app/services/block_service.dart' as _i10;
+import 'package:squad_app/services/chat_service.dart' as _i23;
 import 'package:squad_app/services/deep_link_service.dart' as _i26;
 import 'package:squad_app/services/email_verification_service.dart' as _i25;
 import 'package:squad_app/services/feedback_service.dart' as _i19;
 import 'package:squad_app/services/firestore_service.dart' as _i12;
 import 'package:squad_app/services/notification_service.dart' as _i17;
-import 'package:squad_app/services/post_chat_service.dart' as _i23;
 import 'package:squad_app/services/post_service.dart' as _i7;
 import 'package:squad_app/services/report_service.dart' as _i21;
 import 'package:squad_app/services/storage_service.dart' as _i13;
@@ -47,9 +47,8 @@ import 'package:squad_app/services/storage_service.dart' as _i13;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakePostChatMessage_0 extends _i1.SmartFake
-    implements _i2.PostChatMessage {
-  _FakePostChatMessage_0(Object parent, Invocation parentInvocation)
+class _FakeChatMessage_0 extends _i1.SmartFake implements _i2.ChatMessage {
+  _FakeChatMessage_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -1158,108 +1157,134 @@ class MockReportService extends _i1.Mock implements _i21.ReportService {
           as _i4.Future<void>);
 }
 
-/// A class which mocks [PostChatService].
+/// A class which mocks [ChatService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPostChatService extends _i1.Mock implements _i23.PostChatService {
-  MockPostChatService() {
+class MockChatService extends _i1.Mock implements _i23.ChatService {
+  MockChatService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Stream<List<_i2.PostChatMessage>> getChatMessages(String? postId) =>
+  _i4.Stream<List<_i2.ChatMessage>> getMessages(
+    _i2.ChatContext? context,
+    String? chatRoomId,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#getChatMessages, [postId]),
-            returnValue: _i4.Stream<List<_i2.PostChatMessage>>.empty(),
+            Invocation.method(#getMessages, [context, chatRoomId]),
+            returnValue: _i4.Stream<List<_i2.ChatMessage>>.empty(),
           )
-          as _i4.Stream<List<_i2.PostChatMessage>>);
+          as _i4.Stream<List<_i2.ChatMessage>>);
 
   @override
-  _i4.Future<_i2.PostChatMessage> sendMessage({
-    required String? postId,
+  _i4.Future<_i2.ChatMessage> sendMessage({
+    required _i2.ChatContext? context,
+    required String? chatRoomId,
     required String? senderId,
     required String? senderName,
     required String? content,
     String? senderPhotoUrl,
-    _i2.PostChatMessageType? type = _i2.PostChatMessageType.text,
+    _i2.ChatMessageType? type = _i2.ChatMessageType.text,
     String? imageUrl,
+    String? replyToMessageId,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#sendMessage, [], {
-              #postId: postId,
+              #context: context,
+              #chatRoomId: chatRoomId,
               #senderId: senderId,
               #senderName: senderName,
               #content: content,
               #senderPhotoUrl: senderPhotoUrl,
               #type: type,
               #imageUrl: imageUrl,
+              #replyToMessageId: replyToMessageId,
             }),
-            returnValue: _i4.Future<_i2.PostChatMessage>.value(
-              _FakePostChatMessage_0(
+            returnValue: _i4.Future<_i2.ChatMessage>.value(
+              _FakeChatMessage_0(
                 this,
                 Invocation.method(#sendMessage, [], {
-                  #postId: postId,
+                  #context: context,
+                  #chatRoomId: chatRoomId,
                   #senderId: senderId,
                   #senderName: senderName,
                   #content: content,
                   #senderPhotoUrl: senderPhotoUrl,
                   #type: type,
                   #imageUrl: imageUrl,
+                  #replyToMessageId: replyToMessageId,
                 }),
               ),
             ),
           )
-          as _i4.Future<_i2.PostChatMessage>);
+          as _i4.Future<_i2.ChatMessage>);
 
   @override
-  _i4.Future<_i2.PostChatMessage> sendSystemMessage({
-    required String? postId,
+  _i4.Future<_i2.ChatMessage> sendSystemMessage({
+    required _i2.ChatContext? context,
+    required String? chatRoomId,
     required String? content,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#sendSystemMessage, [], {
-              #postId: postId,
+              #context: context,
+              #chatRoomId: chatRoomId,
               #content: content,
             }),
-            returnValue: _i4.Future<_i2.PostChatMessage>.value(
-              _FakePostChatMessage_0(
+            returnValue: _i4.Future<_i2.ChatMessage>.value(
+              _FakeChatMessage_0(
                 this,
                 Invocation.method(#sendSystemMessage, [], {
-                  #postId: postId,
+                  #context: context,
+                  #chatRoomId: chatRoomId,
                   #content: content,
                 }),
               ),
             ),
           )
-          as _i4.Future<_i2.PostChatMessage>);
+          as _i4.Future<_i2.ChatMessage>);
 
   @override
-  _i4.Future<void> markMessagesAsRead(String? postId, String? userId) =>
+  _i4.Future<void> markMessagesAsRead(
+    _i2.ChatContext? context,
+    String? chatRoomId,
+    String? userId,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#markMessagesAsRead, [postId, userId]),
+            Invocation.method(#markMessagesAsRead, [
+              context,
+              chatRoomId,
+              userId,
+            ]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
 
   @override
-  _i4.Future<int> getUnreadCount(String? postId, String? userId) =>
+  _i4.Future<int> getUnreadCount(
+    _i2.ChatContext? context,
+    String? chatRoomId,
+    String? userId,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#getUnreadCount, [postId, userId]),
+            Invocation.method(#getUnreadCount, [context, chatRoomId, userId]),
             returnValue: _i4.Future<int>.value(0),
           )
           as _i4.Future<int>);
 
   @override
   _i4.Future<void> editMessage({
-    required String? postId,
+    required _i2.ChatContext? context,
+    required String? chatRoomId,
     required String? messageId,
     required String? newContent,
     required String? userId,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#editMessage, [], {
-              #postId: postId,
+              #context: context,
+              #chatRoomId: chatRoomId,
               #messageId: messageId,
               #newContent: newContent,
               #userId: userId,
@@ -1271,13 +1296,15 @@ class MockPostChatService extends _i1.Mock implements _i23.PostChatService {
 
   @override
   _i4.Future<void> deleteMessage({
-    required String? postId,
+    required _i2.ChatContext? context,
+    required String? chatRoomId,
     required String? messageId,
     required String? userId,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#deleteMessage, [], {
-              #postId: postId,
+              #context: context,
+              #chatRoomId: chatRoomId,
               #messageId: messageId,
               #userId: userId,
             }),
@@ -1287,9 +1314,27 @@ class MockPostChatService extends _i1.Mock implements _i23.PostChatService {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> initializeChat(String? postId) =>
+  _i4.Future<void> initializeChat(
+    _i2.ChatContext? context,
+    String? chatRoomId,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#initializeChat, [postId]),
+            Invocation.method(#initializeChat, [context, chatRoomId]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> initializeMatchedGroupChat(
+    String? chatRoomId,
+    String? conversationStarter,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#initializeMatchedGroupChat, [
+              chatRoomId,
+              conversationStarter,
+            ]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
@@ -1297,12 +1342,14 @@ class MockPostChatService extends _i1.Mock implements _i23.PostChatService {
 
   @override
   _i4.Future<void> handleUserJoined({
-    required String? postId,
+    required _i2.ChatContext? context,
+    required String? chatRoomId,
     required String? userName,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#handleUserJoined, [], {
-              #postId: postId,
+              #context: context,
+              #chatRoomId: chatRoomId,
               #userName: userName,
             }),
             returnValue: _i4.Future<void>.value(),
@@ -1312,12 +1359,14 @@ class MockPostChatService extends _i1.Mock implements _i23.PostChatService {
 
   @override
   _i4.Future<void> handleUserLeft({
-    required String? postId,
+    required _i2.ChatContext? context,
+    required String? chatRoomId,
     required String? userName,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#handleUserLeft, [], {
-              #postId: postId,
+              #context: context,
+              #chatRoomId: chatRoomId,
               #userName: userName,
             }),
             returnValue: _i4.Future<void>.value(),
@@ -1326,38 +1375,45 @@ class MockPostChatService extends _i1.Mock implements _i23.PostChatService {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> archiveChat(String? postId) =>
+  _i4.Future<void> archiveChat(_i2.ChatContext? context, String? chatRoomId) =>
       (super.noSuchMethod(
-            Invocation.method(#archiveChat, [postId]),
+            Invocation.method(#archiveChat, [context, chatRoomId]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> cleanupOldChats() =>
+  _i4.Future<bool> canAccessChat(
+    _i2.ChatContext? context,
+    String? chatRoomId,
+    String? userId,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#cleanupOldChats, []),
+            Invocation.method(#canAccessChat, [context, chatRoomId, userId]),
+            returnValue: _i4.Future<bool>.value(false),
+          )
+          as _i4.Future<bool>);
+
+  @override
+  _i4.Future<bool> isChatReadOnly(
+    _i2.ChatContext? context,
+    String? chatRoomId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#isChatReadOnly, [context, chatRoomId]),
+            returnValue: _i4.Future<bool>.value(false),
+          )
+          as _i4.Future<bool>);
+
+  @override
+  _i4.Future<void> cleanupOldHangoutChats() =>
+      (super.noSuchMethod(
+            Invocation.method(#cleanupOldHangoutChats, []),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
-
-  @override
-  _i4.Future<bool> canAccessChat(String? postId, String? userId) =>
-      (super.noSuchMethod(
-            Invocation.method(#canAccessChat, [postId, userId]),
-            returnValue: _i4.Future<bool>.value(false),
-          )
-          as _i4.Future<bool>);
-
-  @override
-  _i4.Future<bool> isChatReadOnly(String? postId) =>
-      (super.noSuchMethod(
-            Invocation.method(#isChatReadOnly, [postId]),
-            returnValue: _i4.Future<bool>.value(false),
-          )
-          as _i4.Future<bool>);
 }
 
 /// A class which mocks [AccountDeletionService].

@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
-import '../models/post_chat_message.dart';
+import '../models/chat_message.dart';
 
 class DebugService {
   static final DebugService _instance = DebugService._internal();
@@ -427,13 +427,14 @@ class DebugService {
           .collection('chat')
           .doc();
 
-      final message = PostChatMessage(
+      final message = ChatMessage(
         id: messageRef.id,
-        postId: postId,
+        chatRoomId: postId,
+        context: ChatContext.hangout,
         senderId: messageData['senderId'] as String,
         senderName: messageData['senderName'] as String,
         content: messageData['content'] as String,
-        type: PostChatMessageType.text,
+        type: ChatMessageType.text,
         timestamp: messageData['timestamp'] as DateTime,
         readBy: [], // No read receipts for simplicity
       );

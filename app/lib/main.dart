@@ -17,7 +17,7 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/profile/delete_account_screen.dart';
 import 'screens/feed/create_post_screen.dart';
 import 'screens/feed/hangout_invitation_screen.dart';
-import 'screens/feed/post_chat_screen.dart';
+import 'screens/chat/chat_screen.dart';
 import 'screens/feed/hangout_screen.dart';
 import 'screens/main/main_scaffold.dart';
 import 'screens/consent/consent_dialog_screen.dart';
@@ -541,8 +541,8 @@ class _SquadAppState extends State<SquadApp> {
               );
             }
 
-            debugPrint('🎉 Returning PostChatScreen with post');
-            return PostChatScreen(post: post);
+            debugPrint('🎉 Returning ChatScreen for hangout');
+            return ChatScreen.forHangout(post: post);
           },
         ),
         GoRoute(
