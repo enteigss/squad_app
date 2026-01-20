@@ -1,3 +1,5 @@
+import 'matching_profile.dart';
+
 class UserModel {
   final String id;
   final String email;
@@ -25,6 +27,7 @@ class UserModel {
   final Map<String, bool> hangoutChatNotifications; // hangoutId -> enabled/disabled
   final int genderChangeCount; // Number of times gender has been changed
   final DateTime? genderChangedAt; // Last time gender was changed
+  final MatchingProfile? matchingProfile; // Matching pool profile
 
   UserModel({
     required this.id,
@@ -53,6 +56,7 @@ class UserModel {
     this.hangoutChatNotifications = const {},
     this.genderChangeCount = 0,
     this.genderChangedAt,
+    this.matchingProfile,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -83,6 +87,9 @@ class UserModel {
       hangoutChatNotifications: Map<String, bool>.from(map['hangoutChatNotifications'] ?? {}),
       genderChangeCount: map['genderChangeCount'] ?? 0,
       genderChangedAt: _parseDateTime(map['genderChangedAt']),
+      matchingProfile: map['matchingProfile'] != null
+          ? MatchingProfile.fromMap(map['matchingProfile'])
+          : null,
     );
   }
 
@@ -124,6 +131,7 @@ class UserModel {
       'hangoutChatNotifications': hangoutChatNotifications,
       'genderChangeCount': genderChangeCount,
       'genderChangedAt': genderChangedAt?.millisecondsSinceEpoch,
+      'matchingProfile': matchingProfile?.toMap(),
     };
   }
 
@@ -154,6 +162,7 @@ class UserModel {
     Map<String, bool>? hangoutChatNotifications,
     int? genderChangeCount,
     DateTime? genderChangedAt,
+    MatchingProfile? matchingProfile,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -182,6 +191,7 @@ class UserModel {
       hangoutChatNotifications: hangoutChatNotifications ?? this.hangoutChatNotifications,
       genderChangeCount: genderChangeCount ?? this.genderChangeCount,
       genderChangedAt: genderChangedAt ?? this.genderChangedAt,
+      matchingProfile: matchingProfile ?? this.matchingProfile,
     );
   }
 }

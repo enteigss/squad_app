@@ -51,6 +51,7 @@ class MatchModel {
   final String groupId;
   final List<String> memberIds;
   final String reasoning;
+  final String potentialDownside;
   final String activitySuggestion;
   final String conversationStarter;
   final DateTime createdAt;
@@ -61,6 +62,7 @@ class MatchModel {
     required this.groupId,
     required this.memberIds,
     required this.reasoning,
+    required this.potentialDownside,
     required this.activitySuggestion,
     required this.conversationStarter,
     required this.createdAt,
@@ -74,6 +76,7 @@ class MatchModel {
       groupId: map['groupId'] as String? ?? '',
       memberIds: List<String>.from(map['memberIds'] ?? []),
       reasoning: map['reasoning'] as String? ?? '',
+      potentialDownside: map['potentialDownside'] as String? ?? '',
       activitySuggestion: map['activitySuggestion'] as String? ?? '',
       conversationStarter: map['conversationStarter'] as String? ?? '',
       createdAt: _parseDateTime(map['createdAt']),
@@ -88,6 +91,7 @@ class MatchModel {
       'groupId': groupId,
       'memberIds': memberIds,
       'reasoning': reasoning,
+      'potentialDownside': potentialDownside,
       'activitySuggestion': activitySuggestion,
       'conversationStarter': conversationStarter,
       'createdAt': createdAt.millisecondsSinceEpoch,
@@ -101,6 +105,7 @@ class MatchModel {
     String? groupId,
     List<String>? memberIds,
     String? reasoning,
+    String? potentialDownside,
     String? activitySuggestion,
     String? conversationStarter,
     DateTime? createdAt,
@@ -111,6 +116,7 @@ class MatchModel {
       groupId: groupId ?? this.groupId,
       memberIds: memberIds ?? this.memberIds,
       reasoning: reasoning ?? this.reasoning,
+      potentialDownside: potentialDownside ?? this.potentialDownside,
       activitySuggestion: activitySuggestion ?? this.activitySuggestion,
       conversationStarter: conversationStarter ?? this.conversationStarter,
       createdAt: createdAt ?? this.createdAt,

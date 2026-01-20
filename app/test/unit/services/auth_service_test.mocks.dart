@@ -1318,7 +1318,6 @@ class MockGoogleSignIn extends _i1.Mock implements _i3.GoogleSignIn {
 /// A class which mocks [GoogleSignInAccount].
 ///
 /// See the documentation for Mockito's code generation for more information.
-// ignore: must_be_immutable
 class MockGoogleSignInAccount extends _i1.Mock
     implements _i3.GoogleSignInAccount {
   MockGoogleSignInAccount() {
@@ -1370,7 +1369,6 @@ class MockGoogleSignInAccount extends _i1.Mock
 /// A class which mocks [GoogleSignInAuthentication].
 ///
 /// See the documentation for Mockito's code generation for more information.
-// ignore: must_be_immutable
 class MockGoogleSignInAuthentication extends _i1.Mock
     implements _i4.GoogleSignInAuthentication {
   MockGoogleSignInAuthentication() {
