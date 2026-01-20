@@ -16,7 +16,6 @@ import 'screens/auth/profile_setup_screen.dart';
 import 'screens/auth/email_verification_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/profile/delete_account_screen.dart';
-import 'screens/chat/chat_screen.dart';
 import 'screens/feed/create_post_screen.dart';
 import 'screens/feed/hangout_invitation_screen.dart';
 import 'screens/feed/post_chat_screen.dart';
@@ -503,7 +502,7 @@ class _SquadAppState extends State<SquadApp> {
           path: '/profile/delete-account',
           builder: (context, state) => const DeleteAccountScreen(),
         ),
-        GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
+        // Old /chat route removed - use /post-chat/:postId or future /matched-group-chat/:groupId instead
         GoRoute(
           path: '/create-post',
           builder: (context, state) => const CreatePostScreen(),
