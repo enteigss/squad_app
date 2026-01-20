@@ -10,7 +10,6 @@ import '../../widgets/report_dialog.dart';
 import '../../widgets/block_confirmation_dialog.dart';
 import '../../widgets/profile_avatar.dart';
 import '../../providers/post_provider.dart';
-import '../../providers/chat_provider.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final UserModel? user;
@@ -626,11 +625,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               listen: false,
               // ignore: deprecated_member_use_from_same_package
             ).setCurrentUser(updatedUser);
-            Provider.of<ChatProvider>(
-              context,
-              listen: false,
-              // ignore: deprecated_member_use_from_same_package
-            ).setCurrentUser(updatedUser);
           }
         }
 
@@ -690,11 +684,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             );
 
             Provider.of<PostProvider>(
-              context,
-              listen: false,
-              // ignore: deprecated_member_use_from_same_package
-            ).setCurrentUser(updatedUser);
-            Provider.of<ChatProvider>(
               context,
               listen: false,
               // ignore: deprecated_member_use_from_same_package

@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:facebook_app_events/facebook_app_events.dart';
 
 import 'providers/auth_provider.dart';
-import 'providers/chat_provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/tab_navigation_provider.dart';
 import 'screens/auth/login_screen.dart';
@@ -87,7 +86,6 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => TabNavigationProvider()),
       ],

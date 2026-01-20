@@ -1,31 +1,26 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/chat_message.dart';
 import '../models/post_chat_message.dart';
-import '../models/post_model.dart';
+import 'chat_service.dart';
 
+/// Wrapper for backward compatibility.
+/// Use ChatService directly for new code.
+@Deprecated('Use ChatService instead')
 class PostChatService {
   static final PostChatService _instance = PostChatService._internal();
   factory PostChatService() => _instance;
   PostChatService._internal();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ChatService _chatService = ChatService();
 
-  // Get real-time stream of chat for a post's chat
+  /// Get real-time stream of messages for a post's chat
+  /// Returns PostChatMessage for backward compatibility
   Stream<List<PostChatMessage>> getChatMessages(String postId) {
-    return _firestore
-        .collection('posts')
-        .doc(postId)
-        .collection('chat')
-        .orderBy('timestamp', descending: true)
-        .limit(50)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => PostChatMessage.fromMap(doc.data()))
-          .toList();
-    });
+    return _chatService.getMessages(ChatContext.hangout, postId).map(
+      (messages) => messages.map(_toPostChatMessage).toList(),
+    );
   }
 
-  // Send a text message to the post chat
+  /// Send a text message to the post chat
   Future<PostChatMessage> sendMessage({
     required String postId,
     required String senderId,
@@ -35,330 +30,159 @@ class PostChatService {
     PostChatMessageType type = PostChatMessageType.text,
     String? imageUrl,
   }) async {
-    try {
-      final String messageId = _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc()
-          .id;
-
-      final PostChatMessage message = PostChatMessage(
-        id: messageId,
-        postId: postId,
-        senderId: senderId,
-        senderName: senderName,
-        senderPhotoUrl: senderPhotoUrl,
-        content: content,
-        type: type,
-        timestamp: DateTime.now(),
-        readBy: [senderId], // Sender has already "read" their own message
-        imageUrl: imageUrl,
-      );
-
-      // Save the message
-      await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc(messageId)
-          .set(message.toMap());
-
-      // Update post's last chat activity
-      await _updatePostChatActivity(postId, messageId);
-
-      return message;
-    } catch (e) {
-      throw Exception('Failed to send message: $e');
-    }
+    final message = await _chatService.sendMessage(
+      context: ChatContext.hangout,
+      chatRoomId: postId,
+      senderId: senderId,
+      senderName: senderName,
+      content: content,
+      senderPhotoUrl: senderPhotoUrl,
+      type: _toChatMessageType(type),
+      imageUrl: imageUrl,
+    );
+    return _toPostChatMessage(message);
   }
 
-  // Send system message (user joined, left, etc.)
+  /// Send system message
   Future<PostChatMessage> sendSystemMessage({
     required String postId,
     required String content,
   }) async {
-    try {
-      final String messageId = _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc()
-          .id;
-
-      final PostChatMessage message = PostChatMessage.createSystemMessage(
-        postId: postId,
-        content: content,
-        messageId: messageId,
-      );
-
-      await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc(messageId)
-          .set(message.toMap());
-
-      await _updatePostChatActivity(postId, messageId);
-
-      return message;
-    } catch (e) {
-      throw Exception('Failed to send system message: $e');
-    }
+    final message = await _chatService.sendSystemMessage(
+      context: ChatContext.hangout,
+      chatRoomId: postId,
+      content: content,
+    );
+    return _toPostChatMessage(message);
   }
 
-  // Mark chat as read by a user
-  Future<void> markMessagesAsRead(String postId, String userId) async {
-    try {
-      // Get unread chat for this user
-      final unreadMessages = await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .where('readBy', whereNotIn: [userId])
-          .get();
-
-      // Batch update to mark chat as read
-      final batch = _firestore.batch();
-      for (final doc in unreadMessages.docs) {
-        final readBy = List<String>.from(doc.data()['readBy'] ?? []);
-        if (!readBy.contains(userId)) {
-          readBy.add(userId);
-          batch.update(doc.reference, {'readBy': readBy});
-        }
-      }
-
-      await batch.commit();
-    } catch (e) {
-      throw Exception('Failed to mark chat as read: $e');
-    }
+  /// Mark messages as read by a user
+  Future<void> markMessagesAsRead(String postId, String userId) {
+    return _chatService.markMessagesAsRead(ChatContext.hangout, postId, userId);
   }
 
-  // Get unread message count for a user in a specific post
-  Future<int> getUnreadCount(String postId, String userId) async {
-    try {
-      final unreadMessages = await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .where('readBy', whereNotIn: [userId])
-          .where('senderId', isNotEqualTo: userId) // Don't count own chat
-          .get();
-
-      return unreadMessages.docs.length;
-    } catch (e) {
-      return 0; // Return 0 on error rather than throwing
-    }
+  /// Get unread message count
+  Future<int> getUnreadCount(String postId, String userId) {
+    return _chatService.getUnreadCount(ChatContext.hangout, postId, userId);
   }
 
-  // Edit a message (only by sender)
+  /// Edit a message
   Future<void> editMessage({
     required String postId,
     required String messageId,
     required String newContent,
     required String userId,
-  }) async {
-    try {
-      final messageDoc = await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc(messageId)
-          .get();
-
-      if (!messageDoc.exists) {
-        throw Exception('Message not found');
-      }
-
-      final message = PostChatMessage.fromMap(messageDoc.data()!);
-      if (message.senderId != userId) {
-        throw Exception('You can only edit your own chat');
-      }
-
-      await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc(messageId)
-          .update({
-        'content': newContent,
-        'isEdited': true,
-        'editedAt': Timestamp.fromDate(DateTime.now()),
-      });
-    } catch (e) {
-      throw Exception('Failed to edit message: $e');
-    }
+  }) {
+    return _chatService.editMessage(
+      context: ChatContext.hangout,
+      chatRoomId: postId,
+      messageId: messageId,
+      newContent: newContent,
+      userId: userId,
+    );
   }
 
-  // Delete a message (only by sender)
+  /// Delete a message
   Future<void> deleteMessage({
     required String postId,
     required String messageId,
     required String userId,
-  }) async {
-    try {
-      final messageDoc = await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc(messageId)
-          .get();
-
-      if (!messageDoc.exists) {
-        throw Exception('Message not found');
-      }
-
-      final message = PostChatMessage.fromMap(messageDoc.data()!);
-      if (message.senderId != userId) {
-        throw Exception('You can only delete your own chat');
-      }
-
-      await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .doc(messageId)
-          .delete();
-    } catch (e) {
-      throw Exception('Failed to delete message: $e');
-    }
+  }) {
+    return _chatService.deleteMessage(
+      context: ChatContext.hangout,
+      chatRoomId: postId,
+      messageId: messageId,
+      userId: userId,
+    );
   }
 
-  // Initialize chat when first user joins a post
-  Future<void> initializeChat(String postId) async {
-    try {
-      // Check if chat already has chat
-      final existingMessages = await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('chat')
-          .limit(1)
-          .get();
-
-      if (existingMessages.docs.isEmpty) {
-        // Send welcome system message
-        await sendSystemMessage(
-          postId: postId,
-          content: 'Welcome to the group chat! Use this space to coordinate your plans.',
-        );
-      }
-    } catch (e) {
-      // Don't throw error if chat initialization fails
-      // Chat can still work without the welcome message
-      print('Failed to initialize chat: $e');
-    }
+  /// Initialize chat when first user joins
+  Future<void> initializeChat(String postId) {
+    return _chatService.initializeChat(ChatContext.hangout, postId);
   }
 
-  // Handle user joining post (send system message)
+  /// Handle user joining post
   Future<void> handleUserJoined({
     required String postId,
     required String userName,
-  }) async {
-    try {
-      await sendSystemMessage(
-        postId: postId,
-        content: '$userName joined the group',
-      );
-    } catch (e) {
-      print('Failed to send user joined message: $e');
-    }
+  }) {
+    return _chatService.handleUserJoined(
+      context: ChatContext.hangout,
+      chatRoomId: postId,
+      userName: userName,
+    );
   }
 
-  // Handle user leaving post (send system message)
+  /// Handle user leaving post
   Future<void> handleUserLeft({
     required String postId,
     required String userName,
-  }) async {
-    try {
-      await sendSystemMessage(
-        postId: postId,
-        content: '$userName left the group',
-      );
-    } catch (e) {
-      print('Failed to send user left message: $e');
+  }) {
+    return _chatService.handleUserLeft(
+      context: ChatContext.hangout,
+      chatRoomId: postId,
+      userName: userName,
+    );
+  }
+
+  /// Archive chat when post is completed
+  Future<void> archiveChat(String postId) {
+    return _chatService.archiveChat(ChatContext.hangout, postId);
+  }
+
+  /// Clean up old chats
+  Future<void> cleanupOldChats() {
+    return _chatService.cleanupOldHangoutChats();
+  }
+
+  /// Check if user can access chat
+  Future<bool> canAccessChat(String postId, String userId) {
+    return _chatService.canAccessChat(ChatContext.hangout, postId, userId);
+  }
+
+  /// Check if chat is read-only
+  Future<bool> isChatReadOnly(String postId) {
+    return _chatService.isChatReadOnly(ChatContext.hangout, postId);
+  }
+
+  // Conversion helpers
+
+  PostChatMessage _toPostChatMessage(ChatMessage msg) {
+    return PostChatMessage(
+      id: msg.id,
+      postId: msg.chatRoomId,
+      senderId: msg.senderId,
+      senderName: msg.senderName,
+      senderPhotoUrl: msg.senderPhotoUrl,
+      content: msg.content,
+      type: _toPostChatMessageType(msg.type),
+      timestamp: msg.timestamp,
+      readBy: msg.readBy,
+      imageUrl: msg.imageUrl,
+      isEdited: msg.isEdited,
+      editedAt: msg.editedAt,
+    );
+  }
+
+  PostChatMessageType _toPostChatMessageType(ChatMessageType type) {
+    switch (type) {
+      case ChatMessageType.text:
+        return PostChatMessageType.text;
+      case ChatMessageType.image:
+        return PostChatMessageType.image;
+      case ChatMessageType.system:
+        return PostChatMessageType.system;
     }
   }
 
-  // Archive chat when post is completed (make it read-only)
-  Future<void> archiveChat(String postId) async {
-    try {
-      await sendSystemMessage(
-        postId: postId,
-        content: 'This event has ended. Chat is now read-only.',
-      );
-    } catch (e) {
-      print('Failed to archive chat: $e');
-    }
-  }
-
-  // Clean up old chats (call periodically)
-  Future<void> cleanupOldChats() async {
-    try {
-      final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
-      
-      // Get completed posts older than one week
-      final oldPosts = await _firestore
-          .collection('posts')
-          .where('status', isEqualTo: PostStatus.completed.name)
-          .where('lastChatActivity', isLessThan: Timestamp.fromDate(oneWeekAgo))
-          .get();
-
-      final batch = _firestore.batch();
-      for (final postDoc in oldPosts.docs) {
-        // Delete chat subcollection by deleting all chat
-        final chatMessages = await _firestore
-            .collection('posts')
-            .doc(postDoc.id)
-            .collection('chat')
-            .get();
-
-        for (final messageDoc in chatMessages.docs) {
-          batch.delete(messageDoc.reference);
-        }
-      }
-
-      await batch.commit();
-    } catch (e) {
-      print('Failed to cleanup old chats: $e');
-    }
-  }
-
-  // Private helper to update post's last chat activity
-  Future<void> _updatePostChatActivity(String postId, String messageId) async {
-    try {
-      await _firestore.collection('posts').doc(postId).update({
-        'lastChatMessageId': messageId,
-        'lastChatActivity': Timestamp.fromDate(DateTime.now()),
-      });
-    } catch (e) {
-      // Don't throw error if this fails, as the message was still sent
-      print('Failed to update post chat activity: $e');
-    }
-  }
-
-  // Check if user has permission to access this chat
-  Future<bool> canAccessChat(String postId, String userId) async {
-    try {
-      final postDoc = await _firestore.collection('posts').doc(postId).get();
-      if (!postDoc.exists) return false;
-
-      final post = Post.fromMap(postDoc.data()!);
-      return post.participantIds.contains(userId);
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Check if chat is read-only (post is completed)
-  Future<bool> isChatReadOnly(String postId) async {
-    try {
-      final postDoc = await _firestore.collection('posts').doc(postId).get();
-      if (!postDoc.exists) return true;
-
-      final post = Post.fromMap(postDoc.data()!);
-      return post.status == PostStatus.completed;
-    } catch (e) {
-      return true; // Default to read-only on error
+  ChatMessageType _toChatMessageType(PostChatMessageType type) {
+    switch (type) {
+      case PostChatMessageType.text:
+        return ChatMessageType.text;
+      case PostChatMessageType.image:
+        return ChatMessageType.image;
+      case PostChatMessageType.system:
+        return ChatMessageType.system;
     }
   }
 }

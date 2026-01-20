@@ -9,5 +9,4 @@
 
 export 'user_fixtures.dart';
 export 'post_fixtures.dart';
-export 'message_fixtures.dart';
 export 'block_fixtures.dart';

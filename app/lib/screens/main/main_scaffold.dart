@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../utils/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/post_provider.dart';
-import '../../providers/chat_provider.dart';
 import '../../providers/tab_navigation_provider.dart';
 import '../../models/meetup_feedback.dart';
 import '../../services/feedback_service.dart';
@@ -87,13 +86,6 @@ class _MainScaffoldState extends State<MainScaffold> {
         postProvider.initializeForUser(currentUserId);
         debugPrint(
           'MainScaffold: Initialized PostProvider with Firestore listener',
-        );
-
-        // Initialize ChatProvider with user ID for automatic Firestore sync
-        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-        chatProvider.initializeForUser(currentUserId);
-        debugPrint(
-          'MainScaffold: Initialized ChatProvider with Firestore listener',
         );
       }
     }
