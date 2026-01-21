@@ -11,6 +11,7 @@ import '../../widgets/meetup_outcome_dialog.dart';
 import '../feed/feed_screen.dart';
 import '../plans/plans_screen.dart';
 import '../profile/profile_screen.dart';
+import '../connect/connect_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   final int initialIndex;
@@ -33,6 +34,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     const FeedScreen(),
     const ProfileScreen(),
     const PlansScreen(),
+    const ConnectScreen(),
   ];
 
   @override
@@ -289,6 +291,14 @@ class _MainScaffoldState extends State<MainScaffold> {
                     index: 2,
                     icon: Icons.event_note,
                     label: 'Plans',
+                  ),
+                  // TAB 3: CONNECT
+                  _buildTabItem(
+                    context: context,
+                    tabProvider: tabProvider,
+                    index: 3,
+                    icon: Icons.people,
+                    label: 'Connect',
                   ),
                 ],
               ),

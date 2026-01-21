@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
+import '../models/matching_profile.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/account_deletion_service.dart';
@@ -513,6 +515,78 @@ class AuthProvider with ChangeNotifier {
       } catch (e) {
         debugPrint('⚠️ Failed to refresh current user data: $e');
       }
+    }
+  }
+
+  /// Update the user's matching profile
+  Future<void> updateMatchingProfile(MatchingProfile profile) async {
+    if (_currentUser == null) {
+      throw Exception('No user logged in');
+    }
+
+    try {
+      debugPrint('📝 Updating matching profile for user ${_currentUser!.id}');
+
+      final profileWithTimestamp = MatchingProfile(
+        isActive: profile.isActive,
+        genderPreference: profile.genderPreference,
+        funActivities: profile.funActivities,
+        talkAboutForever: profile.talkAboutForever,
+        activityRatings: profile.activityRatings,
+        updatedAt: DateTime.now(),
+      );
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUser!.id)
+          .update({
+        'matchingProfile': profileWithTimestamp.toMap(),
+      });
+
+      // Update local user model
+      _currentUser = _currentUser!.copyWith(
+        matchingProfile: profileWithTimestamp,
+      );
+      notifyListeners();
+
+      debugPrint('✅ Matching profile updated successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to update matching profile: $e');
+      rethrow;
+    }
+  }
+
+  /// Toggle the matching profile active status
+  Future<void> toggleMatchingActive(bool isActive) async {
+    if (_currentUser == null || _currentUser!.matchingProfile == null) {
+      throw Exception('No matching profile found');
+    }
+
+    try {
+      debugPrint('🔄 Toggling matching active to: $isActive');
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUser!.id)
+          .update({
+        'matchingProfile.isActive': isActive,
+        'matchingProfile.updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // Update local user model
+      final updatedProfile = _currentUser!.matchingProfile!.copyWith(
+        isActive: isActive,
+        updatedAt: DateTime.now(),
+      );
+      _currentUser = _currentUser!.copyWith(
+        matchingProfile: updatedProfile,
+      );
+      notifyListeners();
+
+      debugPrint('✅ Matching active status updated to: $isActive');
+    } catch (e) {
+      debugPrint('❌ Failed to toggle matching active: $e');
+      rethrow;
     }
   }
 

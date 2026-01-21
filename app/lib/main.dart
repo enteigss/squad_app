@@ -10,6 +10,7 @@ import 'package:facebook_app_events/facebook_app_events.dart';
 import 'providers/auth_provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/tab_navigation_provider.dart';
+import 'providers/matching_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/auth/email_verification_screen.dart';
@@ -88,6 +89,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => TabNavigationProvider()),
+        ChangeNotifierProvider(create: (_) => MatchingProvider()),
       ],
       child: const SquadApp(),
     ),

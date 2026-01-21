@@ -27,4 +27,8 @@ class TabNavigationProvider extends ChangeNotifier {
   void navigateToPlans() {
     setSelectedIndex(2);
   }
+
+  void navigateToConnect() {
+    setSelectedIndex(3);
+  }
 }
