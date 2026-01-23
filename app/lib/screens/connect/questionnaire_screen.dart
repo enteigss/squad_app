@@ -24,6 +24,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   late PageController _pageController;
   final TextEditingController _funActivitiesController = TextEditingController();
   final TextEditingController _talkAboutController = TextEditingController();
+  final TextEditingController _freeTimeController = TextEditingController();
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       final matchingProvider = Provider.of<MatchingProvider>(context, listen: false);
       _funActivitiesController.text = matchingProvider.funActivities;
       _talkAboutController.text = matchingProvider.talkAboutForever;
+      _freeTimeController.text = matchingProvider.freeTime;
     });
   }
 
@@ -43,6 +45,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     _pageController.dispose();
     _funActivitiesController.dispose();
     _talkAboutController.dispose();
+    _freeTimeController.dispose();
     super.dispose();
   }
 
@@ -110,6 +113,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     _buildGenderPreferencePage(matchingProvider),
                     _buildFunActivitiesPage(matchingProvider),
                     _buildTalkAboutPage(matchingProvider),
+                    _buildFreeTimePage(matchingProvider),
                     _buildRatingPage(
                       matchingProvider,
                       'deepConversations',
@@ -408,6 +412,59 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             onChanged: (value) => provider.setTalkAboutForever(value),
             decoration: InputDecoration(
               hintText: 'e.g., Technology, travel stories, music, philosophy, sports, entrepreneurship...',
+              hintStyle: TextStyle(color: AppColors.textHint),
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.divider),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.divider),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFreeTimePage(MatchingProvider provider) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'When are you usually free?',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tell us about your typical schedule so we can suggest good times for activities.',
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _freeTimeController,
+            maxLines: 5,
+            maxLength: 500,
+            onChanged: (value) => provider.setFreeTime(value),
+            decoration: InputDecoration(
+              hintText: 'e.g., I\'m usually free on weekday evenings after 6pm, and most of Saturday. Sunday mornings I have practice...',
               hintStyle: TextStyle(color: AppColors.textHint),
               filled: true,
               fillColor: AppColors.surface,

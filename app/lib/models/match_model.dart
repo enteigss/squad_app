@@ -1,11 +1,5 @@
 /// Match status enum representing the lifecycle of a match
-enum MatchStatus {
-  pending,
-  active,
-  completed,
-  expired,
-  declined,
-}
+enum MatchStatus { pending, active, completed, expired, declined }
 
 /// Extension to convert MatchStatus to/from string for Firestore
 extension MatchStatusExtension on MatchStatus {
@@ -45,7 +39,7 @@ extension MatchStatusExtension on MatchStatus {
 /// Model representing a match between users
 ///
 /// A match groups users together based on compatibility and suggests
-/// activities and conversation starters to help them connect.
+/// activities and shared interests to help them connect.
 class MatchModel {
   final String id;
   final String groupId;
@@ -53,7 +47,7 @@ class MatchModel {
   final String reasoning;
   final String potentialDownside;
   final String activitySuggestion;
-  final String conversationStarter;
+  final String sharedInterests;
   final DateTime createdAt;
   final MatchStatus status;
 
@@ -64,7 +58,7 @@ class MatchModel {
     required this.reasoning,
     required this.potentialDownside,
     required this.activitySuggestion,
-    required this.conversationStarter,
+    required this.sharedInterests,
     required this.createdAt,
     this.status = MatchStatus.pending,
   });
@@ -78,9 +72,11 @@ class MatchModel {
       reasoning: map['reasoning'] as String? ?? '',
       potentialDownside: map['potentialDownside'] as String? ?? '',
       activitySuggestion: map['activitySuggestion'] as String? ?? '',
-      conversationStarter: map['conversationStarter'] as String? ?? '',
+      sharedInterests: map['sharedInterests'] as String? ?? '',
       createdAt: _parseDateTime(map['createdAt']),
-      status: MatchStatusExtension.fromString(map['status'] as String? ?? 'pending'),
+      status: MatchStatusExtension.fromString(
+        map['status'] as String? ?? 'pending',
+      ),
     );
   }
 
@@ -93,7 +89,7 @@ class MatchModel {
       'reasoning': reasoning,
       'potentialDownside': potentialDownside,
       'activitySuggestion': activitySuggestion,
-      'conversationStarter': conversationStarter,
+      'sharedInterests': sharedInterests,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'status': status.value,
     };
@@ -107,7 +103,7 @@ class MatchModel {
     String? reasoning,
     String? potentialDownside,
     String? activitySuggestion,
-    String? conversationStarter,
+    String? sharedInterests,
     DateTime? createdAt,
     MatchStatus? status,
   }) {
@@ -118,7 +114,7 @@ class MatchModel {
       reasoning: reasoning ?? this.reasoning,
       potentialDownside: potentialDownside ?? this.potentialDownside,
       activitySuggestion: activitySuggestion ?? this.activitySuggestion,
-      conversationStarter: conversationStarter ?? this.conversationStarter,
+      sharedInterests: sharedInterests ?? this.sharedInterests,
       createdAt: createdAt ?? this.createdAt,
       status: status ?? this.status,
     );

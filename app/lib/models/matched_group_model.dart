@@ -41,7 +41,7 @@ class MatchedGroupModel {
 
   // Suggestions from the match algorithm
   final String? activitySuggestion;
-  final String? conversationStarter;
+  final String? sharedInterests;
 
   MatchedGroupModel({
     required this.id,
@@ -57,7 +57,7 @@ class MatchedGroupModel {
     this.lastMessageTime,
     this.lastMessagePreview,
     this.activitySuggestion,
-    this.conversationStarter,
+    this.sharedInterests,
   });
 
   factory MatchedGroupModel.fromMap(Map<String, dynamic> map) {
@@ -76,7 +76,7 @@ class MatchedGroupModel {
           map['lastMessageTime'] != null ? _parseTimestamp(map['lastMessageTime']) : null,
       lastMessagePreview: map['lastMessagePreview'],
       activitySuggestion: map['activitySuggestion'],
-      conversationStarter: map['conversationStarter'],
+      sharedInterests: map['sharedInterests'],
     );
   }
 
@@ -96,7 +96,7 @@ class MatchedGroupModel {
           lastMessageTime != null ? Timestamp.fromDate(lastMessageTime!) : null,
       'lastMessagePreview': lastMessagePreview,
       'activitySuggestion': activitySuggestion,
-      'conversationStarter': conversationStarter,
+      'sharedInterests': sharedInterests,
     };
   }
 
@@ -114,7 +114,7 @@ class MatchedGroupModel {
     DateTime? lastMessageTime,
     String? lastMessagePreview,
     String? activitySuggestion,
-    String? conversationStarter,
+    String? sharedInterests,
   }) {
     return MatchedGroupModel(
       id: id ?? this.id,
@@ -130,7 +130,7 @@ class MatchedGroupModel {
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
       activitySuggestion: activitySuggestion ?? this.activitySuggestion,
-      conversationStarter: conversationStarter ?? this.conversationStarter,
+      sharedInterests: sharedInterests ?? this.sharedInterests,
     );
   }
 
@@ -167,7 +167,7 @@ class MatchedGroupModel {
     required String matchId,
     required List<String> memberIds,
     required String activitySuggestion,
-    required String conversationStarter,
+    required String sharedInterests,
     String? name,
   }) {
     return MatchedGroupModel(
@@ -177,7 +177,7 @@ class MatchedGroupModel {
       matchId: matchId,
       createdAt: DateTime.now(),
       activitySuggestion: activitySuggestion,
-      conversationStarter: conversationStarter,
+      sharedInterests: sharedInterests,
     );
   }
 

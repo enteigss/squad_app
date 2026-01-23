@@ -5,9 +5,15 @@
   "scripts": {
     "match": "tsx src/index.ts",
     "match:dry": "tsx src/index.ts --dry-run",
+    "match:faf": "tsx src/index.ts --source find_a_friend_users",
+    "match:faf:dry": "tsx src/index.ts --source find_a_friend_users --dry-run",
     "push": "tsx src/index.ts --push",
     "import": "tsx src/import-csv.ts",
     "import:dry": "tsx src/import-csv.ts --dry-run",
+    "migrate:imported": "tsx src/migrate-imported-users.ts",
+    "migrate:imported:dry": "tsx src/migrate-imported-users.ts --dry-run",
+    "delete:matches": "tsx src/delete-all-matches.ts",
+    "delete:matches:dry": "tsx src/delete-all-matches.ts --dry-run",
     "cli": "tsx src/index.ts"
   },
   "dependencies": {

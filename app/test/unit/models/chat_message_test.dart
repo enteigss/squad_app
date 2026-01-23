@@ -355,7 +355,7 @@ void main() {
       test('matchCreatedMessage creates match welcome message', () {
         final message = ChatMessage.matchCreatedMessage(
           chatRoomId: 'group-123',
-          conversationStarter: 'What brings you here today?',
+          sharedInterests: 'video games, hiking, technology',
           messageId: 'match-msg-1',
         );
 
@@ -363,7 +363,7 @@ void main() {
         expect(message.context, ChatContext.matchedGroup);
         expect(message.type, ChatMessageType.system);
         expect(message.content, contains('matched'));
-        expect(message.content, contains('What brings you here today?'));
+        expect(message.content, contains('video games, hiking, technology'));
       });
     });
   });

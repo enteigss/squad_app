@@ -25,7 +25,7 @@ export async function pushMatchesToFirestore(
       reasoning: match.reasoning,
       potentialDownside: match.potentialDownside,
       activitySuggestion: match.activitySuggestion,
-      conversationStarter: match.conversationStarter,
+      sharedInterests: match.sharedInterests,
       createdAt: Date.now(),
       status: 'pending',
     };
@@ -48,10 +48,10 @@ export async function pushMatchesToFirestore(
       lastMessageTime: null,
       lastMessagePreview: null,
       activitySuggestion: match.activitySuggestion,
-      conversationStarter: match.conversationStarter,
+      sharedInterests: match.sharedInterests,
     };
 
-    const groupRef = db.collection('matchedGroups').doc(groupId);
+    const groupRef = db.collection('matched_groups').doc(groupId);
     batch.set(groupRef, matchedGroupDoc);
 
     log.info(`  -> Match: ${match.memberIds.join(' + ')}`);

@@ -532,6 +532,7 @@ class AuthProvider with ChangeNotifier {
         genderPreference: profile.genderPreference,
         funActivities: profile.funActivities,
         talkAboutForever: profile.talkAboutForever,
+        freeTime: profile.freeTime,
         activityRatings: profile.activityRatings,
         updatedAt: DateTime.now(),
       );

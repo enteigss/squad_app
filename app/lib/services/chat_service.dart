@@ -245,10 +245,10 @@ class ChatService {
     }
   }
 
-  /// Initialize a matched group chat with conversation starter
+  /// Initialize a matched group chat with shared interests
   Future<void> initializeMatchedGroupChat(
     String chatRoomId,
-    String conversationStarter,
+    String sharedInterests,
   ) async {
     try {
       final existingMessages = await _chatCollection(
@@ -262,7 +262,7 @@ class ChatService {
 
         final message = ChatMessage.matchCreatedMessage(
           chatRoomId: chatRoomId,
-          conversationStarter: conversationStarter,
+          sharedInterests: sharedInterests,
           messageId: messageId,
         );
 

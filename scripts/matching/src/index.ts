@@ -16,6 +16,7 @@ program
   .option('-p, --push', 'Push matches from JSON file to Firebase')
   .option('-i, --input <file>', 'Input JSON file for --push mode')
   .option('-b, --batch-size <n>', 'Max users per batch', '50')
+  .option('-s, --source <collection>', 'Source collection for users', 'users')
   .allowUnknownOption(false)
   .parse(process.argv);
 
@@ -52,7 +53,9 @@ async function main() {
     }
 
     // ===== MATCH MODE: Generate new matches =====
-    const users = await fetchEligibleUsers();
+    const sourceCollection = opts.source || 'users';
+    log.info(`Using source collection: ${sourceCollection}`);
+    const users = await fetchEligibleUsers(sourceCollection);
     const batchSize = parseInt(opts.batchSize, 10);
 
     if (users.length === 0) {

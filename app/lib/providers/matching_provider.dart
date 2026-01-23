@@ -13,6 +13,7 @@ class MatchingProvider extends ChangeNotifier {
   String? _genderPreference;
   String _funActivities = '';
   String _talkAboutForever = '';
+  String _freeTime = '';
   int _deepConversationsRating = 3;
   int _outdoorsRating = 3;
   int _chillingRating = 3;
@@ -25,12 +26,13 @@ class MatchingProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
   bool get canGoBack => _currentQuestionIndex > 0;
-  bool get isLastQuestion => _currentQuestionIndex == 8;
-  int get totalQuestions => 9;
+  bool get isLastQuestion => _currentQuestionIndex == 9;
+  int get totalQuestions => 10;
 
   String? get genderPreference => _genderPreference;
   String get funActivities => _funActivities;
   String get talkAboutForever => _talkAboutForever;
+  String get freeTime => _freeTime;
   int get deepConversationsRating => _deepConversationsRating;
   int get outdoorsRating => _outdoorsRating;
   int get chillingRating => _chillingRating;
@@ -47,6 +49,8 @@ class MatchingProvider extends ChangeNotifier {
         return _funActivities.trim().isNotEmpty;
       case 2:
         return _talkAboutForever.trim().isNotEmpty;
+      case 3:
+        return _freeTime.trim().isNotEmpty;
       default:
         // Rating questions always have a default value
         return true;
@@ -55,7 +59,7 @@ class MatchingProvider extends ChangeNotifier {
 
   // Navigation methods
   void nextQuestion() {
-    if (_currentQuestionIndex < 8) {
+    if (_currentQuestionIndex < 9) {
       _currentQuestionIndex++;
       notifyListeners();
     }
@@ -69,7 +73,7 @@ class MatchingProvider extends ChangeNotifier {
   }
 
   void goToQuestion(int index) {
-    if (index >= 0 && index <= 8) {
+    if (index >= 0 && index <= 9) {
       _currentQuestionIndex = index;
       notifyListeners();
     }
@@ -80,6 +84,7 @@ class MatchingProvider extends ChangeNotifier {
     _genderPreference = null;
     _funActivities = '';
     _talkAboutForever = '';
+    _freeTime = '';
     _deepConversationsRating = 3;
     _outdoorsRating = 3;
     _chillingRating = 3;
@@ -103,6 +108,11 @@ class MatchingProvider extends ChangeNotifier {
 
   void setTalkAboutForever(String value) {
     _talkAboutForever = value;
+    notifyListeners();
+  }
+
+  void setFreeTime(String value) {
+    _freeTime = value;
     notifyListeners();
   }
 
@@ -137,6 +147,7 @@ class MatchingProvider extends ChangeNotifier {
     _genderPreference = profile.genderPreference;
     _funActivities = profile.funActivities ?? '';
     _talkAboutForever = profile.talkAboutForever ?? '';
+    _freeTime = profile.freeTime ?? '';
     _deepConversationsRating = profile.activityRatings.deepConversations;
     _outdoorsRating = profile.activityRatings.outdoors;
     _chillingRating = profile.activityRatings.chilling;
@@ -154,6 +165,7 @@ class MatchingProvider extends ChangeNotifier {
       genderPreference: _genderPreference,
       funActivities: _funActivities.trim(),
       talkAboutForever: _talkAboutForever.trim(),
+      freeTime: _freeTime.trim(),
       activityRatings: ActivityRatings(
         deepConversations: _deepConversationsRating,
         outdoors: _outdoorsRating,

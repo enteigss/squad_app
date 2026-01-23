@@ -66,6 +66,7 @@ class MatchingProfile {
   final String? genderPreference;
   final String? funActivities;
   final String? talkAboutForever;
+  final String? freeTime; // When the user is usually free
   final ActivityRatings activityRatings;
   final DateTime? updatedAt;
 
@@ -74,6 +75,7 @@ class MatchingProfile {
     this.genderPreference,
     this.funActivities,
     this.talkAboutForever,
+    this.freeTime,
     ActivityRatings? activityRatings,
     this.updatedAt,
   }) : activityRatings = activityRatings ?? ActivityRatings();
@@ -87,6 +89,7 @@ class MatchingProfile {
       genderPreference: map['genderPreference'],
       funActivities: map['funActivities'],
       talkAboutForever: map['talkAboutForever'],
+      freeTime: map['freeTime'],
       activityRatings: ActivityRatings.fromMap(map['activityRatings']),
       updatedAt: _parseDateTime(map['updatedAt']),
     );
@@ -108,6 +111,7 @@ class MatchingProfile {
       'genderPreference': genderPreference,
       'funActivities': funActivities,
       'talkAboutForever': talkAboutForever,
+      'freeTime': freeTime,
       'activityRatings': activityRatings.toMap(),
       'updatedAt': updatedAt?.millisecondsSinceEpoch,
     };
@@ -118,6 +122,7 @@ class MatchingProfile {
     String? genderPreference,
     String? funActivities,
     String? talkAboutForever,
+    String? freeTime,
     ActivityRatings? activityRatings,
     DateTime? updatedAt,
   }) {
@@ -126,6 +131,7 @@ class MatchingProfile {
       genderPreference: genderPreference ?? this.genderPreference,
       funActivities: funActivities ?? this.funActivities,
       talkAboutForever: talkAboutForever ?? this.talkAboutForever,
+      freeTime: freeTime ?? this.freeTime,
       activityRatings: activityRatings ?? this.activityRatings,
       updatedAt: updatedAt ?? this.updatedAt,
     );

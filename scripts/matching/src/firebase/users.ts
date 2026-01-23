@@ -2,14 +2,14 @@ import { getFirestore } from './client.js';
 import { UserProfileSchema, type UserProfile, type UserForMatching, type ActivityRatings } from '../types.js';
 import { log } from '../utils/logger.js';
 
-export async function fetchEligibleUsers(): Promise<UserProfile[]> {
+export async function fetchEligibleUsers(collection: string = 'users'): Promise<UserProfile[]> {
   const db = getFirestore();
 
-  log.info('Fetching users from Firestore...');
+  log.info(`Fetching users from Firestore collection: ${collection}...`);
 
   // Fetch users who have opted into the matching pool
   const snapshot = await db
-    .collection('users')
+    .collection(collection)
     .where('matchingProfile.isActive', '==', true)
     .get();
 
@@ -71,6 +71,7 @@ export function usersForMatching(users: UserProfile[]): UserForMatching[] {
     genderPreference: u.matchingProfile?.genderPreference ?? null,
     funActivities: u.matchingProfile?.funActivities ?? null,
     talkAboutForever: u.matchingProfile?.talkAboutForever ?? null,
+    freeTime: u.matchingProfile?.freeTime ?? null,
     activityRatings: {
       deepConversations: u.matchingProfile?.activityRatings?.deepConversations ?? defaultRatings.deepConversations,
       outdoors: u.matchingProfile?.activityRatings?.outdoors ?? defaultRatings.outdoors,

@@ -207,13 +207,13 @@ class ChatMessage {
   /// Create a "match created" system message (for matched groups)
   static ChatMessage matchCreatedMessage({
     required String chatRoomId,
-    required String conversationStarter,
+    required String sharedInterests,
     String? messageId,
   }) {
     return createSystemMessage(
       chatRoomId: chatRoomId,
       context: ChatContext.matchedGroup,
-      content: 'You\'ve been matched! Here\'s a conversation starter: $conversationStarter',
+      content: 'You\'ve been matched! Here\'s what you have in common: $sharedInterests',
       messageId: messageId,
     );
   }

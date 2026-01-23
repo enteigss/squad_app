@@ -19,6 +19,7 @@ export const MatchingProfileSchema = z.object({
   genderPreference: z.string().nullable().default(null),
   funActivities: z.string().nullable().default(null),
   talkAboutForever: z.string().nullable().default(null),
+  freeTime: z.string().nullable().default(null),
   activityRatings: z.object({
     deepConversations: z.number().min(1).max(5).default(3),
     outdoors: z.number().min(1).max(5).default(3),
@@ -62,6 +63,7 @@ export interface UserForMatching {
   genderPreference: string | null;
   funActivities: string | null;
   talkAboutForever: string | null;
+  freeTime: string | null;
   activityRatings: ActivityRatings;
 }
 
@@ -72,7 +74,7 @@ export const MatchResultSchema = z.object({
   reasoning: z.string().min(1),
   potentialDownside: z.string().min(1),
   activitySuggestion: z.string().min(1),
-  conversationStarter: z.string().min(1),
+  sharedInterests: z.string().min(1),
 });
 
 export type MatchResult = z.infer<typeof MatchResultSchema>;
@@ -104,7 +106,7 @@ export interface MatchDocument {
   reasoning: string;
   potentialDownside: string;
   activitySuggestion: string;
-  conversationStarter: string;
+  sharedInterests: string;
   createdAt: number; // milliseconds since epoch
   status: MatchStatus;
 }
@@ -132,7 +134,7 @@ export interface MatchedGroupDocument {
   lastMessageTime: firestore.Timestamp | null;
   lastMessagePreview: string | null;
   activitySuggestion: string | null;
-  conversationStarter: string | null;
+  sharedInterests: string | null;
 }
 
 // ============ Output File Format ============
