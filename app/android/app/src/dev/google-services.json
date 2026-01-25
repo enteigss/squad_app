@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "645112342207-fskgfb4kdgn3jim8rr8dmg7m4p4r91lg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jordan.linkupbu.dev",
+            "certificate_hash": "f802d0f9f9e4dce139b63f589e0b5c807a5cf992"
+          }
+        },
+        {
           "client_id": "645112342207-ia0ejls9f2speb0094hukcqlu2d6c4qg.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

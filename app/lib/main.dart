@@ -495,6 +495,10 @@ class _SquadAppState extends State<SquadApp> {
           builder: (context, state) => const MainScaffold(initialIndex: 2),
         ),
         GoRoute(
+          path: '/connect',
+          builder: (context, state) => const MainScaffold(initialIndex: 3),
+        ),
+        GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
         ),

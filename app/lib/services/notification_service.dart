@@ -5,7 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../services/navigation_service.dart';
+import '../providers/tab_navigation_provider.dart';
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -390,6 +392,15 @@ class NotificationService {
       return;
     }
 
+    // Don't show foreground notifications for new matches
+    // (user will see the match in the Connect tab)
+    if (notificationType == 'new_match') {
+      if (kDebugMode) {
+        print('🚫 Suppressing foreground notification for new match');
+      }
+      return;
+    }
+
     // Show in-app notification for other types (hangout joins/leaves, new hangouts, etc.)
     if (message.notification != null) {
       _showInAppNotification(message);
@@ -399,8 +410,12 @@ class NotificationService {
   // Handle notification tap navigation
   void _handleNotificationTap(RemoteMessage message) {
     if (kDebugMode) {
-      print('Notification tapped: ${message.messageId}');
-      print('Data: ${message.data}');
+      print('📲 Notification tapped: ${message.messageId}');
+      print('📲 Data keys: ${message.data.keys.toList()}');
+      print('📲 Data values: ${message.data}');
+      print('📲 Notification title: ${message.notification?.title}');
+      print('📲 Notification body: ${message.notification?.body}');
+      print('📲 Type from data: ${message.data['type']}');
     }
 
     _navigateFromNotification(message.data);
@@ -499,6 +514,23 @@ class NotificationService {
         Future.delayed(const Duration(milliseconds: 100), () {
           if (context.mounted) {
             context.push('/post-chat/$postId');
+          }
+        });
+      }
+    } else if (notificationType == 'new_match') {
+      // Navigate to Connect tab for new match notifications
+      if (kDebugMode) {
+        print('🎯 NEW_MATCH DETECTED - Navigating to Connect tab');
+      }
+      // Go to home to ensure MainScaffold is active, then switch tab via provider
+      final context = NavigationService.navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        context.go('/home');
+        // Switch to Connect tab (index 3) after a brief delay
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (context.mounted) {
+            final tabProvider = Provider.of<TabNavigationProvider>(context, listen: false);
+            tabProvider.setSelectedIndex(3); // Connect tab is index 3
           }
         });
       }

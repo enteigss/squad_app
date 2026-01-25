@@ -158,6 +158,45 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Matched groups - from matching algorithm
+    match /matched_groups/{groupId} {
+      // Users can read matched groups they are a member of
+      allow read: if isAuthenticated() &&
+                     request.auth.uid in resource.data.memberIds;
+      // Only backend/admin can create matched groups (via matching script)
+      allow create: if false;
+      // Members can update the group (e.g., chat metadata)
+      allow update: if isAuthenticated() &&
+                       request.auth.uid in resource.data.memberIds;
+      // No deletes allowed
+      allow delete: if false;
+
+      // Chat messages subcollection
+      match /messages/{messageId} {
+        // Members can read messages
+        allow read: if isAuthenticated() &&
+                       request.auth.uid in get(/databases/$(database)/documents/matched_groups/$(groupId)).data.memberIds;
+        // Members can create messages
+        allow create: if isAuthenticated() &&
+                         request.auth.uid in get(/databases/$(database)/documents/matched_groups/$(groupId)).data.memberIds;
+        // Only sender can update their own messages
+        allow update: if isAuthenticated() &&
+                         request.auth.uid == resource.data.senderId;
+        // Only sender can delete their own messages
+        allow delete: if isAuthenticated() &&
+                         request.auth.uid == resource.data.senderId;
+      }
+    }
+
+    // Matches collection - algorithm results
+    match /matches/{matchId} {
+      // Users can read matches they are a member of
+      allow read: if isAuthenticated() &&
+                     request.auth.uid in resource.data.memberIds;
+      // Only backend/admin can create/update/delete matches
+      allow create, update, delete: if false;
+    }
+
     // Test emails
     match /config/{document} {
       allow read: if true;
