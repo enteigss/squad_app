@@ -4,11 +4,14 @@ import 'package:cloud_functions/cloud_functions.dart';
 import '../models/report_model.dart';
 
 class ReportService {
-  static final ReportService _instance = ReportService._internal();
-  factory ReportService() => _instance;
-  ReportService._internal();
+  final FirebaseFunctions _functions;
+  final FirebaseAuth _auth;
 
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  ReportService({
+    FirebaseFunctions? functions,
+    FirebaseAuth? auth,
+  })  : _functions = functions ?? FirebaseFunctions.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
   Future<void> submitReport({
     required String contentType,
@@ -26,7 +29,7 @@ class ReportService {
       debugPrint('🚩 ReportService: Content ID: $contentId');
       debugPrint('🚩 ReportService: Reason: ${reason.displayName}');
 
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user == null) {
         throw Exception('User not authenticated');
       }

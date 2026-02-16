@@ -5,11 +5,14 @@ import '../models/meetup_feedback.dart';
 import '../models/post_model.dart';
 
 class FeedbackService {
-  static final FeedbackService _instance = FeedbackService._internal();
-  factory FeedbackService() => _instance;
-  FeedbackService._internal();
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FeedbackService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance;
   final String _feedbackCollection = 'meetup_feedback';
   final String _pendingPromptsCollection = 'pending_feedback_prompts';
 
@@ -147,7 +150,7 @@ class FeedbackService {
   }) async {
     try {
       // Ensure user is authenticated before proceeding
-      await FirebaseAuth.instance.currentUser?.getIdToken(
+      await _auth.currentUser?.getIdToken(
         true,
       ); // Force token refresh
 
@@ -168,10 +171,10 @@ class FeedbackService {
         'FeedbackService: Feedback document userId: ${feedback.userId}',
       );
       debugPrint(
-        'FeedbackService: Current Firebase user: ${FirebaseAuth.instance.currentUser?.uid}',
+        'FeedbackService: Current Firebase user: ${_auth.currentUser?.uid}',
       );
       debugPrint(
-        'FeedbackService: User authenticated: ${FirebaseAuth.instance.currentUser != null}',
+        'FeedbackService: User authenticated: ${_auth.currentUser != null}',
       );
       debugPrint('FeedbackService: Feedback data: ${feedback.toMap()}');
 

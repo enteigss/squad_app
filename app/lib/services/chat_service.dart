@@ -5,11 +5,11 @@ import '../models/matched_group_model.dart';
 
 /// Generic chat service that works with both hangout posts and matched groups
 class ChatService {
-  static final ChatService _instance = ChatService._internal();
-  factory ChatService() => _instance;
-  ChatService._internal();
+  final FirebaseFirestore _firestore;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  ChatService({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Get the Firestore collection reference for a chat room's messages
   CollectionReference<Map<String, dynamic>> _chatCollection(

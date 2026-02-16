@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'navigation_service.dart';
 
 class DeepLinkService {
-  static final DeepLinkService _instance = DeepLinkService._internal();
-  factory DeepLinkService() => _instance;
-  DeepLinkService._internal();
-
   static const String hangoutScheme = 'com.jordan.linkupbu';
 
-  final AppLinks _appLinks = AppLinks();
+  final AppLinks _appLinks;
+
+  DeepLinkService({
+    AppLinks? appLinks,
+  }) : _appLinks = appLinks ?? AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
 
   // Initialize deep link handling

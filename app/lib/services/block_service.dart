@@ -5,12 +5,14 @@ import '../models/block_model.dart';
 import '../models/user_model.dart';
 
 class BlockService {
-  static final BlockService _instance = BlockService._internal();
-  factory BlockService() => _instance;
-  BlockService._internal();
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  BlockService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
   /// Block a user
   Future<void> blockUser(String targetUserId, {String? reason}) async {

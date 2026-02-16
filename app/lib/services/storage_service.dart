@@ -3,8 +3,14 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 class StorageService {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final ImagePicker _picker = ImagePicker();
+  final FirebaseStorage _storage;
+  final ImagePicker _picker;
+
+  StorageService({
+    FirebaseStorage? storage,
+    ImagePicker? picker,
+  })  : _storage = storage ?? FirebaseStorage.instance,
+        _picker = picker ?? ImagePicker();
 
   Future<String?> uploadProfileImage(String userId, XFile imageFile) async {
     try {

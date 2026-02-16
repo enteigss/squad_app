@@ -4,7 +4,11 @@ import '../models/matched_group_model.dart';
 import '../models/user_model.dart';
 
 class MatchedGroupService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  MatchedGroupService({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Get a stream of matched groups for a user
   Stream<List<MatchedGroupModel>> getMatchedGroupsForUser(String userId) {

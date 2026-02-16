@@ -10,9 +10,20 @@ import '../services/navigation_service.dart';
 import '../providers/tab_navigation_provider.dart';
 
 class NotificationService {
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final FirebaseMessaging _firebaseMessaging;
+  final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions;
+  final FirebaseAuth _auth;
+
+  NotificationService({
+    FirebaseMessaging? firebaseMessaging,
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+    FirebaseAuth? auth,
+  })  : _firebaseMessaging = firebaseMessaging ?? FirebaseMessaging.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _functions = functions ?? FirebaseFunctions.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
   Future<void> requestPermission() async {
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -64,7 +75,7 @@ class NotificationService {
 
   Future<void> _saveTokenToFirebase(String token) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user != null) {
         // Update the user's FCM token in Firestore
         await _firestore.collection('users').doc(user.uid).update({
@@ -103,7 +114,7 @@ class NotificationService {
   // Method to remove FCM token when user signs out
   Future<void> removeToken() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user != null) {
         // Remove the FCM token from Firestore
         await _firestore.collection('users').doc(user.uid).update({
@@ -309,7 +320,7 @@ class NotificationService {
   // Method to update subscribed topics in user's Firestore document
   Future<void> _updateSubscribedTopicsInFirestore(List<String> topics) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user != null) {
         await _firestore.collection('users').doc(user.uid).update({
           'subscribedTopics': topics,
@@ -331,7 +342,7 @@ class NotificationService {
   // Method to get current subscribed topics from Firestore
   Future<List<String>> _getSubscribedTopicsFromFirestore() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user != null) {
         final doc = await _firestore.collection('users').doc(user.uid).get();
         if (doc.exists && doc.data() != null) {
@@ -370,7 +381,7 @@ class NotificationService {
 
     final notificationType = message.data['type'] as String?;
     final authorId = message.data['author_id'] as String?;
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final currentUserId = _auth.currentUser?.uid;
 
     // Don't show notification if current user is the author (for new hangout notifications)
     if (notificationType == 'new_hangout' &&
@@ -650,7 +661,7 @@ class NotificationService {
     bool enabled,
   ) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user == null) {
         if (kDebugMode) {
           print('No user logged in - cannot toggle chat notifications');
@@ -681,7 +692,7 @@ class NotificationService {
   // Get chat notification preference for a specific hangout
   Future<bool> getHangoutChatNotificationPreference(String hangoutId) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user == null) {
         if (kDebugMode) {
           print('No user logged in - returning default notification preference');

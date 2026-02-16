@@ -3,13 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AnalyticsService {
-  static final AnalyticsService _instance = AnalyticsService._internal();
-  factory AnalyticsService() => _instance;
-  AnalyticsService._internal();
-
   FirebaseAnalytics? _analytics;
   FirebaseAnalyticsObserver? _observer;
   bool _isInitialized = false;
+
+  AnalyticsService();
 
   FirebaseAnalytics? get analytics => _analytics;
   FirebaseAnalyticsObserver? get observer => _observer;

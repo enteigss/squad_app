@@ -5,11 +5,11 @@ import '../models/user_model.dart';
 import '../models/chat_message.dart';
 
 class DebugService {
-  static final DebugService _instance = DebugService._internal();
-  factory DebugService() => _instance;
-  DebugService._internal();
+  final FirebaseFirestore _firestore;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  DebugService({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
   final String _collection = 'posts';
   final String _debugAuthorId = 'debug_user_sample';
   final String _chatPostIndex = '1'; // Basketball post for chat messages

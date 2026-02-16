@@ -9,11 +9,11 @@ import 'analytics_service.dart';
 import 'notification_service.dart';
 
 class PostService {
-  static final PostService _instance = PostService._internal();
-  factory PostService() => _instance;
-  PostService._internal();
+  final FirebaseFirestore _firestore;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  PostService({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
   final String _collection = 'posts';
   final ChatService _chatService = ChatService();
   final FirestoreService _firestoreService = FirestoreService();

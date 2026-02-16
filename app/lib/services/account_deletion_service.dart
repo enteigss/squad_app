@@ -5,9 +5,20 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'notification_service.dart';
 
 class AccountDeletionService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
-  final NotificationService _notificationService = NotificationService();
+  final FirebaseAuth _auth;
+  final FirebaseFunctions _functions;
+  final FirebaseCrashlytics _crashlytics;
+  final NotificationService _notificationService;
+
+  AccountDeletionService({
+    FirebaseAuth? auth,
+    FirebaseFunctions? functions,
+    FirebaseCrashlytics? crashlytics,
+    NotificationService? notificationService,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _functions = functions ?? FirebaseFunctions.instance,
+        _crashlytics = crashlytics ?? FirebaseCrashlytics.instance,
+        _notificationService = notificationService ?? NotificationService();
 
   /// Revoke notification tokens and unsubscribe from topics
   Future<void> revokeNotificationTokens(String userId) async {
@@ -49,7 +60,7 @@ class AccountDeletionService {
     } catch (e) {
       debugPrint('❌ Error revoking Apple Sign In token: $e');
       // Don't throw error here as token revocation failure shouldn't block account deletion
-      await FirebaseCrashlytics.instance.recordError(
+      await _crashlytics.recordError(
         e,
         StackTrace.current,
         reason: 'Apple Sign In token revocation failed',
@@ -64,7 +75,7 @@ class AccountDeletionService {
       yield 'Starting account deletion process...';
 
       debugPrint('🚀 Starting complete account deletion for user: $userId');
-      await FirebaseCrashlytics.instance.log('Account deletion started for user: $userId');
+      await _crashlytics.log('Account deletion started for user: $userId');
 
       // Step 1: Revoke Apple Sign In token first (if applicable)
       yield 'Revoking authentication tokens...';
@@ -100,14 +111,14 @@ class AccountDeletionService {
       }
 
       debugPrint('✅ Complete account deletion finished for user: $userId');
-      await FirebaseCrashlytics.instance.log('Account deletion completed successfully for user: $userId');
+      await _crashlytics.log('Account deletion completed successfully for user: $userId');
 
     } catch (e) {
       final errorMessage = 'Account deletion failed: $e';
       yield errorMessage;
 
       debugPrint('❌ Account deletion failed for user $userId: $e');
-      await FirebaseCrashlytics.instance.recordError(
+      await _crashlytics.recordError(
         e,
         StackTrace.current,
         reason: 'Account deletion failed',
