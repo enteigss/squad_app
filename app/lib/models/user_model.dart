@@ -1,0 +1,197 @@
+import 'matching_profile.dart';
+
+class UserModel {
+  final String id;
+  final String email;
+  final String username;
+  final String? displayName;
+  final String? photoUrl;
+  final String? bio;
+  final String? classYear;
+  final String? location;
+  final List<String> interests;
+  final String? gender;
+  final DateTime createdAt;
+  final DateTime? lastSeen;
+  final bool isOnline;
+  final String? groupId;
+  final bool hasCreatedProfile;
+  final String? fcmToken;
+  final List<String> subscribedTopics;
+  final List<String> blockedUserIds;
+  final List<String> blockedByUserIds;
+  final String authProvider; // 'google' or 'apple'
+  final bool isEmailVerified;
+  final String? verifiedEmail; // BU.edu email for Apple users
+  final String? appleUserId;
+  final Map<String, bool> hangoutChatNotifications; // hangoutId -> enabled/disabled
+  final int genderChangeCount; // Number of times gender has been changed
+  final DateTime? genderChangedAt; // Last time gender was changed
+  final MatchingProfile? matchingProfile; // Matching pool profile
+
+  UserModel({
+    required this.id,
+    required this.email,
+    required this.username,
+    this.displayName,
+    this.photoUrl,
+    this.bio,
+    this.classYear,
+    this.location,
+    this.interests = const [],
+    this.gender,
+    required this.createdAt,
+    this.lastSeen,
+    this.isOnline = false,
+    this.groupId,
+    this.hasCreatedProfile = false,
+    this.fcmToken,
+    this.subscribedTopics = const [],
+    this.blockedUserIds = const [],
+    this.blockedByUserIds = const [],
+    this.authProvider = 'google',
+    this.isEmailVerified = true,
+    this.verifiedEmail,
+    this.appleUserId,
+    this.hangoutChatNotifications = const {},
+    this.genderChangeCount = 0,
+    this.genderChangedAt,
+    this.matchingProfile,
+  });
+
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'] ?? '',
+      email: map['email'] ?? '',
+      username: map['username'] ?? '',
+      displayName: map['displayName'],
+      photoUrl: map['photoUrl'],
+      bio: map['bio'],
+      classYear: map['classYear'],
+      location: map['location'],
+      interests: List<String>.from(map['interests'] ?? []),
+      gender: map['gender'],
+      createdAt: _parseDateTime(map['createdAt']) ?? DateTime.now(),
+      lastSeen: _parseDateTime(map['lastSeen']),
+      isOnline: map['isOnline'] ?? false,
+      groupId: map['groupId'],
+      hasCreatedProfile: map['hasCreatedProfile'] ?? false,
+      fcmToken: map['fcmToken'],
+      subscribedTopics: List<String>.from(map['subscribedTopics'] ?? []),
+      blockedUserIds: List<String>.from(map['blockedUserIds'] ?? []),
+      blockedByUserIds: List<String>.from(map['blockedByUserIds'] ?? []),
+      authProvider: map['authProvider'] ?? 'google',
+      isEmailVerified: map['isEmailVerified'] ?? true,
+      verifiedEmail: map['verifiedEmail'],
+      appleUserId: map['appleUserId'],
+      hangoutChatNotifications: Map<String, bool>.from(map['hangoutChatNotifications'] ?? {}),
+      genderChangeCount: map['genderChangeCount'] ?? 0,
+      genderChangedAt: _parseDateTime(map['genderChangedAt']),
+      matchingProfile: map['matchingProfile'] != null
+          ? MatchingProfile.fromMap(map['matchingProfile'])
+          : null,
+    );
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value.runtimeType.toString() == 'Timestamp') {
+      return (value as dynamic).toDate();
+    }
+    return null;
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'email': email,
+      'username': username,
+      'displayName': displayName,
+      'photoUrl': photoUrl,
+      'bio': bio,
+      'classYear': classYear,
+      'location': location,
+      'interests': interests,
+      'gender': gender,
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'lastSeen': lastSeen?.millisecondsSinceEpoch,
+      'isOnline': isOnline,
+      'groupId': groupId,
+      'hasCreatedProfile': hasCreatedProfile,
+      'fcmToken': fcmToken,
+      'subscribedTopics': subscribedTopics,
+      'blockedUserIds': blockedUserIds,
+      'blockedByUserIds': blockedByUserIds,
+      'authProvider': authProvider,
+      'isEmailVerified': isEmailVerified,
+      'verifiedEmail': verifiedEmail,
+      'appleUserId': appleUserId,
+      'hangoutChatNotifications': hangoutChatNotifications,
+      'genderChangeCount': genderChangeCount,
+      'genderChangedAt': genderChangedAt?.millisecondsSinceEpoch,
+      'matchingProfile': matchingProfile?.toMap(),
+    };
+  }
+
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? username,
+    String? displayName,
+    String? photoUrl,
+    String? bio,
+    String? classYear,
+    String? location,
+    List<String>? interests,
+    String? gender,
+    DateTime? createdAt,
+    DateTime? lastSeen,
+    bool? isOnline,
+    String? groupId,
+    bool? hasCreatedProfile,
+    String? fcmToken,
+    List<String>? subscribedTopics,
+    List<String>? blockedUserIds,
+    List<String>? blockedByUserIds,
+    String? authProvider,
+    bool? isEmailVerified,
+    String? verifiedEmail,
+    String? appleUserId,
+    Map<String, bool>? hangoutChatNotifications,
+    int? genderChangeCount,
+    DateTime? genderChangedAt,
+    MatchingProfile? matchingProfile,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      username: username ?? this.username,
+      displayName: displayName ?? this.displayName,
+      photoUrl: photoUrl ?? this.photoUrl,
+      bio: bio ?? this.bio,
+      classYear: classYear ?? this.classYear,
+      location: location ?? this.location,
+      interests: interests ?? this.interests,
+      gender: gender ?? this.gender,
+      createdAt: createdAt ?? this.createdAt,
+      lastSeen: lastSeen ?? this.lastSeen,
+      isOnline: isOnline ?? this.isOnline,
+      groupId: groupId ?? this.groupId,
+      hasCreatedProfile: hasCreatedProfile ?? this.hasCreatedProfile,
+      fcmToken: fcmToken ?? this.fcmToken,
+      subscribedTopics: subscribedTopics ?? this.subscribedTopics,
+      blockedUserIds: blockedUserIds ?? this.blockedUserIds,
+      blockedByUserIds: blockedByUserIds ?? this.blockedByUserIds,
+      authProvider: authProvider ?? this.authProvider,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      verifiedEmail: verifiedEmail ?? this.verifiedEmail,
+      appleUserId: appleUserId ?? this.appleUserId,
+      hangoutChatNotifications: hangoutChatNotifications ?? this.hangoutChatNotifications,
+      genderChangeCount: genderChangeCount ?? this.genderChangeCount,
+      genderChangedAt: genderChangedAt ?? this.genderChangedAt,
+      matchingProfile: matchingProfile ?? this.matchingProfile,
+    );
+  }
+}

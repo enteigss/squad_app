@@ -1,0 +1,53 @@
+You are helping match people into friend groups. Below is a list of people with their profiles.
+
+Hard constraints (never violate these):
+Only match people with others who fit their "looking for" gender preferences (and vice versa—both parties must be compatible)
+If someone specifies a year preference, weight heavily toward that (e.g., "prefers their year" or "doesn't want to be the only freshman with seniors")
+
+Optimization criteria (in rough priority order):
+Shared interests and conversation topics—at least one strong overlap
+Compatible vibe scores—people with similar energy levels (both high-energy or both chill). Compare their ratings on deep conversations, outdoors, chilling, competitive games, meals, nights out.
+Overlapping free time—try to match people whose schedules have some overlap so they can actually meet up
+Location proximity is a plus but not required
+Honor group size preferences when possible, but a well-matched trio beats a mediocre pair
+
+Group formation rules:
+Default to pairs
+Form a trio when: there's an odd person out, OR three people are all highly compatible with each other, OR someone's constraints make pairs impossible
+Maximum group size is 3
+
+For each group, provide:
+The match (names/IDs)
+Why they work together (shared interests, compatible vibes, etc.)
+A potential risk or downside of this match (e.g., conflicting schedules, different energy levels, limited shared interests beyond one area)
+An activity suggestion as a bulleted list with TWO options: (1) one activity based on their shared interests—be as specific as possible; if they don't share a clear interest, suggest something fun based on their vibes and preferences, and (2) always suggest grabbing a meal together at a specific place—prioritize on-campus options like BU dining halls (Marciano, Warren, West) or nearby restaurants (Chipotle, Canes, Panda Express), but off-campus is fine if it makes sense for their locations. Each option MUST include a specific day and time based on when the users' free times overlap—pick a time that works for everyone. Both options can share the same time if appropriate. Example format: "• Play League together on Friday at 7pm\n• Grab dinner at Marciano on Friday at 6pm"
+A conversational description of shared interests—ONLY include interests/activities that ALL members have in common. Write it as a natural sentence, not a list (e.g., "You both enjoy gaming and are into trying new restaurants" not "gaming, restaurants"). Be as specific as possible while maintaining overlap (e.g., if both like "horror games", say "horror games" not just "games"). But if specificity differs, generalize to the common ground (e.g., if one likes "games" and another likes "League of Legends", just say "games"). Do NOT mention anything unique to just one member—this protects privacy by not revealing details someone might not want shared.
+
+IMPORTANT - Write all output text from the second-person perspective ("you") as if speaking directly to the matched users. For example:
+- Instead of "User 1 and User 2 both enjoy gaming" write "You both enjoy gaming"
+- Instead of "They should grab coffee" write "You should grab coffee"
+- Instead of "This group has compatible schedules" write "You have compatible schedules"
+
+If you have to make tradeoffs:
+A smaller well-matched group beats a larger mediocre one
+Flag any matches where you had to compromise and explain why
+
+CRITICAL OUTPUT RULES:
+1. Every match MUST have at least 2 memberIds - NEVER create a match with only 1 person
+2. Users who cannot be matched go in unmatchedUserIds array, NOT in matches with 1 person
+3. Return raw JSON only - no markdown code blocks, no extra text before or after
+
+Return JSON in this exact format:
+{
+  "matches": [
+    {
+      "memberIds": ["id1", "id2"],
+      "reasoning": "Why you were matched (e.g., 'You both love gaming and have similar chill vibes')",
+      "potentialDownside": "Something to be aware of (e.g., 'You might have different schedules')",
+      "activitySuggestion": "• Play League together on Friday at 7pm\n• Grab dinner at Marciano on Friday at 6pm",
+      "sharedInterests": "A conversational sentence (e.g., 'You both enjoy gaming and love trying new food spots')"
+    }
+  ],
+  "unmatchedUserIds": ["id3"]
+}
+Here are the profiles:

@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.healthCheck = exports.deleteUserAccount = exports.validateVerificationCode = exports.sendVerificationEmail = exports.submitReport = exports.chatMessageNotifications = exports.sendHangoutUpdateNotification = exports.sendLeaveNotification = exports.sendJoinNotification = exports.hangoutNotifications = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
+exports.healthCheck = exports.deleteUserAccount = exports.validateVerificationCode = exports.sendVerificationEmail = exports.submitReport = exports.matchNotifications = exports.chatMessageNotifications = exports.sendHangoutUpdateNotification = exports.sendLeaveNotification = exports.sendJoinNotification = exports.hangoutNotifications = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
@@ -49,6 +49,9 @@ Object.defineProperty(exports, "sendHangoutUpdateNotification", { enumerable: tr
 // Chat Notification Functions
 var chat_notifications_1 = require("./chat-notifications");
 Object.defineProperty(exports, "chatMessageNotifications", { enumerable: true, get: function () { return chat_notifications_1.chatMessageNotifications; } });
+// Match Notification Functions
+var match_notifications_1 = require("./match-notifications");
+Object.defineProperty(exports, "matchNotifications", { enumerable: true, get: function () { return match_notifications_1.matchNotifications; } });
 // Report Submission Functions
 var report_submissions_1 = require("./report-submissions");
 Object.defineProperty(exports, "submitReport", { enumerable: true, get: function () { return report_submissions_1.submitReport; } });

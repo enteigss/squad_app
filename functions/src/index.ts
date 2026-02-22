@@ -28,6 +28,9 @@ export {
 // Chat Notification Functions
 export {chatMessageNotifications} from "./chat-notifications";
 
+// Match Notification Functions
+export {matchNotifications} from "./match-notifications";
+
 // Report Submission Functions
 export {submitReport} from "./report-submissions";
 
