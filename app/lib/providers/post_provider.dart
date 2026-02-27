@@ -7,8 +7,17 @@ import '../services/block_service.dart';
 import 'dart:async';
 
 class PostProvider with ChangeNotifier {
-  final PostService _postService = PostService();
-  final BlockService _blockService = BlockService();
+  final PostService _postService;
+  final BlockService _blockService;
+  final FirebaseFirestore _firestore;
+
+  PostProvider({
+    PostService? postService,
+    BlockService? blockService,
+    FirebaseFirestore? firestore,
+  })  : _postService = postService ?? PostService(),
+        _blockService = blockService ?? BlockService(),
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   List<Post> _posts = [];
   List<Post> _allPosts = []; // Includes locked posts
@@ -100,7 +109,7 @@ class PostProvider with ChangeNotifier {
     _userSubscription?.cancel();
 
     // Listen directly to user document in Firestore
-    _userSubscription = FirebaseFirestore.instance
+    _userSubscription = _firestore
         .collection('users')
         .doc(userId)
         .snapshots()

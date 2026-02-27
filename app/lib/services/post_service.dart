@@ -10,16 +10,26 @@ import 'notification_service.dart';
 
 class PostService {
   final FirebaseFirestore _firestore;
+  final String _collection = 'posts';
+  final ChatService _chatService;
+  final FirestoreService _firestoreService;
+  final FeedbackService _feedbackService;
+  final AnalyticsService _analyticsService;
+  final NotificationService _notificationService;
 
   PostService({
     FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
-  final String _collection = 'posts';
-  final ChatService _chatService = ChatService();
-  final FirestoreService _firestoreService = FirestoreService();
-  final FeedbackService _feedbackService = FeedbackService();
-  final AnalyticsService _analyticsService = AnalyticsService();
-  final NotificationService _notificationService = NotificationService();
+    ChatService? chatService,
+    FirestoreService? firestoreService,
+    FeedbackService? feedbackService,
+    AnalyticsService? analyticsService,
+    NotificationService? notificationService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _chatService = chatService ?? ChatService(),
+        _firestoreService = firestoreService ?? FirestoreService(),
+        _feedbackService = feedbackService ?? FeedbackService(),
+        _analyticsService = analyticsService ?? AnalyticsService(),
+        _notificationService = notificationService ?? NotificationService();
 
   // Create a new post
   Future<String> createPost(Post post) async {

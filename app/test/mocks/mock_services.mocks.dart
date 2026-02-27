@@ -1328,12 +1328,12 @@ class MockChatService extends _i1.Mock implements _i23.ChatService {
   @override
   _i4.Future<void> initializeMatchedGroupChat(
     String? chatRoomId,
-    String? conversationStarter,
+    String? sharedInterests,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#initializeMatchedGroupChat, [
               chatRoomId,
-              conversationStarter,
+              sharedInterests,
             ]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
