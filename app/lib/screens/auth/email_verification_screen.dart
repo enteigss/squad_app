@@ -9,7 +9,9 @@ import '../../utils/colors.dart';
 enum VerificationState { initial, emailSent, verifying, verified, error }
 
 class EmailVerificationScreen extends StatefulWidget {
-  const EmailVerificationScreen({super.key});
+  final EmailVerificationService? verificationService;
+
+  const EmailVerificationScreen({super.key, this.verificationService});
 
   @override
   State<EmailVerificationScreen> createState() =>
@@ -23,8 +25,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   final _codeFocusNode = FocusNode();
   final _formKey = GlobalKey<FormState>();
 
-  final EmailVerificationService _verificationService =
-      EmailVerificationService();
+  late final EmailVerificationService _verificationService;
 
   VerificationState _state = VerificationState.initial;
   String? _errorMessage;
@@ -35,6 +36,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   @override
   void initState() {
     super.initState();
+    _verificationService =
+        widget.verificationService ?? EmailVerificationService();
     _checkResendAvailability();
   }
 

@@ -3,10 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EmailVerificationService {
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final FirebaseFunctions _functions;
   static const String _lastSentKey = 'email_verification_last_sent';
 
-  EmailVerificationService();
+  EmailVerificationService({FirebaseFunctions? functions})
+      : _functions = functions ?? FirebaseFunctions.instance;
 
   /// Send verification code to the provided email address
   /// Returns true if successful, throws exception if failed
