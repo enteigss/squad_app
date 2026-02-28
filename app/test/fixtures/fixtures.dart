@@ -10,3 +10,4 @@
 export 'user_fixtures.dart';
 export 'post_fixtures.dart';
 export 'block_fixtures.dart';
+export 'chat_message_fixtures.dart';
