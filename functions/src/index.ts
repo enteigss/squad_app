@@ -40,6 +40,9 @@ export {sendVerificationEmail, validateVerificationCode} from "./email-verificat
 // Account Deletion Functions
 export {deleteUserAccount} from "./account-deletion";
 
+// Survey Import Functions
+export {importSurveyResponse, syncPendingSurveyData} from "./pending-survey";
+
 // Health check endpoint
 export const healthCheck = onRequest((req, res) => {
   res.json({

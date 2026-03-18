@@ -203,6 +203,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Pending matching profiles - Cloud Functions only
+    match /pending_matching_profiles/{email} {
+      allow read, write: if false;
+    }
+
     // Default deny all other paths
     match /{document=**} {
       allow read, write: if false;
