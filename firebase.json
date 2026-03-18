@@ -10,10 +10,17 @@
     "firestore": {
       "port": 8080
     },
+    "functions": {
+      "port": 5001
+    },
     "ui": {
       "enabled": true,
       "port": 4000
-    }
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "singleProjectMode": true
   },
   "functions": [
     {

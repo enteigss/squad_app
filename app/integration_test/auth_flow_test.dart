@@ -1,9 +1,12 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:squad_app/main.dart' as app;
 
@@ -26,6 +29,30 @@ void main() {
         await FirebaseAuth.instance.signOut();
       } catch (e) {
         debugPrint('No user to sign out: $e');
+      }
+    });
+
+    tearDown(() async {
+      // Clean up test user data from Firestore
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await cleanupTestUser(user.uid);
+        // Also clean up any email verification documents
+        try {
+          await FirebaseFirestore.instance
+              .collection('email_verifications')
+              .doc(user.uid)
+              .delete();
+        } catch (e) {
+          debugPrint('⚠️ No email verification doc to clean up: $e');
+        }
+      }
+
+      // Sign out
+      try {
+        await FirebaseAuth.instance.signOut();
+      } catch (e) {
+        debugPrint('⚠️ Failed to sign out in tearDown: $e');
       }
     });
 
@@ -113,6 +140,142 @@ void main() {
           debugPrint('✅ Firestore document verified');
 
           debugPrint('✅ TEST: New user journey completed successfully!');
+        },
+      );
+    });
+
+    group('Email Verification Flow', () {
+      testWidgets(
+        'unverified user completes email verification → profile setup → home',
+        (WidgetTester tester) async {
+          // SETUP: Create user with isEmailVerified: false (simulates Apple Sign In
+          // where BU email was not detected)
+          debugPrint('🧪 TEST: Creating unverified user...');
+          final cred = await signInUnverifiedTestUser(
+            'unverified@gmail.com',
+            'TestPassword123!',
+          );
+          final uid = cred.user!.uid;
+          await FirebaseAuth.instance.signOut();
+          debugPrint('✅ Unverified user created (uid: $uid)');
+
+          // Start the app
+          app.main();
+          await tester.pumpAndSettle(const Duration(seconds: 5));
+
+          // STEP 1: Handle Analytics Consent
+          debugPrint('🧪 TEST: Handling consent...');
+          await handleAnalyticsConsent(tester);
+          await tester.pumpAndSettle(const Duration(seconds: 3));
+
+          // STEP 2: Sign in (triggers auth state change → redirect to email verification)
+          debugPrint('🧪 TEST: Signing in unverified user...');
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: 'unverified@gmail.com',
+            password: 'TestPassword123!',
+          );
+          await tester.pumpAndSettle(const Duration(seconds: 5));
+
+          // STEP 3: Verify on email verification screen
+          debugPrint('🧪 TEST: Verifying email verification screen...');
+          expect(
+            find.text('Verify Your BU Email'),
+            findsOneWidget,
+            reason: 'Should be on email verification screen',
+          );
+          debugPrint('✅ Email verification screen visible');
+
+          // STEP 4: Enter BU email address
+          debugPrint('🧪 TEST: Entering BU email...');
+          final emailField = find.byType(TextFormField).first;
+          await tester.enterText(emailField, 'testuser@bu.edu');
+          await tester.pumpAndSettle();
+          debugPrint('✅ Entered BU email');
+
+          // STEP 5: Tap "Send Verification Code"
+          debugPrint('🧪 TEST: Sending verification code...');
+          final sendButton = find.text('Send Verification Code');
+          expect(
+            sendButton,
+            findsOneWidget,
+            reason: 'Send Verification Code button should be visible',
+          );
+          await tester.tap(sendButton);
+          await tester.pumpAndSettle(const Duration(seconds: 5));
+          debugPrint('✅ Verification code sent');
+
+          // STEP 6: Read the verification code from Firestore
+          // (the Cloud Function stored it there — in emulator mode it skips
+          // the actual email send but still generates and stores the code)
+          debugPrint('🧪 TEST: Reading verification code from Firestore...');
+          final code = await getVerificationCodeFromFirestore(uid);
+          debugPrint('✅ Got verification code: $code');
+
+          // STEP 7: Enter the verification code
+          debugPrint('🧪 TEST: Entering verification code...');
+          final codeField = find.byType(TextFormField).last;
+          await tester.enterText(codeField, code);
+          await tester.pumpAndSettle(const Duration(seconds: 5));
+          debugPrint('✅ Verification code entered');
+
+          // STEP 8: Verify redirected to profile setup
+          // (validateVerificationCode updates isEmailVerified in Firestore,
+          // then AuthProvider.refreshCurrentUser() fires, GoRouter redirects)
+          debugPrint('🧪 TEST: Verifying redirect to profile setup...');
+          await tester.pumpAndSettle(const Duration(seconds: 5));
+          expect(
+            find.text('Complete Your Profile'),
+            findsOneWidget,
+            reason: 'Should be on profile setup after email verification',
+          );
+          debugPrint('✅ Profile setup screen visible');
+
+          // STEP 9: Complete profile setup
+          debugPrint('🧪 TEST: Completing profile setup...');
+          await completeProfileSetup(
+            tester,
+            name: 'Verified User',
+            classYear: 'Junior',
+            dorm: 'Warren Towers',
+            gender: 'Woman',
+            interests: ['Music'],
+          );
+          await tester.pumpAndSettle(const Duration(seconds: 5));
+
+          // STEP 10: Handle welcome popup
+          final letsGoButton = find.text("Let's Go!");
+          if (letsGoButton.evaluate().isNotEmpty) {
+            await tester.tap(letsGoButton);
+            await tester.pumpAndSettle(const Duration(seconds: 3));
+          }
+
+          // STEP 11: Verify on main screen
+          debugPrint('🧪 TEST: Verifying main screen...');
+          expect(
+            find.byType(BottomNavigationBar),
+            findsOneWidget,
+            reason: 'Should be on main screen after completing full flow',
+          );
+
+          // STEP 12: Verify Firestore user document has isEmailVerified: true
+          debugPrint('🧪 TEST: Verifying email verified in Firestore...');
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .get();
+          expect(
+            userDoc.data()?['isEmailVerified'],
+            isTrue,
+            reason: 'User should be email verified in Firestore',
+          );
+          expect(
+            userDoc.data()?['verifiedEmail'],
+            equals('testuser@bu.edu'),
+            reason: 'Verified email should be stored',
+          );
+
+          debugPrint(
+              '✅ TEST: Email verification flow completed successfully!');
         },
       );
     });
@@ -263,8 +426,8 @@ Future<void> setupFirebaseEmulators() async {
   await Firebase.initializeApp();
 
   // Use 10.0.2.2 for Android emulator (maps to host's localhost)
-  // Use 127.0.0.1 for iOS simulator or physical devices on same network
-  const emulatorHost = '10.0.2.2'; // Android emulator host
+  // Use 127.0.0.1 for iOS simulator, desktop, or physical devices on same network
+  final emulatorHost = Platform.isAndroid ? '10.0.2.2' : '127.0.0.1';
 
   // Connect to Firebase Auth Emulator
   try {
@@ -280,6 +443,15 @@ Future<void> setupFirebaseEmulators() async {
     debugPrint('🔧 Connected to Firestore Emulator on $emulatorHost:8080');
   } catch (e) {
     debugPrint('⚠️ Failed to connect to Firestore Emulator: $e');
+  }
+
+  // Connect to Cloud Functions Emulator
+  try {
+    FirebaseFunctions.instance.useFunctionsEmulator(emulatorHost, 5001);
+    debugPrint(
+        '🔧 Connected to Functions Emulator on $emulatorHost:5001');
+  } catch (e) {
+    debugPrint('⚠️ Failed to connect to Functions Emulator: $e');
   }
 }
 
@@ -302,53 +474,27 @@ Future<void> handleAnalyticsConsent(WidgetTester tester) async {
   }
 }
 
-/// Sign in with test credentials via Firebase Auth emulator
-/// Also creates the Firestore user document if it doesn't exist
-///
-/// IMPORTANT: This creates the Firestore document BEFORE signing in to Firebase Auth,
-/// so that when the AuthProvider's auth state listener fires, it can find the user document.
+/// Sign in with test credentials via Firebase Auth emulator.
+/// Creates the Firestore user document immediately after creating the Auth user
+/// so that the AuthProvider's listener can always find the document.
 Future<UserCredential> signInTestUser(String email, String password) async {
   final auth = FirebaseAuth.instance;
   final firestore = FirebaseFirestore.instance;
 
-  // First, check if user already exists in Firebase Auth by trying to sign in
-  UserCredential? existingCred;
-  String? existingUid;
-
+  // Try to sign in first (user may already exist from a previous test)
   try {
-    existingCred = await auth.signInWithEmailAndPassword(
+    final cred = await auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
-    existingUid = existingCred.user?.uid;
-    debugPrint('✅ User already exists in Firebase Auth: $email');
-    // Sign out immediately - we'll sign in again after ensuring Firestore doc exists
-    await auth.signOut();
-  } catch (e) {
-    // User doesn't exist yet - we'll create them
-    debugPrint('ℹ️ User does not exist yet in Firebase Auth: $email');
-  }
+    debugPrint('✅ Signed in existing user: $email');
 
-  // If user doesn't exist, create them first to get the UID
-  if (existingUid == null) {
-    final newCred = await auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    existingUid = newCred.user?.uid;
-    debugPrint('✅ Created new Firebase Auth user: $email (uid: $existingUid)');
-    // Sign out immediately - we'll sign in again after creating Firestore doc
-    await auth.signOut();
-  }
-
-  // Now create/ensure Firestore document exists BEFORE signing in
-  // This ensures the AuthProvider can find the document when the auth state changes
-  if (existingUid != null) {
-    final userDoc = await firestore.collection('users').doc(existingUid).get();
-
+    // Ensure Firestore doc exists
+    final uid = cred.user!.uid;
+    final userDoc = await firestore.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-      await firestore.collection('users').doc(existingUid).set({
-        'id': existingUid,
+      await firestore.collection('users').doc(uid).set({
+        'id': uid,
         'email': email,
         'username': email.split('@')[0],
         'displayName': null,
@@ -359,18 +505,35 @@ Future<UserCredential> signInTestUser(String email, String password) async {
         'authProvider': 'email',
         'isEmailVerified': true,
       });
-      debugPrint('✅ Created Firestore user document for: $email');
-    } else {
-      debugPrint('✅ Firestore user document already exists for: $email');
+      debugPrint('✅ Created missing Firestore doc for existing user: $email');
     }
+
+    return cred;
+  } catch (e) {
+    debugPrint('ℹ️ User does not exist, creating: $email');
   }
 
-  // Now sign in - the AuthProvider's listener will fire and find the Firestore document
-  final cred = await auth.signInWithEmailAndPassword(
+  // User doesn't exist — create Auth user AND Firestore doc immediately
+  // (so the AuthProvider's listener can find the doc when auth state fires)
+  final cred = await auth.createUserWithEmailAndPassword(
     email: email,
     password: password,
   );
-  debugPrint('✅ Final sign-in completed for: $email');
+  final uid = cred.user!.uid;
+
+  await firestore.collection('users').doc(uid).set({
+    'id': uid,
+    'email': email,
+    'username': email.split('@')[0],
+    'displayName': null,
+    'photoUrl': null,
+    'createdAt': FieldValue.serverTimestamp(),
+    'isOnline': true,
+    'hasCreatedProfile': false,
+    'authProvider': 'email',
+    'isEmailVerified': true,
+  });
+  debugPrint('✅ Created new user + Firestore doc: $email (uid: $uid)');
 
   return cred;
 }
@@ -498,18 +661,100 @@ Future<void> verifyUserDocument(String uid) async {
 /// Create a completed user profile in Firestore (for returning user tests)
 Future<void> createCompletedUserProfile(String uid, String email) async {
   await FirebaseFirestore.instance.collection('users').doc(uid).set({
+    'id': uid,
     'email': email,
+    'username': email.split('@')[0],
     'displayName': 'Test Returning User',
     'classYear': 'Junior',
     'location': 'Warren Towers',
     'gender': 'man',
     'interests': ['Sports', 'Music'],
     'bio': 'Test bio',
-    'isProfileComplete': true,
+    'hasCreatedProfile': true,
+    'isEmailVerified': true,
+    'authProvider': 'email',
+    'isOnline': true,
     'createdAt': FieldValue.serverTimestamp(),
-    'updatedAt': FieldValue.serverTimestamp(),
   });
   debugPrint('✅ Created completed user profile for: $email');
+}
+
+/// Sign in a test user with isEmailVerified: false (simulates Apple Sign In).
+/// Creates the Auth user and Firestore doc immediately so the AuthProvider
+/// always finds the document when the auth state listener fires.
+Future<UserCredential> signInUnverifiedTestUser(
+    String email, String password) async {
+  final auth = FirebaseAuth.instance;
+  final firestore = FirebaseFirestore.instance;
+
+  // Try to sign in first (user may already exist)
+  try {
+    final cred = await auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    final uid = cred.user!.uid;
+
+    // Overwrite Firestore doc to ensure isEmailVerified: false
+    await firestore.collection('users').doc(uid).set({
+      'id': uid,
+      'email': email,
+      'username': email.split('@')[0],
+      'displayName': null,
+      'photoUrl': null,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isOnline': true,
+      'hasCreatedProfile': false,
+      'authProvider': 'apple',
+      'isEmailVerified': false,
+    });
+    debugPrint('✅ Signed in existing unverified user: $email');
+    return cred;
+  } catch (e) {
+    debugPrint('ℹ️ User does not exist, creating unverified user: $email');
+  }
+
+  // User doesn't exist — create Auth user AND Firestore doc immediately
+  final cred = await auth.createUserWithEmailAndPassword(
+    email: email,
+    password: password,
+  );
+  final uid = cred.user!.uid;
+
+  await firestore.collection('users').doc(uid).set({
+    'id': uid,
+    'email': email,
+    'username': email.split('@')[0],
+    'displayName': null,
+    'photoUrl': null,
+    'createdAt': FieldValue.serverTimestamp(),
+    'isOnline': true,
+    'hasCreatedProfile': false,
+    'authProvider': 'apple',
+    'isEmailVerified': false,
+  });
+  debugPrint('✅ Created new unverified user + Firestore doc: $email (uid: $uid)');
+
+  return cred;
+}
+
+/// Read the verification code from Firestore (for testing only).
+/// The Cloud Function stores the code in the email_verifications collection.
+Future<String> getVerificationCodeFromFirestore(String uid) async {
+  final doc = await FirebaseFirestore.instance
+      .collection('email_verifications')
+      .doc(uid)
+      .get();
+
+  expect(
+    doc.exists,
+    isTrue,
+    reason: 'Verification document should exist in Firestore after sending code',
+  );
+
+  final code = doc.data()!['code'] as String;
+  debugPrint('🔑 Retrieved verification code from Firestore: $code');
+  return code;
 }
 
 /// Clean up test user from Firestore
