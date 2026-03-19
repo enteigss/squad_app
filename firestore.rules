@@ -160,9 +160,12 @@ service cloud.firestore {
 
     // Matched groups - from matching algorithm
     match /matched_groups/{groupId} {
-      // Users can read matched groups they are a member of
-      allow read: if isAuthenticated() &&
-                     request.auth.uid in resource.data.memberIds;
+      // Single doc read: verify membership
+      allow get: if isAuthenticated() &&
+                    request.auth.uid in resource.data.memberIds;
+      // List queries must use .where('memberIds', arrayContains: uid)
+      allow list: if isAuthenticated() &&
+                     resource.data.memberIds.hasAny([request.auth.uid]);
       // Only backend/admin can create matched groups (via matching script)
       allow create: if false;
       // Members can update the group (e.g., chat metadata)

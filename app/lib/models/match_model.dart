@@ -46,7 +46,6 @@ class MatchModel {
   final List<String> memberIds;
   final String reasoning;
   final String potentialDownside;
-  final String activitySuggestion;
   final String sharedInterests;
   final DateTime createdAt;
   final MatchStatus status;
@@ -57,7 +56,6 @@ class MatchModel {
     required this.memberIds,
     required this.reasoning,
     required this.potentialDownside,
-    required this.activitySuggestion,
     required this.sharedInterests,
     required this.createdAt,
     this.status = MatchStatus.pending,
@@ -71,7 +69,6 @@ class MatchModel {
       memberIds: List<String>.from(map['memberIds'] ?? []),
       reasoning: map['reasoning'] as String? ?? '',
       potentialDownside: map['potentialDownside'] as String? ?? '',
-      activitySuggestion: map['activitySuggestion'] as String? ?? '',
       sharedInterests: map['sharedInterests'] as String? ?? '',
       createdAt: _parseDateTime(map['createdAt']),
       status: MatchStatusExtension.fromString(
@@ -88,7 +85,6 @@ class MatchModel {
       'memberIds': memberIds,
       'reasoning': reasoning,
       'potentialDownside': potentialDownside,
-      'activitySuggestion': activitySuggestion,
       'sharedInterests': sharedInterests,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'status': status.value,
@@ -102,7 +98,6 @@ class MatchModel {
     List<String>? memberIds,
     String? reasoning,
     String? potentialDownside,
-    String? activitySuggestion,
     String? sharedInterests,
     DateTime? createdAt,
     MatchStatus? status,
@@ -113,7 +108,6 @@ class MatchModel {
       memberIds: memberIds ?? this.memberIds,
       reasoning: reasoning ?? this.reasoning,
       potentialDownside: potentialDownside ?? this.potentialDownside,
-      activitySuggestion: activitySuggestion ?? this.activitySuggestion,
       sharedInterests: sharedInterests ?? this.sharedInterests,
       createdAt: createdAt ?? this.createdAt,
       status: status ?? this.status,

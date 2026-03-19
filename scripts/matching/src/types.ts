@@ -73,7 +73,6 @@ export const MatchResultSchema = z.object({
   memberIds: z.array(z.string()).min(2),
   reasoning: z.string().min(1),
   potentialDownside: z.string().min(1),
-  activitySuggestion: z.string().min(1),
   sharedInterests: z.string().min(1),
 });
 
@@ -105,7 +104,6 @@ export interface MatchDocument {
   memberIds: string[];
   reasoning: string;
   potentialDownside: string;
-  activitySuggestion: string;
   sharedInterests: string;
   createdAt: number; // milliseconds since epoch
   status: MatchStatus;
@@ -133,7 +131,6 @@ export interface MatchedGroupDocument {
   lastMessageId: string | null;
   lastMessageTime: firestore.Timestamp | null;
   lastMessagePreview: string | null;
-  activitySuggestion: string | null;
   sharedInterests: string | null;
 }
 

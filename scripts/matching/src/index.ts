@@ -117,7 +117,6 @@ async function main() {
     for (const match of result.matches) {
       log.info(`  ${match.memberIds.join(' + ')}`);
       log.dim(`    Why: ${match.reasoning}`);
-      log.dim(`    Activity: ${match.activitySuggestion}`);
     }
 
     if (outputFile.unmatchedUserIds.length > 0) {

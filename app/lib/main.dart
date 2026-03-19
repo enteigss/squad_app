@@ -42,6 +42,7 @@ void main() async {
     debugPrint('🔥 Initializing Firebase...');
     await Firebase.initializeApp();
     debugPrint('✅ Firebase initialized successfully');
+    debugPrint('🔥 Firebase project: ${Firebase.app().options.projectId}');
 
     // Initialize Facebook App Events for ad attribution (release mode only)
     if (kReleaseMode) {

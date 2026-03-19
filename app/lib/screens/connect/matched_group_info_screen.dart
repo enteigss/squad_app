@@ -83,15 +83,7 @@ class _MatchedGroupInfoScreenState extends State<MatchedGroupInfoScreen> {
                   _buildHeader(),
                   // Members section
                   _buildMembersSection(),
-                  // Suggestion cards
-                  if (widget.group.activitySuggestion != null)
-                    _buildSuggestionCard(
-                      icon: Icons.local_activity_outlined,
-                      title: 'Activity Suggestion',
-                      description: 'Based on your schedules and shared interests. Feel free to do something else!',
-                      content: widget.group.activitySuggestion!,
-                      color: AppColors.success,
-                    ),
+                  // Shared interests card
                   if (widget.group.sharedInterests != null)
                     _buildSuggestionCard(
                       icon: Icons.link,

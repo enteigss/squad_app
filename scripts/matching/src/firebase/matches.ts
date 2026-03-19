@@ -24,7 +24,6 @@ export async function pushMatchesToFirestore(
       memberIds: match.memberIds,
       reasoning: match.reasoning,
       potentialDownside: match.potentialDownside,
-      activitySuggestion: match.activitySuggestion,
       sharedInterests: match.sharedInterests,
       createdAt: Date.now(),
       status: 'pending',
@@ -47,7 +46,6 @@ export async function pushMatchesToFirestore(
       lastMessageId: null,
       lastMessageTime: null,
       lastMessagePreview: null,
-      activitySuggestion: match.activitySuggestion,
       sharedInterests: match.sharedInterests,
     };
 

@@ -11,7 +11,6 @@ interface MatchedGroup {
   memberIds: string[];
   matchId?: string;
   sharedInterests?: string;
-  activitySuggestion?: string;
   createdAt: admin.firestore.Timestamp;
   status: string;
 }

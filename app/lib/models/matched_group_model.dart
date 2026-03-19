@@ -39,8 +39,7 @@ class MatchedGroupModel {
   final DateTime? lastMessageTime;
   final String? lastMessagePreview;
 
-  // Suggestions from the match algorithm
-  final String? activitySuggestion;
+  // Shared interests from the match algorithm
   final String? sharedInterests;
 
   MatchedGroupModel({
@@ -56,7 +55,6 @@ class MatchedGroupModel {
     this.lastMessageId,
     this.lastMessageTime,
     this.lastMessagePreview,
-    this.activitySuggestion,
     this.sharedInterests,
   });
 
@@ -75,7 +73,6 @@ class MatchedGroupModel {
       lastMessageTime:
           map['lastMessageTime'] != null ? _parseTimestamp(map['lastMessageTime']) : null,
       lastMessagePreview: map['lastMessagePreview'],
-      activitySuggestion: map['activitySuggestion'],
       sharedInterests: map['sharedInterests'],
     );
   }
@@ -95,7 +92,6 @@ class MatchedGroupModel {
       'lastMessageTime':
           lastMessageTime != null ? Timestamp.fromDate(lastMessageTime!) : null,
       'lastMessagePreview': lastMessagePreview,
-      'activitySuggestion': activitySuggestion,
       'sharedInterests': sharedInterests,
     };
   }
@@ -113,7 +109,6 @@ class MatchedGroupModel {
     String? lastMessageId,
     DateTime? lastMessageTime,
     String? lastMessagePreview,
-    String? activitySuggestion,
     String? sharedInterests,
   }) {
     return MatchedGroupModel(
@@ -129,7 +124,6 @@ class MatchedGroupModel {
       lastMessageId: lastMessageId ?? this.lastMessageId,
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
-      activitySuggestion: activitySuggestion ?? this.activitySuggestion,
       sharedInterests: sharedInterests ?? this.sharedInterests,
     );
   }
@@ -166,7 +160,6 @@ class MatchedGroupModel {
     required String id,
     required String matchId,
     required List<String> memberIds,
-    required String activitySuggestion,
     required String sharedInterests,
     String? name,
   }) {
@@ -176,7 +169,6 @@ class MatchedGroupModel {
       memberIds: memberIds,
       matchId: matchId,
       createdAt: DateTime.now(),
-      activitySuggestion: activitySuggestion,
       sharedInterests: sharedInterests,
     );
   }

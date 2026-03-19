@@ -20,7 +20,6 @@ For each group, provide:
 The match (names/IDs)
 Why they work together (shared interests, compatible vibes, etc.)
 A potential risk or downside of this match (e.g., conflicting schedules, different energy levels, limited shared interests beyond one area)
-An activity suggestion as a bulleted list with TWO options: (1) one activity based on their shared interests—be as specific as possible; if they don't share a clear interest, suggest something fun based on their vibes and preferences, and (2) always suggest grabbing a meal together at a specific place—prioritize on-campus options like BU dining halls (Marciano, Warren, West) or nearby restaurants (Chipotle, Canes, Panda Express), but off-campus is fine if it makes sense for their locations. Each option MUST include a specific day and time based on when the users' free times overlap—pick a time that works for everyone. Both options can share the same time if appropriate. Example format: "• Play League together on Friday at 7pm\n• Grab dinner at Marciano on Friday at 6pm"
 A conversational description of shared interests—ONLY include interests/activities that ALL members have in common. Write it as a natural sentence, not a list (e.g., "You both enjoy gaming and are into trying new restaurants" not "gaming, restaurants"). Be as specific as possible while maintaining overlap (e.g., if both like "horror games", say "horror games" not just "games"). But if specificity differs, generalize to the common ground (e.g., if one likes "games" and another likes "League of Legends", just say "games"). Do NOT mention anything unique to just one member—this protects privacy by not revealing details someone might not want shared.
 
 IMPORTANT - Write all output text from the second-person perspective ("you") as if speaking directly to the matched users. For example:
@@ -44,7 +43,6 @@ Return JSON in this exact format:
       "memberIds": ["id1", "id2"],
       "reasoning": "Why you were matched (e.g., 'You both love gaming and have similar chill vibes')",
       "potentialDownside": "Something to be aware of (e.g., 'You might have different schedules')",
-      "activitySuggestion": "• Play League together on Friday at 7pm\n• Grab dinner at Marciano on Friday at 6pm",
       "sharedInterests": "A conversational sentence (e.g., 'You both enjoy gaming and love trying new food spots')"
     }
   ],

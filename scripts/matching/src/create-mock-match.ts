@@ -53,7 +53,6 @@ async function createMockMatch() {
     lastMessageId: null,
     lastMessageTime: null,
     lastMessagePreview: null,
-    activitySuggestion: 'Try grabbing coffee at the campus cafe and discussing your shared interest in technology!',
     sharedInterests: 'technology, video games, trying new restaurants',
   };
 
