@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:squad_app/providers/auth_provider.dart';
 import 'package:squad_app/providers/post_provider.dart';
+import 'package:squad_app/providers/tab_navigation_provider.dart';
 
 /// Extension on WidgetTester to pump the app with all necessary providers
 ///
@@ -25,6 +26,7 @@ extension PumpApp on WidgetTester {
     Widget widget, {
     AuthProvider? authProvider,
     PostProvider? postProvider,
+    TabNavigationProvider? tabNavigationProvider,
     ThemeData? theme,
     List<NavigatorObserver>? navigatorObservers,
   }) async {
@@ -39,6 +41,13 @@ extension PumpApp on WidgetTester {
     if (postProvider != null) {
       providers.add(
         ChangeNotifierProvider<PostProvider>.value(value: postProvider),
+      );
+    }
+
+    if (tabNavigationProvider != null) {
+      providers.add(
+        ChangeNotifierProvider<TabNavigationProvider>.value(
+            value: tabNavigationProvider),
       );
     }
 

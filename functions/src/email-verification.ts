@@ -145,7 +145,11 @@ LinkUp BU - Boston University
       html: emailHTML,
     };
 
-    await transporter.sendMail(mailOptions);
+    if (process.env.FUNCTIONS_EMULATOR) {
+      logger.info("Emulator mode: skipping actual email send", {userId, email: emailLower, code});
+    } else {
+      await transporter.sendMail(mailOptions);
+    }
 
     logger.info("Verification email sent successfully", {userId, email: emailLower});
 

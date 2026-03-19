@@ -9,9 +9,10 @@ import '../services/account_deletion_service.dart';
 import '../services/storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
-  final AuthService _authService = AuthService();
-  final AccountDeletionService _deletionService = AccountDeletionService();
-  final StorageService _storageService = StorageService();
+  final AuthService _authService;
+  final AccountDeletionService _deletionService;
+  final StorageService _storageService;
+  final NotificationService _notificationService;
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -30,7 +31,15 @@ class AuthProvider with ChangeNotifier {
     return authenticated;
   }
 
-  AuthProvider() {
+  AuthProvider({
+    AuthService? authService,
+    AccountDeletionService? deletionService,
+    StorageService? storageService,
+    NotificationService? notificationService,
+  })  : _authService = authService ?? AuthService(),
+        _deletionService = deletionService ?? AccountDeletionService(),
+        _storageService = storageService ?? StorageService(),
+        _notificationService = notificationService ?? NotificationService() {
     _initializeAuth();
   }
 
@@ -59,7 +68,7 @@ class AuthProvider with ChangeNotifier {
             debugPrint(
               '🔔 Requesting notification permissions for returning user...',
             );
-            final notificationService = NotificationService();
+            final notificationService = _notificationService;
             await notificationService.requestPermission();
             debugPrint(
               '✅ Notification permissions requested successfully for returning user',
@@ -150,7 +159,7 @@ class AuthProvider with ChangeNotifier {
       // Request notification permissions and get FCM token
       try {
         debugPrint('🔔 Requesting notification permissions...');
-        final notificationService = NotificationService();
+        final notificationService = _notificationService;
         await notificationService.requestPermission();
         debugPrint('✅ Notification permissions requested successfully');
 
@@ -235,7 +244,7 @@ class AuthProvider with ChangeNotifier {
       // Request notification permissions and get FCM token
       try {
         debugPrint('🔔 Requesting notification permissions for Apple user...');
-        final notificationService = NotificationService();
+        final notificationService = _notificationService;
         await notificationService.requestPermission();
         debugPrint(
           '✅ Notification permissions requested successfully for Apple user',
@@ -323,7 +332,7 @@ class AuthProvider with ChangeNotifier {
       // Request notification permissions and get FCM token
       try {
         debugPrint('🔔 Requesting notification permissions...');
-        final notificationService = NotificationService();
+        final notificationService = _notificationService;
         await notificationService.requestPermission();
         debugPrint('✅ Notification permissions requested successfully');
 
@@ -370,7 +379,7 @@ class AuthProvider with ChangeNotifier {
       // Remove FCM token before signing out
       try {
         debugPrint('🔔 Removing FCM token before sign out...');
-        final notificationService = NotificationService();
+        final notificationService = _notificationService;
         await notificationService.removeToken();
         debugPrint('✅ FCM token removed successfully');
       } catch (e) {
@@ -465,7 +474,7 @@ class AuthProvider with ChangeNotifier {
           debugPrint(
             '🔔 Gender changed from $previousGender to $gender, updating notification topics...',
           );
-          final notificationService = NotificationService();
+          final notificationService = _notificationService;
 
           // Unsubscribe from all hangout topics first
           await notificationService.unsubscribeFromTopics([

@@ -8,11 +8,9 @@ class BlockService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
-  BlockService({
-    FirebaseFirestore? firestore,
-    FirebaseAuth? auth,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  BlockService({FirebaseFirestore? firestore, FirebaseAuth? auth})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   /// Block a user
   Future<void> blockUser(String targetUserId, {String? reason}) async {

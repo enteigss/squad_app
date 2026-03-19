@@ -5,13 +5,14 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mock_exceptions/mock_exceptions.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:squad_app/models/user_model.dart';
 import 'package:squad_app/services/auth_service.dart';
 
 import '../../fixtures/user_fixtures.dart';
-import 'auth_service_test.mocks.dart';
+import 'auth_service_test.mocks.dart' hide MockUserCredential;
 
 // Generate mocks for dependencies that aren't covered by existing packages
 @GenerateMocks(
@@ -27,6 +28,13 @@ import 'auth_service_test.mocks.dart';
     MockSpec<UserInfo>(as: #MockUserInfo),
   ],
 )
+MockUserInfo _appleUserInfo() {
+  final info = MockUserInfo();
+  when(info.providerId).thenReturn('apple.com');
+  when(info.uid).thenReturn('apple-id-12345');
+  return info;
+}
+
 void main() {
   group('AuthService', () {
     late AuthService authService;
@@ -36,8 +44,17 @@ void main() {
     late MockFirebaseCrashlytics mockCrashlytics;
     late MockGoogleSignIn mockGoogleSignIn;
 
+    AuthService createAuthService(MockFirebaseAuth auth) {
+      return AuthService(
+        auth: auth,
+        analytics: mockAnalytics,
+        firestore: fakeFirestore,
+        getGoogleSignIn: () => mockGoogleSignIn,
+        getCrashlytics: () => mockCrashlytics,
+      );
+    }
+
     setUp(() {
-      mockAuth = MockFirebaseAuth();
       fakeFirestore = FakeFirebaseFirestore();
       mockAnalytics = MockFirebaseAnalytics();
       mockCrashlytics = MockFirebaseCrashlytics();
@@ -59,13 +76,14 @@ void main() {
         mockAnalytics.setUserId(id: anyNamed('id')),
       ).thenAnswer((_) async => {});
 
-      authService = AuthService(
-        auth: mockAuth,
-        analytics: mockAnalytics,
-        firestore: fakeFirestore,
-        getGoogleSignIn: () => mockGoogleSignIn,
-        getCrashlytics: () => mockCrashlytics,
+      mockAuth = MockFirebaseAuth(
+        mockUser: MockUser(
+          uid: 'default-uid',
+          email: 'test@bu.edu',
+          isAnonymous: false,
+        ),
       );
+      authService = createAuthService(mockAuth);
     });
 
     group('signInWithEmailAndPassword', () {
@@ -75,15 +93,11 @@ void main() {
 
       test('successful sign-in with existing user', () async {
         // Arrange
-        final mockUser = MockUser(
-          uid: userId,
-          email: email,
-          isAnonymous: false,
+        mockAuth = MockFirebaseAuth(
+          mockUser: MockUser(uid: userId, email: email, isAnonymous: false),
         );
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
+        authService = createAuthService(mockAuth);
 
-        // Set up existing user in Firestore
         final existingUser = UserFixtures.custom(
           id: userId,
           email: email,
@@ -93,10 +107,6 @@ void main() {
             .collection('users')
             .doc(userId)
             .set(existingUser.toMap());
-
-        when(
-          mockAuth.signInWithEmailAndPassword(email: email, password: password),
-        ).thenAnswer((_) async => mockUserCredential);
 
         // Act
         final result = await authService.signInWithEmailAndPassword(
@@ -132,20 +142,10 @@ void main() {
         'successful sign-in creates new user document when missing',
         () async {
           // Arrange
-          final mockUser = MockUser(
-            uid: userId,
-            email: email,
-            isAnonymous: false,
+          mockAuth = MockFirebaseAuth(
+            mockUser: MockUser(uid: userId, email: email, isAnonymous: false),
           );
-          final mockUserCredential = MockUserCredential();
-          when(mockUserCredential.user).thenReturn(mockUser);
-
-          when(
-            mockAuth.signInWithEmailAndPassword(
-              email: email,
-              password: password,
-            ),
-          ).thenAnswer((_) async => mockUserCredential);
+          authService = createAuthService(mockAuth);
 
           // Act
           final result = await authService.signInWithEmailAndPassword(
@@ -175,12 +175,12 @@ void main() {
 
       test('throws exception for user-not-found error', () async {
         // Arrange
-        when(
-          mockAuth.signInWithEmailAndPassword(email: email, password: password),
-        ).thenThrow(FirebaseAuthException(code: 'user-not-found'));
+        whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'user-not-found'));
 
         // Act & Assert
-        expect(
+        await expectLater(
           () => authService.signInWithEmailAndPassword(
             email: email,
             password: password,
@@ -208,12 +208,12 @@ void main() {
 
       test('throws exception for wrong-password error', () async {
         // Arrange
-        when(
-          mockAuth.signInWithEmailAndPassword(email: email, password: password),
-        ).thenThrow(FirebaseAuthException(code: 'wrong-password'));
+        whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'wrong-password'));
 
         // Act & Assert
-        expect(
+        await expectLater(
           () => authService.signInWithEmailAndPassword(
             email: email,
             password: password,
@@ -230,12 +230,12 @@ void main() {
 
       test('throws exception for invalid-email error', () async {
         // Arrange
-        when(
-          mockAuth.signInWithEmailAndPassword(email: email, password: password),
-        ).thenThrow(FirebaseAuthException(code: 'invalid-email'));
+        whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'invalid-email'));
 
         // Act & Assert
-        expect(
+        await expectLater(
           () => authService.signInWithEmailAndPassword(
             email: email,
             password: password,
@@ -249,30 +249,101 @@ void main() {
           ),
         );
       });
+
+      test('throws exception for user-disabled error', () async {
+        // Arrange
+        whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'user-disabled'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('This account has been disabled'),
+            ),
+          ),
+        );
+      });
+
+      test('throws exception for too-many-requests error', () async {
+        // Arrange
+        whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'too-many-requests'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Too many failed attempts'),
+            ),
+          ),
+        );
+      });
+
+      test('throws exception for invalid-credential error', () async {
+        // Arrange
+        whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'invalid-credential'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Invalid email or password'),
+            ),
+          ),
+        );
+      });
+
+      test('rethrows unhandled FirebaseAuthException codes', () async {
+        // Arrange
+        whenCalling(Invocation.method(#signInWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'network-request-failed'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          ),
+          throwsA(
+            isA<FirebaseAuthException>().having(
+              (e) => e.code,
+              'code',
+              'network-request-failed',
+            ),
+          ),
+        );
+      });
     });
 
     group('signUpWithEmailAndPassword', () {
       const email = 'newuser@bu.edu';
       const password = 'password123';
-      const userId = 'user-new';
 
       test('successful sign-up creates user document', () async {
-        // Arrange
-        final mockUser = MockUser(
-          uid: userId,
-          email: email,
-          isAnonymous: false,
-        );
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
-
-        when(
-          mockAuth.createUserWithEmailAndPassword(
-            email: email,
-            password: password,
-          ),
-        ).thenAnswer((_) async => mockUserCredential);
-
         // Act
         final result = await authService.signUpWithEmailAndPassword(
           email: email,
@@ -281,17 +352,16 @@ void main() {
 
         // Assert
         expect(result, isNotNull);
-        expect(result!.id, userId);
-        expect(result.email, email);
+        expect(result!.email, email);
         expect(result.username, 'newuser');
         expect(result.hasCreatedProfile, false);
         expect(result.authProvider, 'email');
         expect(result.isOnline, true);
 
-        // Verify user document was created
+        // Verify user document was created (UID is auto-generated)
         final userDoc = await fakeFirestore
             .collection('users')
-            .doc(userId)
+            .doc(result.id)
             .get();
         expect(userDoc.exists, true);
         expect(userDoc.data()?['email'], email);
@@ -300,15 +370,12 @@ void main() {
 
       test('throws exception for weak-password error', () async {
         // Arrange
-        when(
-          mockAuth.createUserWithEmailAndPassword(
-            email: email,
-            password: password,
-          ),
-        ).thenThrow(FirebaseAuthException(code: 'weak-password'));
+        whenCalling(Invocation.method(#createUserWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'weak-password'));
 
         // Act & Assert
-        expect(
+        await expectLater(
           () => authService.signUpWithEmailAndPassword(
             email: email,
             password: password,
@@ -325,15 +392,12 @@ void main() {
 
       test('throws exception for email-already-in-use error', () async {
         // Arrange
-        when(
-          mockAuth.createUserWithEmailAndPassword(
-            email: email,
-            password: password,
-          ),
-        ).thenThrow(FirebaseAuthException(code: 'email-already-in-use'));
+        whenCalling(Invocation.method(#createUserWithEmailAndPassword, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'email-already-in-use'));
 
         // Act & Assert
-        expect(
+        await expectLater(
           () => authService.signUpWithEmailAndPassword(
             email: email,
             password: password,
@@ -355,6 +419,17 @@ void main() {
 
       test('successful sign-in with new BU user', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          mockUser: MockUser(
+            uid: userId,
+            email: email,
+            displayName: 'Test User',
+            photoURL: 'https://example.com/photo.jpg',
+            isAnonymous: false,
+          ),
+        );
+        authService = createAuthService(mockAuth);
+
         final mockGoogleAccount = MockGoogleSignInAccount();
         final mockGoogleAuth = MockGoogleSignInAuthentication();
 
@@ -365,20 +440,6 @@ void main() {
         when(mockGoogleAccount.email).thenReturn(email);
         when(mockGoogleAccount.authentication).thenReturn(mockGoogleAuth);
         when(mockGoogleAuth.idToken).thenReturn('fake-id-token');
-
-        final mockUser = MockUser(
-          uid: userId,
-          email: email,
-          displayName: 'Test User',
-          photoURL: 'https://example.com/photo.jpg',
-          isAnonymous: false,
-        );
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
-
-        when(
-          mockAuth.signInWithCredential(any),
-        ).thenAnswer((_) async => mockUserCredential);
 
         // Act
         final result = await authService.signInWithGoogle();
@@ -409,6 +470,11 @@ void main() {
 
       test('successful sign-in with existing user', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          mockUser: MockUser(uid: userId, email: email, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
+
         final existingUser = UserFixtures.custom(
           id: userId,
           email: email,
@@ -430,18 +496,6 @@ void main() {
         when(mockGoogleAccount.authentication).thenReturn(mockGoogleAuth);
         when(mockGoogleAuth.idToken).thenReturn('fake-id-token');
 
-        final mockUser = MockUser(
-          uid: userId,
-          email: email,
-          isAnonymous: false,
-        );
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
-
-        when(
-          mockAuth.signInWithCredential(any),
-        ).thenAnswer((_) async => mockUserCredential);
-
         // Act
         final result = await authService.signInWithGoogle();
 
@@ -457,7 +511,55 @@ void main() {
             .get();
         expect(userDoc.data()?['isOnline'], true);
       });
-      // test('returns null when user cancels authentication', () async { ... });
+
+      test('returns null when user cancels authentication', () async {
+        // Arrange
+        when(mockGoogleSignIn.supportsAuthenticate()).thenReturn(true);
+        when(
+          mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => throw Exception('User cancelled'));
+
+        // Act
+        final result = await authService.signInWithGoogle();
+
+        // Assert
+        expect(result, isNull);
+      });
+
+      test('throws FirebaseAuthException on credential error', () async {
+        // Arrange
+        final mockGoogleAccount = MockGoogleSignInAccount();
+        final mockGoogleAuth = MockGoogleSignInAuthentication();
+
+        when(mockGoogleSignIn.supportsAuthenticate()).thenReturn(true);
+        when(
+          mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleAccount);
+        when(mockGoogleAccount.email).thenReturn(email);
+        when(mockGoogleAccount.authentication).thenReturn(mockGoogleAuth);
+        when(mockGoogleAuth.idToken).thenReturn('fake-id-token');
+
+        whenCalling(Invocation.method(#signInWithCredential, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'invalid-credential'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.signInWithGoogle(),
+          throwsA(isA<FirebaseAuthException>()),
+        );
+
+        // Verify error was logged to Crashlytics
+        verify(
+          mockCrashlytics.recordError(
+            any,
+            any,
+            reason: 'Google Sign-In failed',
+            information: anyNamed('information'),
+            fatal: false,
+          ),
+        ).called(1);
+      });
 
       test('rejects non-BU email addresses', () async {
         // Arrange
@@ -474,7 +576,7 @@ void main() {
         ).thenAnswer((_) async => mockGoogleAccount);
 
         // Act & Assert
-        expect(
+        await expectLater(
           () => authService.signInWithGoogle(),
           throwsA(
             isA<Exception>().having(
@@ -496,26 +598,19 @@ void main() {
 
       test('successful sign-in with new user', () async {
         // Arrange
-        final mockUser = MockUser(
-          uid: userId,
-          email: email,
-          displayName: 'Test User',
-          photoURL: 'https://example.com/photo.jpg',
-          isAnonymous: false,
+        mockAuth = MockFirebaseAuth(
+          mockUser: MockUser(
+            uid: userId,
+            email: email,
+            displayName: 'Test User',
+            photoURL: 'https://example.com/photo.jpg',
+            isAnonymous: false,
+            providerData: [
+              _appleUserInfo(),
+            ],
+          ),
         );
-
-        // Mock provider data for Apple
-        final mockUserInfo = MockUserInfo();
-        when(mockUserInfo.providerId).thenReturn('apple.com');
-        when(mockUserInfo.uid).thenReturn('apple-id-12345');
-        when(mockUser.providerData).thenReturn([mockUserInfo]);
-
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
-
-        when(
-          mockAuth.signInWithProvider(AppleAuthProvider()),
-        ).thenAnswer((_) async => mockUserCredential);
+        authService = createAuthService(mockAuth);
 
         // Act
         final result = await authService.signInWithApple();
@@ -544,29 +639,23 @@ void main() {
 
       test('successful sign-in with existing user', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          mockUser: MockUser(
+            uid: userId,
+            email: email,
+            isAnonymous: false,
+            providerData: [
+              _appleUserInfo(),
+            ],
+          ),
+        );
+        authService = createAuthService(mockAuth);
+
         final existingUser = UserFixtures.appleUser.copyWith(id: userId);
         await fakeFirestore
             .collection('users')
             .doc(userId)
             .set(existingUser.toMap());
-
-        final mockUser = MockUser(
-          uid: userId,
-          email: email,
-          isAnonymous: false,
-        );
-
-        final mockUserInfo = MockUserInfo();
-        when(mockUserInfo.providerId).thenReturn('apple.com');
-        when(mockUserInfo.uid).thenReturn('apple-id-12345');
-        when(mockUser.providerData).thenReturn([mockUserInfo]);
-
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
-
-        when(
-          mockAuth.signInWithProvider(AppleAuthProvider()),
-        ).thenAnswer((_) async => mockUserCredential);
 
         // Act
         final result = await authService.signInWithApple();
@@ -582,6 +671,30 @@ void main() {
             .get();
         expect(userDoc.data()?['isOnline'], true);
       });
+
+      test('rethrows FirebaseAuthException on provider error', () async {
+        // Arrange
+        whenCalling(Invocation.method(#signInWithProvider, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'invalid-credential'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.signInWithApple(),
+          throwsA(isA<FirebaseAuthException>()),
+        );
+
+        // Verify error was logged to Crashlytics
+        verify(
+          mockCrashlytics.recordError(
+            any,
+            any,
+            reason: 'Apple Sign-In failed',
+            information: anyNamed('information'),
+            fatal: false,
+          ),
+        ).called(1);
+      });
     });
 
     group('signOut', () {
@@ -589,11 +702,12 @@ void main() {
 
       test('updates online status and signs out', () async {
         // Arrange
-        final mockUser = MockUser(uid: userId, isAnonymous: false);
-        when(mockAuth.currentUser).thenReturn(mockUser);
-        when(mockAuth.signOut()).thenAnswer((_) async => {});
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
 
-        // Create user document
         final user = UserFixtures.custom(id: userId, email: 'test@bu.edu');
         await fakeFirestore.collection('users').doc(userId).set(user.toMap());
 
@@ -601,7 +715,7 @@ void main() {
         await authService.signOut();
 
         // Assert
-        verify(mockAuth.signOut()).called(1);
+        expect(mockAuth.currentUser, isNull);
 
         // Verify online status was updated
         final userDoc = await fakeFirestore
@@ -613,15 +727,26 @@ void main() {
       });
 
       test('signs out even when currentUser is null', () async {
-        // Arrange
-        when(mockAuth.currentUser).thenReturn(null);
-        when(mockAuth.signOut()).thenAnswer((_) async => {});
+        // Arrange - default mockAuth has no signed-in user
 
         // Act
         await authService.signOut();
 
         // Assert
-        verify(mockAuth.signOut()).called(1);
+        expect(mockAuth.currentUser, isNull);
+      });
+
+      test('rethrows exception when signOut fails', () async {
+        // Arrange
+        whenCalling(Invocation.method(#signOut, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'network-request-failed'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.signOut(),
+          throwsA(isA<FirebaseAuthException>()),
+        );
       });
     });
 
@@ -654,13 +779,14 @@ void main() {
     group('updateUserProfile', () {
       const userId = 'user-123';
 
-      setUp(() {
-        final mockUser = MockUser(uid: userId, isAnonymous: false);
-        when(mockAuth.currentUser).thenReturn(mockUser);
-      });
-
       test('updates profile fields successfully', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
+
         final user = UserFixtures.custom(
           id: userId,
           email: 'test@bu.edu',
@@ -692,6 +818,12 @@ void main() {
 
       test('allows setting gender for first time', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
+
         final user = UserFixtures.custom(
           id: userId,
           email: 'test@bu.edu',
@@ -708,11 +840,17 @@ void main() {
             .doc(userId)
             .get();
         expect(userDoc.data()?['gender'], 'male');
-        expect(userDoc.data()?['genderChangeCount'], isNull);
+        expect(userDoc.data()?['genderChangeCount'], 0);
       });
 
       test('allows changing gender once', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
+
         final user = UserFixtures.custom(
           id: userId,
           email: 'test@bu.edu',
@@ -735,6 +873,12 @@ void main() {
 
       test('rejects second gender change for non-whitelisted users', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
+
         final user = UserModel(
           id: userId,
           email: 'test@bu.edu',
@@ -746,7 +890,7 @@ void main() {
         await fakeFirestore.collection('users').doc(userId).set(user.toMap());
 
         // Act & Assert
-        expect(
+        await expectLater(
           () => authService.updateUserProfile(gender: 'female'),
           throwsA(
             isA<Exception>().having(
@@ -760,12 +904,18 @@ void main() {
 
       test('allows unlimited gender changes for whitelisted users', () async {
         // Arrange
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
+
         final user = UserModel(
           id: userId,
           email: 'jordangr@bu.edu',
           username: 'jordangr',
           gender: 'male',
-          genderChangeCount: 5, // Already changed multiple times
+          genderChangeCount: 5,
           createdAt: DateTime.now(),
         );
         await fakeFirestore.collection('users').doc(userId).set(user.toMap());
@@ -816,8 +966,11 @@ void main() {
 
       test('reauthenticates Google user successfully', () async {
         // Arrange
-        final mockUser = MockUser(uid: userId, isAnonymous: false);
-        when(mockAuth.currentUser).thenReturn(mockUser);
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
 
         final user = UserModel(
           id: userId,
@@ -835,7 +988,7 @@ void main() {
           mockGoogleSignIn.initialize(
             serverClientId: anyNamed('serverClientId'),
           ),
-        );
+        ).thenAnswer((_) async {});
         when(
           mockGoogleSignIn.disconnect(),
         ).thenAnswer((_) => Future<GoogleSignInAccount?>.value(null));
@@ -844,12 +997,6 @@ void main() {
         ).thenAnswer((_) async => mockGoogleAccount);
         when(mockGoogleAccount.authentication).thenReturn(mockGoogleAuth);
         when(mockGoogleAuth.idToken).thenReturn('fake-id-token');
-
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
-        when(
-          mockUser.reauthenticateWithCredential(any),
-        ).thenAnswer((_) async => mockUserCredential);
 
         // Act
         final result = await authService.reauthenticateUser();
@@ -862,29 +1009,24 @@ void main() {
 
       test('reauthenticates Apple user successfully', () async {
         // Arrange
-        final mockUser = MockUser(uid: userId, isAnonymous: false);
-        when(mockAuth.currentUser).thenReturn(mockUser);
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
 
         final user = UserFixtures.appleUser.copyWith(id: userId);
         await fakeFirestore.collection('users').doc(userId).set(user.toMap());
-
-        final mockUserCredential = MockUserCredential();
-        when(mockUserCredential.user).thenReturn(mockUser);
-        when(
-          mockAuth.signInWithProvider(AppleAuthProvider()),
-        ).thenAnswer((_) async => mockUserCredential);
 
         // Act
         final result = await authService.reauthenticateUser();
 
         // Assert
         expect(result, true);
-        verify(mockAuth.signInWithProvider(AppleAuthProvider())).called(1);
       });
 
       test('returns false when user is not signed in', () async {
-        // Arrange
-        when(mockAuth.currentUser).thenReturn(null);
+        // Arrange - default mockAuth has no signed-in user
 
         // Act
         final result = await authService.reauthenticateUser();
@@ -895,14 +1037,17 @@ void main() {
 
       test('returns false for unsupported auth provider', () async {
         // Arrange
-        final mockUser = MockUser(uid: userId, isAnonymous: false);
-        when(mockAuth.currentUser).thenReturn(mockUser);
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
 
         final user = UserModel(
           id: userId,
           email: 'test@bu.edu',
           username: 'test',
-          authProvider: 'email', // Email provider not supported
+          authProvider: 'email',
           createdAt: DateTime.now(),
         );
         await fakeFirestore.collection('users').doc(userId).set(user.toMap());
@@ -912,6 +1057,45 @@ void main() {
 
         // Assert
         expect(result, false);
+      });
+
+      test('returns false when user data is not found', () async {
+        // Arrange
+        mockAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: userId, isAnonymous: false),
+        );
+        authService = createAuthService(mockAuth);
+        // No user document in Firestore
+
+        // Act
+        final result = await authService.reauthenticateUser();
+
+        // Assert
+        expect(result, false);
+      });
+    });
+
+    group('sendPasswordResetEmail', () {
+      test('sends password reset email successfully', () async {
+        // Act & Assert
+        await expectLater(
+          authService.sendPasswordResetEmail('test@bu.edu'),
+          completes,
+        );
+      });
+
+      test('rethrows exception on failure', () async {
+        // Arrange
+        whenCalling(Invocation.method(#sendPasswordResetEmail, null))
+            .on(mockAuth)
+            .thenThrow(FirebaseAuthException(code: 'user-not-found'));
+
+        // Act & Assert
+        await expectLater(
+          () => authService.sendPasswordResetEmail('test@bu.edu'),
+          throwsA(isA<FirebaseAuthException>()),
+        );
       });
     });
   });

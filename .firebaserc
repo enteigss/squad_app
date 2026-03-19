@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "squad-7bc7e",
+    "default": "linkup-bu-test-environment",
     "prod": "squad-7bc7e",
     "test": "linkup-bu-test-environment"
   }

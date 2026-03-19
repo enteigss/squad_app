@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.healthCheck = exports.deleteUserAccount = exports.validateVerificationCode = exports.sendVerificationEmail = exports.submitReport = exports.matchNotifications = exports.chatMessageNotifications = exports.sendHangoutUpdateNotification = exports.sendLeaveNotification = exports.sendJoinNotification = exports.hangoutNotifications = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
+exports.healthCheck = exports.syncPendingSurveyData = exports.importSurveyResponse = exports.deleteUserAccount = exports.validateVerificationCode = exports.sendVerificationEmail = exports.submitReport = exports.matchNotifications = exports.chatMessageNotifications = exports.sendHangoutUpdateNotification = exports.sendLeaveNotification = exports.sendJoinNotification = exports.hangoutNotifications = exports.appPreview = exports.hangoutPreview = exports.sendSMSInvite = void 0;
 const firebase_functions_1 = require("firebase-functions");
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
@@ -62,6 +62,10 @@ Object.defineProperty(exports, "validateVerificationCode", { enumerable: true, g
 // Account Deletion Functions
 var account_deletion_1 = require("./account-deletion");
 Object.defineProperty(exports, "deleteUserAccount", { enumerable: true, get: function () { return account_deletion_1.deleteUserAccount; } });
+// Survey Import Functions
+var pending_survey_1 = require("./pending-survey");
+Object.defineProperty(exports, "importSurveyResponse", { enumerable: true, get: function () { return pending_survey_1.importSurveyResponse; } });
+Object.defineProperty(exports, "syncPendingSurveyData", { enumerable: true, get: function () { return pending_survey_1.syncPendingSurveyData; } });
 // Health check endpoint
 exports.healthCheck = (0, https_1.onRequest)((req, res) => {
     res.json({

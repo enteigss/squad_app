@@ -13,6 +13,9 @@ import '../../services/notification_service.dart';
 import '../../services/navigation_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/blocked_message_bubble.dart';
+import '../../widgets/chat/message_bubble.dart';
+import '../../widgets/chat/system_message_bubble.dart';
+import '../../widgets/chat/chat_message_input.dart';
 
 /// Configuration for the chat screen
 class ChatScreenConfig {
@@ -476,199 +479,29 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUserId = authProvider.currentUser?.id;
     final currentUserPhotoUrl = authProvider.currentUser?.photoUrl;
     final isOwnMessage = message.senderId == currentUserId;
-    final isSystemMessage = message.type == ChatMessageType.system;
-    final isCensoredMessage = message.content == 'CENSORED_MESSAGE';
 
-    if (isSystemMessage) {
-      return _buildSystemMessage(message);
+    if (message.type == ChatMessageType.system) {
+      return SystemMessageBubble(message: message);
     }
 
-    if (isCensoredMessage) {
+    if (message.content == 'CENSORED_MESSAGE') {
       return BlockedMessageBubble(
         blockedUserName: message.senderName,
         timestamp: message.timestamp,
       );
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: isOwnMessage
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isOwnMessage) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              backgroundImage: message.senderPhotoUrl != null
-                  ? NetworkImage(message.senderPhotoUrl!)
-                  : null,
-              child: message.senderPhotoUrl == null
-                  ? Icon(Icons.person, color: AppColors.primary, size: 16)
-                  : null,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isOwnMessage ? AppColors.primary : AppColors.surface,
-                borderRadius: BorderRadius.circular(16).copyWith(
-                  bottomRight: isOwnMessage ? const Radius.circular(4) : null,
-                  bottomLeft: !isOwnMessage ? const Radius.circular(4) : null,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isOwnMessage)
-                    Text(
-                      message.senderName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  if (!isOwnMessage) const SizedBox(height: 4),
-                  Text(
-                    message.content,
-                    style: TextStyle(
-                      color: isOwnMessage
-                          ? Colors.white
-                          : AppColors.textPrimary,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatMessageTime(message.timestamp),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isOwnMessage
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                      if (message.isEdited) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          '(edited)',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontStyle: FontStyle.italic,
-                            color: isOwnMessage
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isOwnMessage) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              backgroundImage: currentUserPhotoUrl != null
-                  ? NetworkImage(currentUserPhotoUrl)
-                  : null,
-              child: currentUserPhotoUrl == null
-                  ? Icon(Icons.person, color: AppColors.primary, size: 16)
-                  : null,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSystemMessage(ChatMessage message) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.textSecondary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            message.content,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              fontStyle: FontStyle.italic,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
+    return MessageBubble(
+      message: message,
+      isOwnMessage: isOwnMessage,
+      currentUserPhotoUrl: currentUserPhotoUrl,
     );
   }
 
   Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.textSecondary.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                hintStyle: TextStyle(
-                  color: AppColors.textSecondary.withValues(alpha: 0.7),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: AppColors.background,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              maxLines: null,
-              textCapitalization: TextCapitalization.sentences,
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.send, color: Colors.white, size: 20),
-            ),
-          ),
-        ],
-      ),
+    return ChatMessageInput(
+      controller: _messageController,
+      onSend: _sendMessage,
     );
   }
 
@@ -711,21 +544,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       }
-    }
-  }
-
-  String _formatMessageTime(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inMinutes < 1) {
-      return 'now';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${timestamp.day}/${timestamp.month}';
     }
   }
 }

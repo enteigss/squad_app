@@ -24,7 +24,8 @@ class UserModel {
   final bool isEmailVerified;
   final String? verifiedEmail; // BU.edu email for Apple users
   final String? appleUserId;
-  final Map<String, bool> hangoutChatNotifications; // hangoutId -> enabled/disabled
+  final Map<String, bool>
+  hangoutChatNotifications; // hangoutId -> enabled/disabled
   final int genderChangeCount; // Number of times gender has been changed
   final DateTime? genderChangedAt; // Last time gender was changed
   final MatchingProfile? matchingProfile; // Matching pool profile
@@ -84,7 +85,9 @@ class UserModel {
       isEmailVerified: map['isEmailVerified'] ?? true,
       verifiedEmail: map['verifiedEmail'],
       appleUserId: map['appleUserId'],
-      hangoutChatNotifications: Map<String, bool>.from(map['hangoutChatNotifications'] ?? {}),
+      hangoutChatNotifications: Map<String, bool>.from(
+        map['hangoutChatNotifications'] ?? {},
+      ),
       genderChangeCount: map['genderChangeCount'] ?? 0,
       genderChangedAt: _parseDateTime(map['genderChangedAt']),
       matchingProfile: map['matchingProfile'] != null
@@ -188,7 +191,8 @@ class UserModel {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       verifiedEmail: verifiedEmail ?? this.verifiedEmail,
       appleUserId: appleUserId ?? this.appleUserId,
-      hangoutChatNotifications: hangoutChatNotifications ?? this.hangoutChatNotifications,
+      hangoutChatNotifications:
+          hangoutChatNotifications ?? this.hangoutChatNotifications,
       genderChangeCount: genderChangeCount ?? this.genderChangeCount,
       genderChangedAt: genderChangedAt ?? this.genderChangedAt,
       matchingProfile: matchingProfile ?? this.matchingProfile,

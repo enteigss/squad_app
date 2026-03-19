@@ -42,6 +42,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
   Future<void> _determineInitialView() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.refreshCurrentUser();
     final userId = authProvider.currentUser?.id;
 
     if (userId == null) {
