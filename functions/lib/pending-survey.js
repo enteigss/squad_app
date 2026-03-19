@@ -103,6 +103,8 @@ exports.importSurveyResponse = (0, https_1.onRequest)({ cors: true, invoker: "pu
                 data.location.trim() || null : null,
             phoneNumber: typeof data.phoneNumber === "string" ?
                 data.phoneNumber.trim() || null : null,
+            anythingElse: typeof data.anythingElse === "string" ?
+                data.anythingElse.trim() || null : null,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
         await admin.firestore()

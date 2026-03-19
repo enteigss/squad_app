@@ -89,6 +89,9 @@ export const importSurveyResponse = onRequest(
         phoneNumber:
           typeof data.phoneNumber === "string" ?
             data.phoneNumber.trim() || null : null,
+        anythingElse:
+          typeof data.anythingElse === "string" ?
+            data.anythingElse.trim() || null : null,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -98,6 +101,39 @@ export const importSurveyResponse = onRequest(
         .set(pendingDoc);
 
       logger.info("Survey response saved", {email});
+
+      // If a user with this email already exists, sync immediately
+      const usersSnap = await admin.firestore()
+        .collection("users")
+        .where("email", "==", email)
+        .limit(1)
+        .get();
+
+      if (!usersSnap.empty) {
+        const userDoc = usersSnap.docs[0];
+        const userData = userDoc.data();
+        const update: Record<string, unknown> = {
+          matchingProfile: pendingDoc.matchingProfile,
+        };
+        if (!userData.gender && pendingDoc.gender) {
+          update.gender = pendingDoc.gender;
+        }
+        if (!userData.classYear && pendingDoc.classYear) {
+          update.classYear = pendingDoc.classYear;
+        }
+        if (!userData.location && pendingDoc.location) {
+          update.location = pendingDoc.location;
+        }
+        await userDoc.ref.update(update);
+        await admin.firestore()
+          .collection("pending_matching_profiles")
+          .doc(email)
+          .delete();
+        logger.info("Synced survey directly to existing user", {
+          uid: userDoc.id, email,
+        });
+      }
+
       res.status(200).json({success: true});
     } catch (error: unknown) {
       logger.error("Error importing survey response", error);
