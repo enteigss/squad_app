@@ -490,7 +490,7 @@ packages:
     source: hosted
     version: "3.15.2"
   firebase_core_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: firebase_core_platform_interface
       sha256: cccb4f572325dc14904c02fcc7db6323ad62ba02536833dddb5c02cac7341c64
@@ -944,7 +944,7 @@ packages:
     source: hosted
     version: "2.0.0"
   mock_exceptions:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: mock_exceptions
       sha256: "6e3e623712d2c6106ffe9e14732912522b565ddaa82a8dcee6cd4441b5984056"

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mock_exceptions/mock_exceptions.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:squad_app/models/user_model.dart';

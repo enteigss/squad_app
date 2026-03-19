@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:squad_app/models/post_model.dart';
-import 'package:squad_app/models/user_model.dart';
 import 'package:squad_app/services/post_service.dart';
 import 'package:squad_app/services/chat_service.dart';
 import 'package:squad_app/services/firestore_service.dart';

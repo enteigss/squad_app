@@ -104,6 +104,8 @@ dev_dependencies:
   firebase_auth_mocks: ^0.14.1
   google_sign_in_mocks: ^0.4.1
   network_image_mock: ^2.1.1
+  mock_exceptions: ^0.8.2
+  firebase_core_platform_interface: ^6.0.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

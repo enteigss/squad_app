@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:network_image_mock/network_image_mock.dart';
-import 'package:squad_app/models/post_model.dart';
 import 'package:squad_app/providers/auth_provider.dart';
 import 'package:squad_app/providers/post_provider.dart';
 import 'package:squad_app/screens/feed/feed_screen.dart';

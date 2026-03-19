@@ -159,16 +159,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
     });
   }
 
-  void _onBackFromEdit() {
-    setState(() {
-      if (_hasMatchedGroups) {
-        _currentView = ConnectViewState.matchedList;
-      } else {
-        // Stay on edit screen - nowhere to go back to
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     // Show loading while checking for matches
