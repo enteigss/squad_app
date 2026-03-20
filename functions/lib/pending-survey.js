@@ -112,6 +112,36 @@ exports.importSurveyResponse = (0, https_1.onRequest)({ cors: true, invoker: "pu
             .doc(email)
             .set(pendingDoc);
         firebase_functions_1.logger.info("Survey response saved", { email });
+        // If a user with this email already exists, sync immediately
+        const usersSnap = await admin.firestore()
+            .collection("users")
+            .where("email", "==", email)
+            .limit(1)
+            .get();
+        if (!usersSnap.empty) {
+            const userDoc = usersSnap.docs[0];
+            const userData = userDoc.data();
+            const update = {
+                matchingProfile: pendingDoc.matchingProfile,
+            };
+            if (!userData.gender && pendingDoc.gender) {
+                update.gender = pendingDoc.gender;
+            }
+            if (!userData.classYear && pendingDoc.classYear) {
+                update.classYear = pendingDoc.classYear;
+            }
+            if (!userData.location && pendingDoc.location) {
+                update.location = pendingDoc.location;
+            }
+            await userDoc.ref.update(update);
+            await admin.firestore()
+                .collection("pending_matching_profiles")
+                .doc(email)
+                .delete();
+            firebase_functions_1.logger.info("Synced survey directly to existing user", {
+                uid: userDoc.id, email,
+            });
+        }
         res.status(200).json({ success: true });
     }
     catch (error) {
