@@ -66,12 +66,14 @@ android {
             dimension = "environment"
             applicationIdSuffix = ""
             versionNameSuffix = ""
+            resValue("string", "app_name", "LinkUp BU")
         }
 
         create("dev") {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
+            resValue("string", "app_name", "LinkUp BU Dev")
         }
     }
 
