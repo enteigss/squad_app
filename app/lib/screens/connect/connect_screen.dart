@@ -55,8 +55,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
     // First check if user has any matched groups
     try {
-      final groupsStream = _matchedGroupService.getMatchedGroupsForUser(userId);
-      final groups = await groupsStream.first;
+      final groups = await _matchedGroupService.fetchMatchedGroupsForUser(userId);
 
       if (groups.isNotEmpty) {
         setState(() {
