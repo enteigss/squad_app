@@ -14,6 +14,8 @@
     "migrate:imported:dry": "tsx src/migrate-imported-users.ts --dry-run",
     "delete:matches": "tsx src/delete-all-matches.ts",
     "delete:matches:dry": "tsx src/delete-all-matches.ts --dry-run",
+    "delete:users": "tsx src/delete-all-users.ts",
+    "delete:users:dry": "tsx src/delete-all-users.ts --dry-run",
     "cli": "tsx src/index.ts"
   },
   "dependencies": {
