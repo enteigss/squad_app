@@ -7,25 +7,58 @@
 // 3. Event source: From form > Event type: On form submit
 // 4. Save
 
-var CLOUD_FUNCTION_URL = "YOUR_CLOUD_FUNCTION_URL_HERE";
+var DEV_URL = "https://importsurveyresponse-4bufdcu3fq-uc.a.run.app";
+var PROD_URL = "https://importsurveyresponse-mr2t4plsna-uc.a.run.app";
+
+// Emails that go to BOTH dev and prod
+var BOTH_EMAILS = [
+  "enteigss@gmail.com",
+  "jordan.anderson.green@gmail.com",
+  "jordangr@bu.edu",
+];
+
+// Emails that go to dev ONLY
+var DEV_ONLY_EMAILS = [
+  "greenmichaeltodd@gmail.com",
+  "green.wb.evan@gmail.com",
+  "sheriese@gmail.com",
+  "przem@gmail.com",
+];
+
+function getTargetUrls(email) {
+  var lower = email.toLowerCase().trim();
+  if (BOTH_EMAILS.indexOf(lower) !== -1) return [DEV_URL, PROD_URL];
+  if (DEV_ONLY_EMAILS.indexOf(lower) !== -1) return [DEV_URL];
+  return [PROD_URL];
+}
 
 function onFormSubmit(e) {
-  var r = e.namedValues;
+  var responses = {};
+    e.response.getItemResponses().forEach(function(itemResponse) {
+      responses[itemResponse.getItem().getTitle()] = itemResponse.getResponse();
+    });
+    var items = e.response.getItemResponses();
+    for (var i = 0; i < items.length; i++) {
+      Logger.log("Q: " + items[i].getItem().getTitle());
+      Logger.log("A: " + items[i].getResponse());
+      Logger.log("---");
+    }
 
   var payload = {
-    email: val(r["What is your BU email? (so I can connect you with your group)"]),
-    graduationYear: val(r["What is your graduation class?"]),
-    genderPreference: val(r["Who are you looking to meet?"]),
-    funActivities: val(r["What do you do for fun?"]),
-    talkAboutForever: val(r["What topics could you talk about forever?"]),
-    freeTime: val(r["When are you usually free? (No specific format necessary, answer this question however you want)"]),
-    deepConversations: rating(r["How much do you enjoy deep conversations?"]),
-    outdoors: rating(r["How much do you enjoy outdoor activities?"]),
-    chilling: rating(r["How much do you enjoy just chilling?"]),
-    competitiveGames: rating(r["How much do you enjoy competitive games? (video games, board games, mini golf etc.)"]),
-    meals: rating(r["How much do you enjoy grabbing a meal?"]),
-    nightsOut: rating(r["How much do you enjoy nights out?"]),
-    phoneNumber: val(r["If you would prefer give me your number and I will text you instead (if you don't check your email much)"]),
+    email: responses["What is your BU email? (so I can connect you with your group)"] || "",
+    graduationYear: responses["What is your graduation class?"] || "",
+    genderPreference: responses["Who are you looking to meet?"] || "",
+    funActivities: responses["What do you like to do for fun?"] || "",
+    talkAboutForever: responses["What topics could you talk about forever?"] || "",
+    freeTime: responses["When are you usually free? (No specific format necessary, answer this question however you want)"] || "",
+    deepConversations: parseInt(responses["How much do you enjoy deep conversations?"] || "3", 10),
+    outdoors: parseInt(responses["How much do you enjoy outdoor activities?"] || "3", 10),
+    chilling: parseInt(responses["How much do you enjoy just chilling?"] || "3", 10),
+    competitiveGames: parseInt(responses["How much do you enjoy competitive games? (video games, board games, mini golf etc.)"] || "3", 10),
+    meals: parseInt(responses["How much do you enjoy grabbing a meal?"] || "3", 10),
+    nightsOut: parseInt(responses["How much do you enjoy nights out?"] || "3", 10),
+    anythingElse: responses["Anything else you'd like me to know?"] || "",
+    phoneNumber: responses["If you you would prefer give me your number and I will text you instead (if you don't check your email much)."] || "",
   };
 
   var options = {
@@ -35,8 +68,13 @@ function onFormSubmit(e) {
     muteHttpExceptions: true,
   };
 
-  var response = UrlFetchApp.fetch(CLOUD_FUNCTION_URL, options);
-  Logger.log("Response: " + response.getContentText());
+  Logger.log("Payload: " + JSON.stringify(payload, null, 2));
+
+  var urls = getTargetUrls(payload.email);
+  for (var i = 0; i < urls.length; i++) {
+    var response = UrlFetchApp.fetch(urls[i], options);
+    Logger.log("Response from " + urls[i] + ": " + response.getContentText());
+  }
 }
 
 function val(arr) {
