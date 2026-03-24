@@ -26,7 +26,7 @@ export {
 } from "./hangout-notifications";
 
 // Chat Notification Functions
-export {chatMessageNotifications} from "./chat-notifications";
+export {chatMessageNotifications, matchGroupChatMessageNotifications} from "./chat-notifications";
 
 // Match Notification Functions
 export {matchNotifications} from "./match-notifications";

@@ -28,12 +28,34 @@ interface Post {
 }
 
 /**
+ * Interface for MatchedGroup data
+ */
+interface MatchedGroup {
+  id: string;
+  memberIds: string[];
+  status: string;
+}
+
+/**
  * Interface for User data with notification preferences
  */
 interface User {
   id: string;
   fcmToken?: string;
   hangoutChatNotifications?: {[hangoutId: string]: boolean};
+  matchGroupChatNotifications?: {[groupId: string]: boolean};
+}
+
+/**
+ * Notification context configuration
+ */
+interface NotificationContext {
+  chatRoomId: string;
+  messageId: string;
+  messageData: ChatMessage;
+  notificationType: string;
+  prefsField: "hangoutChatNotifications" | "matchGroupChatNotifications";
+  dataPayload: {[key: string]: string};
 }
 
 /**
@@ -90,57 +112,143 @@ export const chatMessageNotifications = onDocumentCreated(
         (participantId) => participantId !== messageData.senderId
       );
 
-      if (recipientIds.length === 0) {
-        logger.info(`No recipients to notify for message ${messageId}`);
-        return;
-      }
-
-      logger.info(`Found ${recipientIds.length} potential recipients`, {
-        recipientIds: recipientIds,
-      });
-
-      // Send notifications to each recipient
-      const notificationPromises = recipientIds.map((recipientId) =>
-        sendNotificationToUser(
-          recipientId,
-          postId,
-          messageData,
-          messageId
-        )
-      );
-
-      const results = await Promise.allSettled(notificationPromises);
-
-      // Count successes and failures
-      const successCount = results.filter((r) => r.status === "fulfilled").length;
-      const failureCount = results.filter((r) => r.status === "rejected").length;
-
-      logger.info(`Completed processing chat notifications for message ${messageId}`, {
-        postId: postId,
-        totalRecipients: recipientIds.length,
-        successCount: successCount,
-        failureCount: failureCount,
-      });
+      await sendChatNotifications({
+        chatRoomId: postId,
+        messageId: messageId,
+        messageData: messageData,
+        notificationType: "chat_message",
+        prefsField: "hangoutChatNotifications",
+        dataPayload: {
+          type: "chat_message",
+          postId: postId,
+          messageId: messageId,
+          senderId: messageData.senderId,
+          senderName: messageData.senderName,
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        },
+      }, recipientIds);
     } catch (error) {
       logger.error("Error processing chat notification:", error);
-      // Don't rethrow - we don't want to fail message creation if notifications fail
     }
   }
 );
+
+/**
+ * Cloud Function that triggers when a new chat message is created in a matched group
+ * Sends push notifications to members who have notifications enabled
+ */
+export const matchGroupChatMessageNotifications = onDocumentCreated(
+  "matched_groups/{groupId}/messages/{messageId}",
+  async (event) => {
+    try {
+      const messageData = event.data?.data() as ChatMessage;
+      const groupId = event.params.groupId;
+      const messageId = event.params.messageId;
+
+      if (!messageData) {
+        logger.warn(`No data found for message ${messageId} in matched group ${groupId}`);
+        return;
+      }
+
+      logger.info(`Processing chat message notification for matched group ${groupId}`, {
+        messageId: messageId,
+        senderId: messageData.senderId,
+        senderName: messageData.senderName,
+        type: messageData.type,
+      });
+
+      if (messageData.type === "system") {
+        logger.info(`Skipping notification for system message ${messageId}`);
+        return;
+      }
+
+      // Get the matched group data
+      const groupDoc = await admin.firestore()
+        .collection("matched_groups")
+        .doc(groupId)
+        .get();
+
+      if (!groupDoc.exists) {
+        logger.warn(`Matched group ${groupId} not found`);
+        return;
+      }
+
+      const groupData = groupDoc.data() as MatchedGroup;
+
+      if (groupData.status !== "active") {
+        logger.info(`Skipping notifications for non-active matched group ${groupId} (status: ${groupData.status})`);
+        return;
+      }
+
+      // Get all members except the sender
+      const recipientIds = groupData.memberIds.filter(
+        (memberId) => memberId !== messageData.senderId
+      );
+
+      await sendChatNotifications({
+        chatRoomId: groupId,
+        messageId: messageId,
+        messageData: messageData,
+        notificationType: "match_chat_message",
+        prefsField: "matchGroupChatNotifications",
+        dataPayload: {
+          type: "match_chat_message",
+          matchedGroupId: groupId,
+          messageId: messageId,
+          senderId: messageData.senderId,
+          senderName: messageData.senderName,
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+        },
+      }, recipientIds);
+    } catch (error) {
+      logger.error("Error processing matched group chat notification:", error);
+    }
+  }
+);
+
+/**
+ * Shared logic: send chat notifications to a list of recipients
+ */
+async function sendChatNotifications(
+  ctx: NotificationContext,
+  recipientIds: string[]
+): Promise<void> {
+  if (recipientIds.length === 0) {
+    logger.info(`No recipients to notify for message ${ctx.messageId}`);
+    return;
+  }
+
+  logger.info(`Found ${recipientIds.length} potential recipients`, {
+    recipientIds: recipientIds,
+  });
+
+  const notificationPromises = recipientIds.map((recipientId) =>
+    sendNotificationToUser(recipientId, ctx)
+  );
+
+  const results = await Promise.allSettled(notificationPromises);
+
+  const successCount = results.filter((r) => r.status === "fulfilled").length;
+  const failureCount = results.filter((r) => r.status === "rejected").length;
+
+  logger.info(`Completed processing chat notifications for message ${ctx.messageId}`, {
+    chatRoomId: ctx.chatRoomId,
+    totalRecipients: recipientIds.length,
+    successCount: successCount,
+    failureCount: failureCount,
+  });
+}
 
 /**
  * Send notification to a specific user if they have notifications enabled
  */
 async function sendNotificationToUser(
   userId: string,
-  postId: string,
-  messageData: ChatMessage,
-  messageId: string
+  ctx: NotificationContext
 ): Promise<void> {
   let userData: User | undefined;
 
   try {
-    // Get user document
     const userDoc = await admin.firestore()
       .collection("users")
       .doc(userId)
@@ -153,41 +261,32 @@ async function sendNotificationToUser(
 
     userData = userDoc.data() as User;
 
-    // Check if user has FCM token
     if (!userData.fcmToken) {
       logger.info(`User ${userId} has no FCM token - skipping notification`);
       return;
     }
 
     // Check notification preferences - default to true (enabled) if not set
-    const notificationPrefs = userData.hangoutChatNotifications || {};
-    const notificationsEnabled = notificationPrefs[postId] ?? true;
+    const notificationPrefs = userData[ctx.prefsField] || {};
+    const notificationsEnabled = notificationPrefs[ctx.chatRoomId] ?? true;
 
     if (!notificationsEnabled) {
-      logger.info(`User ${userId} has disabled notifications for hangout ${postId}`);
+      logger.info(`User ${userId} has disabled notifications for ${ctx.chatRoomId}`);
       return;
     }
 
-    // Create notification payload
     const maxContentLength = 100;
-    const contentPreview = messageData.content.length > maxContentLength
-      ? `${messageData.content.substring(0, maxContentLength)}...`
-      : messageData.content;
+    const contentPreview = ctx.messageData.content.length > maxContentLength
+      ? `${ctx.messageData.content.substring(0, maxContentLength)}...`
+      : ctx.messageData.content;
 
     const message = {
       token: userData.fcmToken,
       notification: {
-        title: `${messageData.senderName}`,
+        title: `${ctx.messageData.senderName}`,
         body: contentPreview,
       },
-      data: {
-        type: "chat_message",
-        postId: postId,
-        messageId: messageId,
-        senderId: messageData.senderId,
-        senderName: messageData.senderName,
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
+      data: ctx.dataPayload,
       android: {
         notification: {
           icon: "ic_notification",
@@ -207,25 +306,23 @@ async function sendNotificationToUser(
       },
     };
 
-    // Send the notification
     const response = await admin.messaging().send(message);
 
     logger.info(`Successfully sent chat notification to user ${userId}`, {
-      postId: postId,
-      messageId: messageId,
+      chatRoomId: ctx.chatRoomId,
+      messageId: ctx.messageId,
       responseId: response,
     });
   } catch (error) {
     logger.error(`Failed to send chat notification to user ${userId}:`, {
-      postId: postId,
-      messageId: messageId,
+      chatRoomId: ctx.chatRoomId,
+      messageId: ctx.messageId,
       error: error,
       errorMessage: (error as Error).message,
       errorCode: (error as any).code,
       errorDetails: (error as any).details,
       fcmToken: userData?.fcmToken ? `${userData.fcmToken.substring(0, 20)}...` : "none",
     });
-    // Re-throw to mark this promise as rejected
     throw error;
   }
 }

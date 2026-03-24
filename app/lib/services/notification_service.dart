@@ -725,5 +725,73 @@ class NotificationService {
     }
   }
 
+  // Toggle chat notifications for a specific matched group
+  Future<void> toggleMatchGroupChatNotifications(
+    String groupId,
+    bool enabled,
+  ) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        if (kDebugMode) {
+          print('No user logged in - cannot toggle chat notifications');
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        print('Toggling chat notifications for matched group $groupId: $enabled');
+      }
+
+      await _firestore.collection('users').doc(user.uid).update({
+        'matchGroupChatNotifications.$groupId': enabled,
+      });
+
+      if (kDebugMode) {
+        print('Successfully updated chat notification preference for matched group $groupId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error toggling match group chat notifications: $e');
+      }
+      rethrow;
+    }
+  }
+
+  // Get chat notification preference for a specific matched group
+  Future<bool> getMatchGroupChatNotificationPreference(String groupId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        if (kDebugMode) {
+          print('No user logged in - returning default notification preference');
+        }
+        return true;
+      }
+
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        return true;
+      }
+
+      final data = doc.data();
+      if (data == null) {
+        return true;
+      }
+
+      final notificationPrefs = data['matchGroupChatNotifications'] as Map<String, dynamic>?;
+      if (notificationPrefs == null) {
+        return true;
+      }
+
+      return notificationPrefs[groupId] as bool? ?? true;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting match group chat notification preference: $e');
+      }
+      return true;
+    }
+  }
+
   // You can add other methods here for handling incoming messages, etc.
 }

@@ -115,12 +115,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadNotificationPreference() async {
-    // Only load notification preferences for hangout chats for now
-    if (_context != ChatContext.hangout) return;
-
     try {
-      final enabled = await _notificationService
-          .getHangoutChatNotificationPreference(_chatRoomId);
+      bool enabled;
+      if (_context == ChatContext.hangout) {
+        enabled = await _notificationService
+            .getHangoutChatNotificationPreference(_chatRoomId);
+      } else if (_context == ChatContext.matchedGroup) {
+        enabled = await _notificationService
+            .getMatchGroupChatNotificationPreference(_chatRoomId);
+      } else {
+        return;
+      }
       if (mounted) {
         setState(() {
           _chatNotificationsEnabled = enabled;
@@ -144,6 +149,11 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       if (_context == ChatContext.hangout) {
         await _notificationService.toggleHangoutChatNotifications(
+          _chatRoomId,
+          _chatNotificationsEnabled,
+        );
+      } else if (_context == ChatContext.matchedGroup) {
+        await _notificationService.toggleMatchGroupChatNotifications(
           _chatRoomId,
           _chatNotificationsEnabled,
         );

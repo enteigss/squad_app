@@ -946,5 +946,154 @@ void main() {
         expect(result, true);
       });
     });
+
+    group('toggleMatchGroupChatNotifications', () {
+      test('updates matchGroupChatNotifications in Firestore', () async {
+        // Arrange
+        await seedUser();
+
+        // Act
+        await notificationService.toggleMatchGroupChatNotifications('g1', false);
+
+        // Assert
+        final doc = await fakeFirestore.collection('users').doc(testUserId).get();
+        final prefs = doc.data()?['matchGroupChatNotifications'] as Map<String, dynamic>?;
+        expect(prefs?['g1'], false);
+      });
+
+      test('can enable notifications for a matched group', () async {
+        // Arrange
+        await seedUser();
+        await fakeFirestore.collection('users').doc(testUserId).update({
+          'matchGroupChatNotifications.g1': false,
+        });
+
+        // Act
+        await notificationService.toggleMatchGroupChatNotifications('g1', true);
+
+        // Assert
+        final doc = await fakeFirestore.collection('users').doc(testUserId).get();
+        final prefs = doc.data()?['matchGroupChatNotifications'] as Map<String, dynamic>?;
+        expect(prefs?['g1'], true);
+      });
+
+      test('returns early when no user is logged in', () async {
+        // Arrange
+        final noUserAuth = MockFirebaseAuth();
+        final service = NotificationService(
+          firebaseMessaging: mockMessaging,
+          firestore: fakeFirestore,
+          auth: noUserAuth,
+          functions: mockFunctions,
+        );
+
+        // Act
+        await service.toggleMatchGroupChatNotifications('g1', false);
+
+        // Assert — no documents should exist
+        final snapshot = await fakeFirestore.collection('users').get();
+        expect(snapshot.docs, isEmpty);
+      });
+
+      test('rethrows Firestore errors', () async {
+        // Arrange
+        final noUserAuth = MockFirebaseAuth(
+          signedIn: true,
+          mockUser: MockUser(uid: 'nonexistent-user', isAnonymous: false),
+        );
+        final service = NotificationService(
+          firebaseMessaging: mockMessaging,
+          firestore: fakeFirestore,
+          auth: noUserAuth,
+          functions: mockFunctions,
+        );
+
+        try {
+          await service.toggleMatchGroupChatNotifications('g1', true);
+        } catch (e) {
+          expect(e, isNotNull);
+        }
+      });
+    });
+
+    group('getMatchGroupChatNotificationPreference', () {
+      test('returns true when no user is logged in', () async {
+        // Arrange
+        final noUserAuth = MockFirebaseAuth();
+        final service = NotificationService(
+          firebaseMessaging: mockMessaging,
+          firestore: fakeFirestore,
+          auth: noUserAuth,
+          functions: mockFunctions,
+        );
+
+        // Act
+        final result = await service.getMatchGroupChatNotificationPreference('g1');
+
+        // Assert
+        expect(result, true);
+      });
+
+      test('returns true when user doc does not exist', () async {
+        // Act
+        final result = await notificationService.getMatchGroupChatNotificationPreference('g1');
+
+        // Assert
+        expect(result, true);
+      });
+
+      test('returns true when matchGroupChatNotifications field is absent', () async {
+        // Arrange
+        await seedUser();
+
+        // Act
+        final result = await notificationService.getMatchGroupChatNotificationPreference('g1');
+
+        // Assert
+        expect(result, true);
+      });
+
+      test('returns true when groupId is not in preferences map', () async {
+        // Arrange
+        await seedUser();
+        await fakeFirestore.collection('users').doc(testUserId).update({
+          'matchGroupChatNotifications.g2': false,
+        });
+
+        // Act
+        final result = await notificationService.getMatchGroupChatNotificationPreference('g1');
+
+        // Assert
+        expect(result, true);
+      });
+
+      test('returns false when explicitly disabled for group', () async {
+        // Arrange
+        await seedUser();
+        await fakeFirestore.collection('users').doc(testUserId).update({
+          'matchGroupChatNotifications.g1': false,
+        });
+
+        // Act
+        final result = await notificationService.getMatchGroupChatNotificationPreference('g1');
+
+        // Assert
+        expect(result, false);
+      });
+
+      test('returns true when explicitly enabled for group', () async {
+        // Arrange
+        await seedUser();
+        await fakeFirestore.collection('users').doc(testUserId).update({
+          'matchGroupChatNotifications.g1': true,
+        });
+
+        // Act
+        final result = await notificationService.getMatchGroupChatNotificationPreference('g1');
+
+        // Assert
+        expect(result, true);
+      });
+    });
   });
 }
