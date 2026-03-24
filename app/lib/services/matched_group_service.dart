@@ -12,17 +12,11 @@ class MatchedGroupService {
 
   /// Get a stream of matched groups for a user
   Stream<List<MatchedGroupModel>> getMatchedGroupsForUser(String userId) {
-    debugPrint('📋 Fetching matched groups for user: $userId');
-
-    // Simple query to avoid needing composite index
-    // Filter by status and sort in memory
     return _firestore
         .collection('matched_groups')
         .where('memberIds', arrayContains: userId)
         .snapshots()
         .map((snapshot) {
-      debugPrint('📋 Found ${snapshot.docs.length} matched groups (before filter)');
-
       final groups = snapshot.docs
           .map((doc) {
             final data = doc.data();
@@ -32,12 +26,29 @@ class MatchedGroupService {
           .where((group) => group.status == MatchedGroupStatus.active)
           .toList();
 
-      // Sort by createdAt descending
       groups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      debugPrint('📋 Returning ${groups.length} active matched groups');
       return groups;
     });
+  }
+
+  /// One-time fetch of matched groups for a user
+  Future<List<MatchedGroupModel>> fetchMatchedGroupsForUser(String userId) async {
+    final snapshot = await _firestore
+        .collection('matched_groups')
+        .where('memberIds', arrayContains: userId)
+        .get();
+
+    final groups = snapshot.docs
+        .map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return MatchedGroupModel.fromMap(data);
+        })
+        .where((group) => group.status == MatchedGroupStatus.active)
+        .toList();
+
+    groups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return groups;
   }
 
   /// Get a single matched group by ID
