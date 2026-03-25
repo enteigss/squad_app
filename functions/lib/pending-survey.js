@@ -86,14 +86,16 @@ exports.importSurveyResponse = (0, https_1.onRequest)({ cors: true, invoker: "pu
                     data.talkAboutForever.trim() || null : null,
                 freeTime: typeof data.freeTime === "string" ?
                     data.freeTime.trim() || null : null,
-                activityRatings: {
-                    deepConversations: parseRating(data.deepConversations),
-                    outdoors: parseRating(data.outdoors),
-                    chilling: parseRating(data.chilling),
-                    competitiveGames: parseRating(data.competitiveGames),
-                    meals: parseRating(data.meals),
-                    nightsOut: parseRating(data.nightsOut),
-                },
+                excludedActivities: Array.isArray(data.excludedActivities) ?
+                    data.excludedActivities.filter((v) => typeof v === "string") : [],
+                rankedActivities: Array.isArray(data.rankedActivities) ?
+                    data.rankedActivities.filter((v) => typeof v === "string") : [],
+                friendType: typeof data.friendType === "string" ?
+                    data.friendType.trim() || null : null,
+                friendTypeMatchWell: typeof data.friendTypeMatchWell === "string" ?
+                    data.friendTypeMatchWell.trim() || null : null,
+                friendTypeNoMatch: typeof data.friendTypeNoMatch === "string" ?
+                    data.friendTypeNoMatch.trim() || null : null,
                 updatedAt: now,
             },
             gender: normalizeGender(data.gender),

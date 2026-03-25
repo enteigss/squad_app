@@ -1,5 +1,5 @@
 import { getFirestore } from './client.js';
-import { UserProfileSchema, type UserProfile, type UserForMatching, type ActivityRatings } from '../types.js';
+import { UserProfileSchema, type UserProfile, type UserForMatching } from '../types.js';
 import { log } from '../utils/logger.js';
 
 export async function fetchEligibleUsers(collection: string = 'users'): Promise<UserProfile[]> {
@@ -51,16 +51,6 @@ export function filterBlockedUsers(users: UserProfile[]): UserProfile[] {
   return users; // Return all users, blocked pairs handled during matching
 }
 
-// Default activity ratings
-const defaultRatings: ActivityRatings = {
-  deepConversations: 3,
-  outdoors: 3,
-  chilling: 3,
-  competitiveGames: 3,
-  meals: 3,
-  nightsOut: 3,
-};
-
 // Convert to format safe for Claude (only matching-relevant data, no PII)
 export function usersForMatching(users: UserProfile[]): UserForMatching[] {
   return users.map((u) => ({
@@ -72,14 +62,11 @@ export function usersForMatching(users: UserProfile[]): UserForMatching[] {
     funActivities: u.matchingProfile?.funActivities ?? null,
     talkAboutForever: u.matchingProfile?.talkAboutForever ?? null,
     freeTime: u.matchingProfile?.freeTime ?? null,
-    activityRatings: {
-      deepConversations: u.matchingProfile?.activityRatings?.deepConversations ?? defaultRatings.deepConversations,
-      outdoors: u.matchingProfile?.activityRatings?.outdoors ?? defaultRatings.outdoors,
-      chilling: u.matchingProfile?.activityRatings?.chilling ?? defaultRatings.chilling,
-      competitiveGames: u.matchingProfile?.activityRatings?.competitiveGames ?? defaultRatings.competitiveGames,
-      meals: u.matchingProfile?.activityRatings?.meals ?? defaultRatings.meals,
-      nightsOut: u.matchingProfile?.activityRatings?.nightsOut ?? defaultRatings.nightsOut,
-    },
+    excludedActivities: u.matchingProfile?.excludedActivities ?? [],
+    rankedActivities: u.matchingProfile?.rankedActivities ?? [],
+    friendType: u.matchingProfile?.friendType ?? null,
+    friendTypeMatchWell: u.matchingProfile?.friendTypeMatchWell ?? null,
+    friendTypeNoMatch: u.matchingProfile?.friendTypeNoMatch ?? null,
   }));
 }
 

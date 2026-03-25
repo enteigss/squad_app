@@ -1,17 +1,6 @@
 import { z } from 'zod';
 import type { firestore } from 'firebase-admin';
 
-// ============ Activity Ratings (1-5 scale) ============
-
-export interface ActivityRatings {
-  deepConversations: number;  // "having deep/intellectual conversations"
-  outdoors: number;           // "doing stuff outdoors"
-  chilling: number;           // "just chilling"
-  competitiveGames: number;   // "competitive games (video games, board games, etc.)"
-  meals: number;              // "grabbing a meal"
-  nightsOut: number;          // "nights out"
-}
-
 // ============ Matching Profile (stored in user document) ============
 
 export const MatchingProfileSchema = z.object({
@@ -20,14 +9,11 @@ export const MatchingProfileSchema = z.object({
   funActivities: z.string().nullable().default(null),
   talkAboutForever: z.string().nullable().default(null),
   freeTime: z.string().nullable().default(null),
-  activityRatings: z.object({
-    deepConversations: z.number().min(1).max(5).default(3),
-    outdoors: z.number().min(1).max(5).default(3),
-    chilling: z.number().min(1).max(5).default(3),
-    competitiveGames: z.number().min(1).max(5).default(3),
-    meals: z.number().min(1).max(5).default(3),
-    nightsOut: z.number().min(1).max(5).default(3),
-  }).default({}),
+  excludedActivities: z.array(z.string()).default([]),
+  rankedActivities: z.array(z.string()).default([]),
+  friendType: z.string().nullable().default(null),
+  friendTypeMatchWell: z.string().nullable().default(null),
+  friendTypeNoMatch: z.string().nullable().default(null),
   updatedAt: z.number().nullable().default(null),
 });
 
@@ -64,7 +50,11 @@ export interface UserForMatching {
   funActivities: string | null;
   talkAboutForever: string | null;
   freeTime: string | null;
-  activityRatings: ActivityRatings;
+  excludedActivities: string[];
+  rankedActivities: string[];
+  friendType: string | null;
+  friendTypeMatchWell: string | null;
+  friendTypeNoMatch: string | null;
 }
 
 // ============ Match Result (from Claude API) ============
