@@ -211,9 +211,5 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Default deny all other paths
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
+}
 }
