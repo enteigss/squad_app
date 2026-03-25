@@ -4,7 +4,6 @@ import '../../providers/matching_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/rating_button_row.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -25,6 +24,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final TextEditingController _funActivitiesController = TextEditingController();
   final TextEditingController _talkAboutController = TextEditingController();
   final TextEditingController _freeTimeController = TextEditingController();
+  final TextEditingController _friendTypeController = TextEditingController();
+  final TextEditingController _friendTypeMatchWellController = TextEditingController();
+  final TextEditingController _friendTypeNoMatchController = TextEditingController();
 
   @override
   void initState() {
@@ -37,6 +39,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       _funActivitiesController.text = matchingProvider.funActivities;
       _talkAboutController.text = matchingProvider.talkAboutForever;
       _freeTimeController.text = matchingProvider.freeTime;
+      _friendTypeController.text = matchingProvider.friendType;
+      _friendTypeMatchWellController.text = matchingProvider.friendTypeMatchWell;
+      _friendTypeNoMatchController.text = matchingProvider.friendTypeNoMatch;
     });
   }
 
@@ -46,6 +51,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     _funActivitiesController.dispose();
     _talkAboutController.dispose();
     _freeTimeController.dispose();
+    _friendTypeController.dispose();
+    _friendTypeMatchWellController.dispose();
+    _friendTypeNoMatchController.dispose();
     super.dispose();
   }
 
@@ -114,48 +122,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     _buildFunActivitiesPage(matchingProvider),
                     _buildTalkAboutPage(matchingProvider),
                     _buildFreeTimePage(matchingProvider),
-                    _buildRatingPage(
-                      matchingProvider,
-                      'deepConversations',
-                      'How much do you enjoy deep conversations?',
-                      'Having meaningful, intellectual discussions about life, ideas, and everything in between.',
-                      matchingProvider.deepConversationsRating,
-                    ),
-                    _buildRatingPage(
-                      matchingProvider,
-                      'outdoors',
-                      'How much do you enjoy outdoor activities?',
-                      'Things like hiking, walking, camping, or just being outside in nature.',
-                      matchingProvider.outdoorsRating,
-                    ),
-                    _buildRatingPage(
-                      matchingProvider,
-                      'chilling',
-                      'How much do you enjoy just chilling?',
-                      'Relaxing indoors, playing games, scrolling phones, or just hanging out without needing to talk much.',
-                      matchingProvider.chillingRating,
-                    ),
-                    _buildRatingPage(
-                      matchingProvider,
-                      'competitiveGames',
-                      'How much do you enjoy competitive games?',
-                      'Video games, board games, mini golf, pool, or anything with a bit of friendly competition.',
-                      matchingProvider.competitiveGamesRating,
-                    ),
-                    _buildRatingPage(
-                      matchingProvider,
-                      'meals',
-                      'How much do you enjoy grabbing a meal?',
-                      'Going out to eat, trying new restaurants, or just sharing food with friends.',
-                      matchingProvider.mealsRating,
-                    ),
-                    _buildRatingPage(
-                      matchingProvider,
-                      'nightsOut',
-                      'How much do you enjoy nights out?',
-                      'Parties, clubs, bars, or any kind of nightlife activities.',
-                      matchingProvider.nightsOutRating,
-                    ),
+                    _buildExcludeActivitiesPage(matchingProvider),
+                    _buildRankActivitiesPage(matchingProvider),
+                    _buildFriendTypePage(matchingProvider),
                   ],
                 ),
               ),
@@ -487,21 +456,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  Widget _buildRatingPage(
-    MatchingProvider provider,
-    String ratingKey,
-    String question,
-    String description,
-    int currentRating,
-  ) {
+  Widget _buildExcludeActivitiesPage(MatchingProvider provider) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            question,
-            style: const TextStyle(
+          const Text(
+            'Which activities are NOT your thing?',
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -509,59 +472,260 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            description,
+            'Tap to remove activities you don\'t enjoy. You must keep at least 2.',
             style: TextStyle(
               fontSize: 15,
               color: AppColors.textSecondary,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 48),
-          RatingButtonRow(
-            selectedRating: currentRating,
-            onRatingChanged: (rating) => provider.setRating(ratingKey, rating),
-            lowLabel: 'Not my thing',
-            highLabel: 'Love it!',
-          ),
-          const SizedBox(height: 48),
-          // Visual indicator of current selection
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _getRatingLabel(currentRating),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+          const SizedBox(height: 24),
+          ...MatchingProvider.activityLabels.entries.map((entry) {
+            final isExcluded = provider.excludedActivities.contains(entry.key);
+            final canExclude = !isExcluded || provider.includedActivities.length > 2;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: () {
+                  if (canExclude || isExcluded) {
+                    provider.toggleActivityExclusion(entry.key);
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isExcluded
+                        ? AppColors.error.withValues(alpha: 0.08)
+                        : AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isExcluded
+                          ? AppColors.error.withValues(alpha: 0.3)
+                          : AppColors.primary.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: isExcluded
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
+                            decoration: isExcluded
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        isExcluded ? Icons.close : Icons.check_circle,
+                        color: isExcluded ? AppColors.error : AppColors.primary,
+                        size: 24,
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRankActivitiesPage(MatchingProvider provider) {
+    final ranked = provider.rankedActivities;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Rank your favorite activities',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Drag to reorder from most enjoyed (top) to least enjoyed (bottom).',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ReorderableListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: ranked.length,
+            onReorder: (oldIndex, newIndex) {
+              final updated = List<String>.from(ranked);
+              if (newIndex > oldIndex) newIndex--;
+              final item = updated.removeAt(oldIndex);
+              updated.insert(newIndex, item);
+              provider.setRankedActivities(updated);
+            },
+            itemBuilder: (context, index) {
+              final key = ranked[index];
+              final label = MatchingProvider.activityLabels[key] ?? key;
+              return Container(
+                key: ValueKey(key),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: ListTile(
+                  leading: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.drag_handle,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFriendTypePage(MatchingProvider provider) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tell us about your friend style',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This helps us find people who complement your personality.',
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildFriendTypeField(
+            label: 'What type of friend are you?',
+            hint: 'e.g., I\'m the planner of the group, always organizing hangouts...',
+            controller: _friendTypeController,
+            onChanged: provider.setFriendType,
+          ),
+          const SizedBox(height: 20),
+          _buildFriendTypeField(
+            label: 'What type of friend do you match well with?',
+            hint: 'e.g., Spontaneous people who are down for anything...',
+            controller: _friendTypeMatchWellController,
+            onChanged: provider.setFriendTypeMatchWell,
+          ),
+          const SizedBox(height: 20),
+          _buildFriendTypeField(
+            label: 'What type of friend do you NOT match well with?',
+            hint: 'e.g., People who cancel plans last minute or are very introverted...',
+            controller: _friendTypeNoMatchController,
+            onChanged: provider.setFriendTypeNoMatch,
           ),
         ],
       ),
     );
   }
 
-  String _getRatingLabel(int rating) {
-    switch (rating) {
-      case 1:
-        return 'Not interested';
-      case 2:
-        return 'Meh, sometimes';
-      case 3:
-        return 'It\'s okay';
-      case 4:
-        return 'I enjoy it';
-      case 5:
-        return 'I love it!';
-      default:
-        return '';
-    }
+  Widget _buildFriendTypeField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: 3,
+          maxLength: 500,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.textHint),
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.divider),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.divider),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildNavigationButtons(MatchingProvider provider) {

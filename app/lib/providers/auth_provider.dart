@@ -536,13 +536,7 @@ class AuthProvider with ChangeNotifier {
     try {
       debugPrint('📝 Updating matching profile for user ${_currentUser!.id}');
 
-      final profileWithTimestamp = MatchingProfile(
-        isActive: profile.isActive,
-        genderPreference: profile.genderPreference,
-        funActivities: profile.funActivities,
-        talkAboutForever: profile.talkAboutForever,
-        freeTime: profile.freeTime,
-        activityRatings: profile.activityRatings,
+      final profileWithTimestamp = profile.copyWith(
         updatedAt: DateTime.now(),
       );
 

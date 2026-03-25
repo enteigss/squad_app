@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/matching_profile.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/matching_provider.dart';
 import '../../utils/colors.dart';
 import '../../widgets/custom_button.dart';
 
@@ -69,11 +70,18 @@ class MatchingProfileEditScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                // Activity ratings section
+                // Activity preferences section
                 const SizedBox(height: 24),
                 _buildSectionTitle('Activity Preferences'),
                 const SizedBox(height: 12),
-                _buildRatingsCard(profile.activityRatings),
+                _buildActivitiesCard(profile),
+                // Friend type section
+                if (_hasFriendTypeData(profile)) ...[
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('Friend Style'),
+                  const SizedBox(height: 12),
+                  _buildFriendTypeCard(profile),
+                ],
                 const SizedBox(height: 32),
                 // Edit button
                 CustomButton(
@@ -89,6 +97,12 @@ class MatchingProfileEditScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  bool _hasFriendTypeData(MatchingProfile profile) {
+    return (profile.friendType != null && profile.friendType!.isNotEmpty) ||
+        (profile.friendTypeMatchWell != null && profile.friendTypeMatchWell!.isNotEmpty) ||
+        (profile.friendTypeNoMatch != null && profile.friendTypeNoMatch!.isNotEmpty);
   }
 
   Widget _buildStatusCard(
@@ -217,15 +231,9 @@ class MatchingProfileEditScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRatingsCard(ActivityRatings ratings) {
-    final ratingItems = [
-      ('Deep conversations', ratings.deepConversations),
-      ('Outdoor activities', ratings.outdoors),
-      ('Just chilling', ratings.chilling),
-      ('Competitive games', ratings.competitiveGames),
-      ('Grabbing a meal', ratings.meals),
-      ('Nights out', ratings.nightsOut),
-    ];
+  Widget _buildActivitiesCard(MatchingProfile profile) {
+    final ranked = profile.rankedActivities;
+    final excluded = profile.excludedActivities;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -235,53 +243,151 @@ class MatchingProfileEditScreen extends StatelessWidget {
         border: Border.all(color: AppColors.divider),
       ),
       child: Column(
-        children: ratingItems.map((item) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    item.$1,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (ranked.isNotEmpty) ...[
+            Text(
+              'Activities you enjoy (ranked)',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...ranked.asMap().entries.map((entry) {
+              final label = MatchingProvider.activityLabels[entry.value] ?? entry.value;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${entry.key + 1}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+          if (excluded.isNotEmpty) ...[
+            if (ranked.isNotEmpty) const SizedBox(height: 16),
+            Text(
+              'Not your thing',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: excluded.map((key) {
+                final label = MatchingProvider.activityLabels[key] ?? key;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.2),
                     ),
                   ),
-                ),
-                _buildRatingDots(item.$2),
-              ],
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
-          );
-        }).toList(),
+          ],
+          if (ranked.isEmpty && excluded.isEmpty)
+            Text(
+              'No activity preferences set',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildRatingDots(int rating) {
-    return Row(
-      children: List.generate(5, (index) {
-        final isFilled = index < rating;
-        return Container(
-          width: 24,
-          height: 24,
-          margin: const EdgeInsets.only(left: 4),
-          decoration: BoxDecoration(
-            color: isFilled ? AppColors.primary : AppColors.divider,
-            borderRadius: BorderRadius.circular(6),
+  Widget _buildFriendTypeCard(MatchingProfile profile) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (profile.friendType != null && profile.friendType!.isNotEmpty) ...[
+            _buildFriendTypeItem('What type of friend I am', profile.friendType!),
+          ],
+          if (profile.friendTypeMatchWell != null && profile.friendTypeMatchWell!.isNotEmpty) ...[
+            if (profile.friendType != null && profile.friendType!.isNotEmpty)
+              const SizedBox(height: 12),
+            _buildFriendTypeItem('Match well with', profile.friendTypeMatchWell!),
+          ],
+          if (profile.friendTypeNoMatch != null && profile.friendTypeNoMatch!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildFriendTypeItem('Don\'t match well with', profile.friendTypeNoMatch!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFriendTypeItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
           ),
-          child: Center(
-            child: Text(
-              '${index + 1}',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: isFilled ? Colors.white : AppColors.textSecondary,
-              ),
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textPrimary,
           ),
-        );
-      }),
+        ),
+      ],
     );
   }
 

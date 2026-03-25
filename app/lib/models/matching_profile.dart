@@ -1,64 +1,3 @@
-/// Activity ratings for matching (1-5 scale)
-/// Keep in sync with: scripts/matching/src/types.ts
-class ActivityRatings {
-  final int deepConversations; // "having deep/intellectual conversations"
-  final int outdoors; // "doing stuff outdoors"
-  final int chilling; // "just chilling"
-  final int competitiveGames; // "competitive games (video games, board games, etc.)"
-  final int meals; // "grabbing a meal"
-  final int nightsOut; // "nights out"
-
-  ActivityRatings({
-    this.deepConversations = 3,
-    this.outdoors = 3,
-    this.chilling = 3,
-    this.competitiveGames = 3,
-    this.meals = 3,
-    this.nightsOut = 3,
-  });
-
-  factory ActivityRatings.fromMap(Map<String, dynamic>? map) {
-    if (map == null) return ActivityRatings();
-    return ActivityRatings(
-      deepConversations: map['deepConversations'] ?? 3,
-      outdoors: map['outdoors'] ?? 3,
-      chilling: map['chilling'] ?? 3,
-      competitiveGames: map['competitiveGames'] ?? 3,
-      meals: map['meals'] ?? 3,
-      nightsOut: map['nightsOut'] ?? 3,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'deepConversations': deepConversations,
-      'outdoors': outdoors,
-      'chilling': chilling,
-      'competitiveGames': competitiveGames,
-      'meals': meals,
-      'nightsOut': nightsOut,
-    };
-  }
-
-  ActivityRatings copyWith({
-    int? deepConversations,
-    int? outdoors,
-    int? chilling,
-    int? competitiveGames,
-    int? meals,
-    int? nightsOut,
-  }) {
-    return ActivityRatings(
-      deepConversations: deepConversations ?? this.deepConversations,
-      outdoors: outdoors ?? this.outdoors,
-      chilling: chilling ?? this.chilling,
-      competitiveGames: competitiveGames ?? this.competitiveGames,
-      meals: meals ?? this.meals,
-      nightsOut: nightsOut ?? this.nightsOut,
-    );
-  }
-}
-
 /// Matching profile stored in user document
 /// Keep in sync with: scripts/matching/src/types.ts
 class MatchingProfile {
@@ -66,8 +5,12 @@ class MatchingProfile {
   final String? genderPreference;
   final String? funActivities;
   final String? talkAboutForever;
-  final String? freeTime; // When the user is usually free
-  final ActivityRatings activityRatings;
+  final String? freeTime;
+  final List<String> excludedActivities;
+  final List<String> rankedActivities;
+  final String? friendType;
+  final String? friendTypeMatchWell;
+  final String? friendTypeNoMatch;
   final DateTime? updatedAt;
 
   MatchingProfile({
@@ -76,9 +19,13 @@ class MatchingProfile {
     this.funActivities,
     this.talkAboutForever,
     this.freeTime,
-    ActivityRatings? activityRatings,
+    this.excludedActivities = const [],
+    this.rankedActivities = const [],
+    this.friendType,
+    this.friendTypeMatchWell,
+    this.friendTypeNoMatch,
     this.updatedAt,
-  }) : activityRatings = activityRatings ?? ActivityRatings();
+  });
 
   factory MatchingProfile.fromMap(Map<String, dynamic>? map) {
     if (map == null) {
@@ -90,7 +37,11 @@ class MatchingProfile {
       funActivities: map['funActivities'],
       talkAboutForever: map['talkAboutForever'],
       freeTime: map['freeTime'],
-      activityRatings: ActivityRatings.fromMap(map['activityRatings']),
+      excludedActivities: List<String>.from(map['excludedActivities'] ?? []),
+      rankedActivities: List<String>.from(map['rankedActivities'] ?? []),
+      friendType: map['friendType'],
+      friendTypeMatchWell: map['friendTypeMatchWell'],
+      friendTypeNoMatch: map['friendTypeNoMatch'],
       updatedAt: _parseDateTime(map['updatedAt']),
     );
   }
@@ -112,7 +63,11 @@ class MatchingProfile {
       'funActivities': funActivities,
       'talkAboutForever': talkAboutForever,
       'freeTime': freeTime,
-      'activityRatings': activityRatings.toMap(),
+      'excludedActivities': excludedActivities,
+      'rankedActivities': rankedActivities,
+      'friendType': friendType,
+      'friendTypeMatchWell': friendTypeMatchWell,
+      'friendTypeNoMatch': friendTypeNoMatch,
       'updatedAt': updatedAt?.millisecondsSinceEpoch,
     };
   }
@@ -123,7 +78,11 @@ class MatchingProfile {
     String? funActivities,
     String? talkAboutForever,
     String? freeTime,
-    ActivityRatings? activityRatings,
+    List<String>? excludedActivities,
+    List<String>? rankedActivities,
+    String? friendType,
+    String? friendTypeMatchWell,
+    String? friendTypeNoMatch,
     DateTime? updatedAt,
   }) {
     return MatchingProfile(
@@ -132,7 +91,11 @@ class MatchingProfile {
       funActivities: funActivities ?? this.funActivities,
       talkAboutForever: talkAboutForever ?? this.talkAboutForever,
       freeTime: freeTime ?? this.freeTime,
-      activityRatings: activityRatings ?? this.activityRatings,
+      excludedActivities: excludedActivities ?? this.excludedActivities,
+      rankedActivities: rankedActivities ?? this.rankedActivities,
+      friendType: friendType ?? this.friendType,
+      friendTypeMatchWell: friendTypeMatchWell ?? this.friendTypeMatchWell,
+      friendTypeNoMatch: friendTypeNoMatch ?? this.friendTypeNoMatch,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
