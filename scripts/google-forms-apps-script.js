@@ -44,55 +44,6 @@ function onFormSubmit(e) {
       Logger.log("---");
     }
 
-  // All 6 activity keys
-  var allActivities = [
-    "deepConversations",
-    "outdoors",
-    "chilling",
-    "competitiveGames",
-    "meals",
-    "nightsOut",
-  ];
-
-  // Parse excluded activities from checkbox question (comma-separated labels)
-  var excludedRaw = responses["Which of these activities do you NOT enjoy?"] || "";
-  var labelToKey = {
-    "Deep conversations": "deepConversations",
-    "Outdoor activities": "outdoors",
-    "Just chilling": "chilling",
-    "Competitive games": "competitiveGames",
-    "Grabbing a meal": "meals",
-    "Nights out": "nightsOut",
-  };
-  var excludedActivities = [];
-  if (excludedRaw) {
-    var labels = typeof excludedRaw === "string" ? excludedRaw.split(",") : excludedRaw;
-    for (var j = 0; j < labels.length; j++) {
-      var key = labelToKey[labels[j].trim()];
-      if (key) excludedActivities.push(key);
-    }
-  }
-
-  // Parse ranked activities from ranking question (ordered labels)
-  var rankedRaw = responses["Rank the remaining activities from most to least enjoyed"] || "";
-  var rankedActivities = [];
-  if (rankedRaw) {
-    var rankedLabels = typeof rankedRaw === "string" ? rankedRaw.split(",") : rankedRaw;
-    for (var k = 0; k < rankedLabels.length; k++) {
-      var rKey = labelToKey[rankedLabels[k].trim()];
-      if (rKey && excludedActivities.indexOf(rKey) === -1) rankedActivities.push(rKey);
-    }
-  }
-
-  // If no ranking provided, default to all non-excluded activities in original order
-  if (rankedActivities.length === 0) {
-    for (var m = 0; m < allActivities.length; m++) {
-      if (excludedActivities.indexOf(allActivities[m]) === -1) {
-        rankedActivities.push(allActivities[m]);
-      }
-    }
-  }
-
   var payload = {
     email: responses["What is your BU email? (so I can connect you with your group)"] || "",
     graduationYear: responses["What is your graduation class?"] || "",
@@ -100,12 +51,17 @@ function onFormSubmit(e) {
     funActivities: responses["What do you like to do for fun?"] || "",
     talkAboutForever: responses["What topics could you talk about forever?"] || "",
     freeTime: responses["When are you usually free? (No specific format necessary, answer this question however you want)"] || "",
-    excludedActivities: excludedActivities,
-    rankedActivities: rankedActivities,
-    friendType: responses["What type of friend are you?"] || "",
+    deepConversations: parseInt(responses["How much do you enjoy deep conversations?"] || "3", 10),
+    outdoors: parseInt(responses["How much do you enjoy outdoor activities?"] || "3", 10),
+    chilling: parseInt(responses["How much do you enjoy just chilling?"] || "3", 10),
+    competitiveGames: parseInt(responses["How much do you enjoy competitive games? (video games, board games, mini golf etc.)"] || "3", 10),
+    meals: parseInt(responses["How much do you enjoy grabbing a meal?"] || "3", 10),
+    nightsOut: parseInt(responses["How much do you enjoy nights out?"] || "3", 10),
+    activityPreferencesElaboration: responses["If you want, tell us more about what you do or don't like to do with friends (Optional)"] || "",
+    friendType: responses["How would you describe yourself as a friend?"] || "",
     friendTypeMatchWell: responses["What type of friend do you match well with?"] || "",
     friendTypeNoMatch: responses["What type of friend do you NOT match well with?"] || "",
-    anythingElse: responses["Anything else you'd like me to know?"] || "",
+    anythingElse: responses["Anything else that's important for us to know? (Optional)"] || "",
     phoneNumber: responses["If you you would prefer give me your number and I will text you instead (if you don't check your email much)."] || "",
   };
 

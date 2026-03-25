@@ -2,17 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/matching_profile.dart';
 
 class MatchingProvider extends ChangeNotifier {
-  // All available activities with display labels
-  static const Map<String, String> activityLabels = {
-    'deepConversations': 'Deep conversations',
-    'outdoors': 'Outdoor activities',
-    'chilling': 'Just chilling',
-    'competitiveGames': 'Competitive games',
-    'meals': 'Grabbing a meal',
-    'nightsOut': 'Nights out',
-  };
-
-  // Current question index (0-6)
+  // Current question index (0-11)
   int _currentQuestionIndex = 0;
 
   // Loading states
@@ -24,8 +14,13 @@ class MatchingProvider extends ChangeNotifier {
   String _funActivities = '';
   String _talkAboutForever = '';
   String _freeTime = '';
-  final Set<String> _excludedActivities = {};
-  List<String> _rankedActivities = [];
+  int _deepConversationsRating = 3;
+  int _outdoorsRating = 3;
+  int _chillingRating = 3;
+  int _competitiveGamesRating = 3;
+  int _mealsRating = 3;
+  int _nightsOutRating = 3;
+  String _activityPreferencesElaboration = '';
   String _friendType = '';
   String _friendTypeMatchWell = '';
   String _friendTypeNoMatch = '';
@@ -35,25 +30,23 @@ class MatchingProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
   bool get canGoBack => _currentQuestionIndex > 0;
-  bool get isLastQuestion => _currentQuestionIndex == 6;
-  int get totalQuestions => 7;
+  bool get isLastQuestion => _currentQuestionIndex == 11;
+  int get totalQuestions => 12;
 
   String? get genderPreference => _genderPreference;
   String get funActivities => _funActivities;
   String get talkAboutForever => _talkAboutForever;
   String get freeTime => _freeTime;
-  Set<String> get excludedActivities => _excludedActivities;
-  List<String> get rankedActivities => _rankedActivities;
+  int get deepConversationsRating => _deepConversationsRating;
+  int get outdoorsRating => _outdoorsRating;
+  int get chillingRating => _chillingRating;
+  int get competitiveGamesRating => _competitiveGamesRating;
+  int get mealsRating => _mealsRating;
+  int get nightsOutRating => _nightsOutRating;
+  String get activityPreferencesElaboration => _activityPreferencesElaboration;
   String get friendType => _friendType;
   String get friendTypeMatchWell => _friendTypeMatchWell;
   String get friendTypeNoMatch => _friendTypeNoMatch;
-
-  /// Activities not excluded (available for ranking)
-  List<String> get includedActivities {
-    return activityLabels.keys
-        .where((key) => !_excludedActivities.contains(key))
-        .toList();
-  }
 
   // Check if current question has a valid answer
   bool get canProceed {
@@ -66,27 +59,15 @@ class MatchingProvider extends ChangeNotifier {
         return _talkAboutForever.trim().isNotEmpty;
       case 3:
         return _freeTime.trim().isNotEmpty;
-      case 4:
-        // Exclude page: must keep at least 2 activities
-        return includedActivities.length >= 2;
-      case 5:
-        // Rank page: always valid (pre-populated)
-        return true;
-      case 6:
-        // Friend type page: always valid
-        return true;
       default:
+        // Rating questions (4-9), elaboration (10), friend type (11) always valid
         return true;
     }
   }
 
   // Navigation methods
   void nextQuestion() {
-    if (_currentQuestionIndex < 6) {
-      // When moving from exclude page to rank page, initialize ranked list
-      if (_currentQuestionIndex == 4) {
-        _initRankedActivities();
-      }
+    if (_currentQuestionIndex < 11) {
       _currentQuestionIndex++;
       notifyListeners();
     }
@@ -100,7 +81,7 @@ class MatchingProvider extends ChangeNotifier {
   }
 
   void goToQuestion(int index) {
-    if (index >= 0 && index <= 6) {
+    if (index >= 0 && index <= 11) {
       _currentQuestionIndex = index;
       notifyListeners();
     }
@@ -112,8 +93,13 @@ class MatchingProvider extends ChangeNotifier {
     _funActivities = '';
     _talkAboutForever = '';
     _freeTime = '';
-    _excludedActivities.clear();
-    _rankedActivities = [];
+    _deepConversationsRating = 3;
+    _outdoorsRating = 3;
+    _chillingRating = 3;
+    _competitiveGamesRating = 3;
+    _mealsRating = 3;
+    _nightsOutRating = 3;
+    _activityPreferencesElaboration = '';
     _friendType = '';
     _friendTypeMatchWell = '';
     _friendTypeNoMatch = '';
@@ -142,19 +128,34 @@ class MatchingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleActivityExclusion(String activityKey) {
-    if (_excludedActivities.contains(activityKey)) {
-      _excludedActivities.remove(activityKey);
-    } else {
-      _excludedActivities.add(activityKey);
+  void setRating(String ratingType, int value) {
+    if (value < 1 || value > 5) return;
+
+    switch (ratingType) {
+      case 'deepConversations':
+        _deepConversationsRating = value;
+        break;
+      case 'outdoors':
+        _outdoorsRating = value;
+        break;
+      case 'chilling':
+        _chillingRating = value;
+        break;
+      case 'competitiveGames':
+        _competitiveGamesRating = value;
+        break;
+      case 'meals':
+        _mealsRating = value;
+        break;
+      case 'nightsOut':
+        _nightsOutRating = value;
+        break;
     }
-    // Remove from ranked list if excluded
-    _rankedActivities.remove(activityKey);
     notifyListeners();
   }
 
-  void setRankedActivities(List<String> ranked) {
-    _rankedActivities = ranked;
+  void setActivityPreferencesElaboration(String value) {
+    _activityPreferencesElaboration = value;
     notifyListeners();
   }
 
@@ -173,24 +174,19 @@ class MatchingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Initialize ranked activities from included activities (preserving any existing order)
-  void _initRankedActivities() {
-    final included = includedActivities;
-    // Keep existing ranked items that are still included, then append new ones
-    final existing = _rankedActivities.where((a) => included.contains(a)).toList();
-    final newItems = included.where((a) => !existing.contains(a)).toList();
-    _rankedActivities = [...existing, ...newItems];
-  }
-
   // Load existing profile for editing
   void loadExistingProfile(MatchingProfile profile) {
     _genderPreference = profile.genderPreference;
     _funActivities = profile.funActivities ?? '';
     _talkAboutForever = profile.talkAboutForever ?? '';
     _freeTime = profile.freeTime ?? '';
-    _excludedActivities.clear();
-    _excludedActivities.addAll(profile.excludedActivities);
-    _rankedActivities = List<String>.from(profile.rankedActivities);
+    _deepConversationsRating = profile.activityRatings.deepConversations;
+    _outdoorsRating = profile.activityRatings.outdoors;
+    _chillingRating = profile.activityRatings.chilling;
+    _competitiveGamesRating = profile.activityRatings.competitiveGames;
+    _mealsRating = profile.activityRatings.meals;
+    _nightsOutRating = profile.activityRatings.nightsOut;
+    _activityPreferencesElaboration = profile.activityPreferencesElaboration ?? '';
     _friendType = profile.friendType ?? '';
     _friendTypeMatchWell = profile.friendTypeMatchWell ?? '';
     _friendTypeNoMatch = profile.friendTypeNoMatch ?? '';
@@ -200,16 +196,21 @@ class MatchingProvider extends ChangeNotifier {
 
   // Build MatchingProfile from current form data
   MatchingProfile buildProfile() {
-    // Ensure ranked activities are up to date
-    _initRankedActivities();
     return MatchingProfile(
       isActive: true,
       genderPreference: _genderPreference,
       funActivities: _funActivities.trim(),
       talkAboutForever: _talkAboutForever.trim(),
       freeTime: _freeTime.trim(),
-      excludedActivities: _excludedActivities.toList(),
-      rankedActivities: _rankedActivities,
+      activityRatings: ActivityRatings(
+        deepConversations: _deepConversationsRating,
+        outdoors: _outdoorsRating,
+        chilling: _chillingRating,
+        competitiveGames: _competitiveGamesRating,
+        meals: _mealsRating,
+        nightsOut: _nightsOutRating,
+      ),
+      activityPreferencesElaboration: _activityPreferencesElaboration.trim().isEmpty ? null : _activityPreferencesElaboration.trim(),
       friendType: _friendType.trim().isEmpty ? null : _friendType.trim(),
       friendTypeMatchWell: _friendTypeMatchWell.trim().isEmpty ? null : _friendTypeMatchWell.trim(),
       friendTypeNoMatch: _friendTypeNoMatch.trim().isEmpty ? null : _friendTypeNoMatch.trim(),

@@ -1,6 +1,17 @@
 import { z } from 'zod';
 import type { firestore } from 'firebase-admin';
 
+// ============ Activity Ratings (1-5 scale) ============
+
+export interface ActivityRatings {
+  deepConversations: number;  // "having deep/intellectual conversations"
+  outdoors: number;           // "doing stuff outdoors"
+  chilling: number;           // "just chilling"
+  competitiveGames: number;   // "competitive games (video games, board games, etc.)"
+  meals: number;              // "grabbing a meal"
+  nightsOut: number;          // "nights out"
+}
+
 // ============ Matching Profile (stored in user document) ============
 
 export const MatchingProfileSchema = z.object({
@@ -9,8 +20,15 @@ export const MatchingProfileSchema = z.object({
   funActivities: z.string().nullable().default(null),
   talkAboutForever: z.string().nullable().default(null),
   freeTime: z.string().nullable().default(null),
-  excludedActivities: z.array(z.string()).default([]),
-  rankedActivities: z.array(z.string()).default([]),
+  activityRatings: z.object({
+    deepConversations: z.number().min(1).max(5).default(3),
+    outdoors: z.number().min(1).max(5).default(3),
+    chilling: z.number().min(1).max(5).default(3),
+    competitiveGames: z.number().min(1).max(5).default(3),
+    meals: z.number().min(1).max(5).default(3),
+    nightsOut: z.number().min(1).max(5).default(3),
+  }).default({}),
+  activityPreferencesElaboration: z.string().nullable().default(null),
   friendType: z.string().nullable().default(null),
   friendTypeMatchWell: z.string().nullable().default(null),
   friendTypeNoMatch: z.string().nullable().default(null),
@@ -50,8 +68,8 @@ export interface UserForMatching {
   funActivities: string | null;
   talkAboutForever: string | null;
   freeTime: string | null;
-  excludedActivities: string[];
-  rankedActivities: string[];
+  activityRatings: ActivityRatings;
+  activityPreferencesElaboration: string | null;
   friendType: string | null;
   friendTypeMatchWell: string | null;
   friendTypeNoMatch: string | null;

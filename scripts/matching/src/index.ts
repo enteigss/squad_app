@@ -80,8 +80,8 @@ async function main() {
         log.dim(`    Year: ${u.graduationYear || '?'} | Location: ${u.location || '?'}`);
         log.dim(`    Fun: ${u.funActivities || '(not answered)'}`);
         log.dim(`    Talk about: ${u.talkAboutForever || '(not answered)'}`);
-        log.dim(`    Excluded: ${u.excludedActivities.length ? u.excludedActivities.join(', ') : '(none)'}`);
-        log.dim(`    Ranked: ${u.rankedActivities.length ? u.rankedActivities.join(' > ') : '(none)'}`);
+        log.dim(`    Ratings: deep=${u.activityRatings.deepConversations} outdoors=${u.activityRatings.outdoors} chill=${u.activityRatings.chilling} games=${u.activityRatings.competitiveGames} meals=${u.activityRatings.meals} nights=${u.activityRatings.nightsOut}`);
+        log.dim(`    Elaboration: ${u.activityPreferencesElaboration || '(not answered)'}`);
         log.dim(`    Friend type: ${u.friendType || '(not answered)'} | Match well: ${u.friendTypeMatchWell || '(not answered)'} | No match: ${u.friendTypeNoMatch || '(not answered)'}`);
       }
       return;

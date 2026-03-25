@@ -69,16 +69,17 @@ export const importSurveyResponse = onRequest(
           freeTime:
             typeof data.freeTime === "string" ?
               data.freeTime.trim() || null : null,
-          excludedActivities:
-            Array.isArray(data.excludedActivities) ?
-              data.excludedActivities.filter(
-                (v: unknown) => typeof v === "string"
-              ) : [],
-          rankedActivities:
-            Array.isArray(data.rankedActivities) ?
-              data.rankedActivities.filter(
-                (v: unknown) => typeof v === "string"
-              ) : [],
+          activityRatings: {
+            deepConversations: parseRating(data.deepConversations),
+            outdoors: parseRating(data.outdoors),
+            chilling: parseRating(data.chilling),
+            competitiveGames: parseRating(data.competitiveGames),
+            meals: parseRating(data.meals),
+            nightsOut: parseRating(data.nightsOut),
+          },
+          activityPreferencesElaboration:
+            typeof data.activityPreferencesElaboration === "string" ?
+              data.activityPreferencesElaboration.trim() || null : null,
           friendType:
             typeof data.friendType === "string" ?
               data.friendType.trim() || null : null,
