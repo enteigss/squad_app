@@ -396,7 +396,7 @@ class NotificationService {
 
     // Don't show foreground notifications for chat messages
     // (chat screen updates in real-time via Firestore listeners)
-    if (notificationType == 'chat_message') {
+    if (notificationType == 'chat_message' || notificationType == 'match_chat_message') {
       if (kDebugMode) {
         print('🚫 Suppressing foreground notification for chat message (real-time UI handles this)');
       }
