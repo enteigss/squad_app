@@ -1,0 +1,77 @@
+name: Android Deploy to Google Play
+
+on:
+  push:
+    branches: [test]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+          bundler-cache: true
+          working-directory: app/android
+
+      - name: Decode keystore
+        run: echo "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > app/android/upload-keystore.jks
+
+      - name: Write key.properties
+        run: |
+          cat > app/android/key.properties <<EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Write Google Play service account JSON
+        run: echo '${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}' > /tmp/google-play-key.json
+
+      - name: Install Flutter dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build dev AAB
+        working-directory: app
+        run: flutter build appbundle --flavor dev --dart-define=ENV=dev
+
+      - name: Upload dev to Google Play
+        working-directory: app/android
+        env:
+          GOOGLE_PLAY_JSON_KEY_PATH: /tmp/google-play-key.json
+        run: bundle exec fastlane deploy_dev
+
+      - name: Build prod AAB
+        working-directory: app
+        run: flutter build appbundle --flavor prod --dart-define=ENV=prod
+
+      - name: Upload prod to Google Play
+        working-directory: app/android
+        env:
+          GOOGLE_PLAY_JSON_KEY_PATH: /tmp/google-play-key.json
+        run: bundle exec fastlane deploy_prod
+
+      - name: Clean up secrets
+        if: always()
+        run: |
+          rm -f /tmp/google-play-key.json
+          rm -f app/android/upload-keystore.jks
+          rm -f app/android/key.properties

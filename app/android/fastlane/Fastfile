@@ -1,0 +1,31 @@
+default_platform(:android)
+
+platform :android do
+  desc "Deploy dev build to Google Play internal testing"
+  lane :deploy_dev do
+    upload_to_play_store(
+      package_name: "com.jordan.linkupbu.dev",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
+      track: "internal",
+      aab: "../build/app/outputs/bundle/devRelease/app-dev-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+    )
+  end
+
+  desc "Deploy prod build to Google Play internal testing"
+  lane :deploy_prod do
+    upload_to_play_store(
+      package_name: "com.jordan.linkupbu",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
+      track: "internal",
+      aab: "../build/app/outputs/bundle/prodRelease/app-prod-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+    )
+  end
+end
